@@ -132,13 +132,16 @@ export function dagFixture() {
   };
 }
 
-export function wideCamera() {
-  const cam = G.perspectiveCamera(55, 16 / 9, 0.1, 1000);
-  cam.position.set(0, 0, 5);
+/** A view of the origin down -z from (0, 0, `z`). */
+export function frontCamera(z: number, far = 1000) {
+  const cam = G.perspectiveCamera(55, 16 / 9, 0.1, far);
+  cam.position.set(0, 0, z);
   cam.lookAt(0, 0, 0);
   cam.updateMatrixWorld();
   return cam;
 }
+
+export const wideCamera = () => frontCamera(5);
 
 /** An oblique view of the origin from (3, 2, 9), as the zero-threshold cut tests decide under. */
 export function obliqueCamera() {

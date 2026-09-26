@@ -3,6 +3,7 @@ import { cameraSelectionUniforms } from '../core/selection.ts';
 import { cameraMoteur } from '../../camera/camera.fixture.ts';
 import { packDagSelection, packedWorldsToRenderOrigin } from './selection.ts';
 import { scenePages, sceneRoots } from './cutFrontierScene.fixture.ts';
+import { frontCamera } from '../../page/selection/dag.fixture.ts';
 
 /**
  * Frontier-count scene, posed at FOUR DEPTHS: a single pose keeps only one detail stage, hence
@@ -14,11 +15,8 @@ export function requestScene(seuil: number, feuilles = 4096, niveaux = 8) {
   const poses = [0, 12, 30, 70].map((z) => new G.Matrix4().makeTranslation(0, 0, -z));
   const roots = sceneRoots(pages, poses, true);
   const packed = packDagSelection(roots);
-  const camera = G.perspectiveCamera(55, 16 / 9, 0.1, 200);
-  camera.position.set(0, 0, 16);
-  camera.lookAt(0, 0, 0);
-  camera.updateMatrixWorld(true);
-  const cam = cameraMoteur(camera);
+  // Posed by the scene builder that owns camera poses, read through the contract.
+  const cam = cameraMoteur(frontCamera(16, 200));
   const uni = cameraSelectionUniforms(cam, seuil, [1280, 720]);
   // WebGL2 ranking reads the SAME pose: the relative view of the render frame and the poses
   // brought into it. Giving them in absolute world under a relative view would compare two frames.
