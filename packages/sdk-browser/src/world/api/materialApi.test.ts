@@ -139,7 +139,7 @@ test('setMaterial writes each listed value into every surface of the material, l
     assert.equal(surface.roughness, 0.25);
   }
   assert.deepEqual([textures[0].repeat.x, textures[0].repeat.y], [4, 2]);
-  api.setMaterial('1', { alphaCutoff: 0.25 });
+  assert.equal(api.setMaterial('1', { alphaCutoff: 0.25 }), true, 'every engine took it');
   assert.equal(api.material('1').alphaCutoff, 0.25);
   assert.equal(api.importedMaterials()[0].roughness, 1, 'the file values stay readable');
   assert.equal(api.importedMaterials()[1].alphaCutoff, 0.5);
