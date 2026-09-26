@@ -166,7 +166,7 @@ function ensureStaticLayer(rt: WebgpuPagesRuntime) {
       // The pyramids and the occlusion test read the layer: a device that refuses them keeps the
       // layer, and draws the moving casters untested.
       try {
-        lights.pageHiz = await createShadowPageHiz(device, layer.targets);
+        lights.pageHiz = await createShadowPageHiz(device, layer.targets[0]);
         lights.occlusion = await createShadowOcclusion(device, capacity);
       } catch (error) {
         lights.pageHiz?.dispose();

@@ -4,7 +4,7 @@ import { layerPass } from '../../../gpu/shadow/layers.ts';
 import { HIZ_UNTESTED } from '../../../gpu/shadow/occlusion.ts';
 import { REGION_RESTORE, REGION_STATIC } from '../../shadow/regions.ts';
 import { shadowRegionGroup } from '../../shadow/regionGroups.ts';
-import { MAX_LAYERS, SHADOW_PAGE } from '../../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import { SHADOW_PAGE } from '../../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import type { WebgpuPagesRuntime } from '../runtime.ts';
 import { encodeShadowCasters } from '../../shadow/casters.ts';
 import type { ShadowTransmittance } from '../../../gpu/shadow/transmittance.ts';
@@ -12,9 +12,7 @@ import type { ShadowTransmittance } from '../../../gpu/shadow/transmittance.ts';
 /** Pyramid slot of each region this frame, `HIZ_UNTESTED` for a region drawn as culled, and the
  *  region each slot was given to. */
 const slotOf = new Uint32Array(MAX_SHADOW_REGIONS),
-  regionOf = new Uint32Array(MAX_SHADOW_REGIONS),
-  /** Where each layer's slots end: slots are numbered layer by layer (`pageHiz.ts`). */
-  ends = new Uint32Array(MAX_LAYERS);
+  regionOf = new Uint32Array(MAX_SHADOW_REGIONS);
 
 /**
  * The pages a moving caster is drawn over get a pyramid of their static layer, and each restored
@@ -27,17 +25,14 @@ function encodeOcclusion(rt: WebgpuPagesRuntime, encoder: GPUCommandEncoder, cou
     { regions, pageHiz, occlusion, cull, spheres, shadows } = lights;
   if (!pageHiz || !occlusion || !cull || !spheres || !shadows) return false;
   let pages = 0;
-  for (let layer = 0; layer < shadows.targets.length; layer++) {
-    for (let region = 0; region < count; region++) {
-      if (regions.layer(region) !== layer) continue;
-      const restored = regions.startOf(region) === REGION_RESTORE;
-      if (restored) regionOf[pages] = region;
-      slotOf[region] = restored ? pages++ : HIZ_UNTESTED;
-    }
-    ends[layer] = pages;
+  for (let region = 0; region < count; region++) {
+    // The pyramids read the first layer: a page past it draws its moving casters untested.
+    const restored = regions.startOf(region) === REGION_RESTORE && !regions.layer(region);
+    if (restored) regionOf[pages] = region;
+    slotOf[region] = restored ? pages++ : HIZ_UNTESTED;
   }
   if (!pages) return false;
-  pageHiz.encode(encoder, ends.subarray(0, shadows.targets.length), (slot, out, at) => {
+  pageHiz.encode(encoder, pages, (slot, out, at) => {
     const region = regionOf[slot];
     out[at] = regions.x(region);
     out[at + 1] = regions.y(region);
