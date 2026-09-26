@@ -59,7 +59,7 @@ function gpuHarness() {
 
 test('composition presents and preserves the capture target in one fullscreen draw', async () => {
   const h = gpuHarness(),
-    lighting = await createDeferredLighting(h.device, {} as GPUBuffer);
+    lighting = await createDeferredLighting(h.device);
   const capture = h.view(),
     presentation = h.view(),
     clear: GPUColor = [0.1, 0.2, 0.3, 1];
@@ -92,7 +92,7 @@ test('composition presents and preserves the capture target in one fullscreen dr
 
 test('composition without presentation keeps its capture-only output and clear color', async () => {
   const h = gpuHarness(),
-    lighting = await createDeferredLighting(h.device, {} as GPUBuffer);
+    lighting = await createDeferredLighting(h.device);
   const capture = h.view(),
     clear: GPUColor = [0.1, 0.2, 0.3, 1];
   lighting.bind(h.surface, h.view(), h.view(), false);
@@ -115,7 +115,7 @@ test('composition without presentation keeps its capture-only output and clear c
 
 test('diagnostic composition retains the display-space flag and unbound calls fail before encoding', async () => {
   const h = gpuHarness(),
-    lighting = await createDeferredLighting(h.device, {} as GPUBuffer),
+    lighting = await createDeferredLighting(h.device),
     target = h.view();
   assert.throws(
     () => lighting.compose(h.encoder, target, [0, 0, 0, 1], h.view()),
@@ -139,7 +139,7 @@ test('diagnostic composition retains the display-space flag and unbound calls fa
 
 test('the rank of a sampled image rides in the fourth viewport slot, zero without one', async () => {
   const h = gpuHarness(),
-    lighting = await createDeferredLighting(h.device, {} as GPUBuffer),
+    lighting = await createDeferredLighting(h.device),
     matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
   lighting.update(matrix, [1, 2, 3], 800, 600, 0x204060, false, [3, 2, 1, 1], 7);
   assert.deepEqual([...h.writes[0].slice(20, 24)], [800, 600, 0, 7]);
@@ -151,7 +151,7 @@ test('the rank of a sampled image rides in the fourth viewport slot, zero withou
 
 test('an image is composed with the share it read, one group per pair (#349)', async () => {
   const h = gpuHarness(),
-    lighting = await createDeferredLighting(h.device, {} as GPUBuffer);
+    lighting = await createDeferredLighting(h.device);
   const hdr = h.view();
   lighting.bind(h.surface, h.view(), hdr, false);
   // The two TAA histories, each its colour beside its share, written in turn.

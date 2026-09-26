@@ -58,38 +58,12 @@ export async function loadImportedLights(
 }
 
 /**
- * The `room` lights that reach farthest, returned in cache order: directionals first, then the
- * strongest by max channel intensity. JavaScript's sort is stable, so two lights of the same
- * reach keep their original rank.
- */
-function withinBudget(imported: readonly SceneLight[], room: number): readonly SceneLight[] {
-  if (imported.length <= room) return imported;
-  const reach = (light: SceneLight) =>
-    light.intensity * Math.max(light.color[0], light.color[1], light.color[2]);
-  const kept = new Set(
-    [...imported]
-      .sort(
-        (a, b) =>
-          Number(b.kind === 'directional') - Number(a.kind === 'directional') ||
-          reach(b) - reach(a),
-      )
-      .slice(0, room),
-  );
-  return imported.filter((light) => kept.has(light));
-}
-
-/**
  * Declares the imported lights in the session store, at open and without the host having to do
- * anything: an imported scene arrives with its lights. Shadow comes from the flag the file
- * carried — the runtime already caps the number of maps refreshed per frame. The contract
- * accepts only `maxLights` lights; beyond that, the least reaching are counted in `dropped` and
- * published by the diagnostic, never silently lost.
+ * anything: an imported scene arrives with its lights, every one of them — the store grows with
+ * the scene (#822). Shadow comes from the flag the file carried — the runtime already caps the
+ * number of maps refreshed per frame.
  */
-export function declareImportedLights(
-  store: SceneLightStore,
-  imported: readonly SceneLight[],
-): { declared: string[]; dropped: number } {
-  const keep = withinBudget(imported, Math.max(0, store.settings.maxLights - store.count));
-  for (const light of keep) store.add(light);
-  return { declared: keep.map((light) => light.id), dropped: imported.length - keep.length };
+export function declareImportedLights(store: SceneLightStore, imported: readonly SceneLight[]) {
+  for (const light of imported) store.add(light);
+  return imported.map((light) => light.id);
 }

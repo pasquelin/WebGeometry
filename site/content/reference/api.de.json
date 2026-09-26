@@ -1181,8 +1181,8 @@
     "summary": "Die Regel bewertet Nachweise; sie erfindet nie eine Referenz und liest nie selbst eine Uhr."
   },
   "createSceneLightStore": {
-    "summary": "Lichter der Szene, in fester Anzahl.",
-    "description": "Der Puffer wird einmal für `maxLights` Lichter zugewiesen und nie neu zugewiesen; das Hinzufügen, Einstellen oder Entfernen eines Lichts schreibt nur seine sechzehn Fließkommazahlen und erhöht seine Revision. Die `revision` pro Licht zeigt einem Leser an, dass sich ein Licht geändert hat: keine Struktur wird pro Bild neu gebaut. Der Schattenplaner liest die Form des Lichts selbst, sodass eine Änderung von Intensität oder Farbe keine Schattenseite veralten lässt."
+    "summary": "Szenenlichter, so viele wie die Szene deklariert: `capacity` Plätze, verdoppelt wenn voll und nie verkleinert.",
+    "description": "Das Hinzufügen, Einstellen oder Entfernen eines Lichts schreibt seine Fließkommazahlen und erhöht seine `revision`, die einem Leser zeigt, dass es sich geändert hat: pro Bild wird nichts neu gebaut. Der Schattenplaner liest die Form des Lichts selbst, sodass eine Änderung von Intensität oder Farbe keine Schattenseite veralten lässt."
   },
   "createSceneRoot": {
     "summary": "Erstellt eine leere, versionierte Szenenhierarchie.",
@@ -1575,11 +1575,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "Der engine-eigene WebGL2-Pfad kann dieses Modell nicht zeichnen.",
       "PAGE_BUDGET": "Die von der Ansicht benötigten Seiten passen nicht in das Speicherbudget, oder dieser Pfad hat kein Budget.",
       "UNSUPPORTED_MEMORY_BUDGETS": "Die von der Ansicht benötigten Seiten passen nicht in das Speicherbudget, oder dieser Pfad hat kein Budget.",
-      "INVALID_SCENE_LIGHT": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, überzählig, oder hat nirgendwo hinzugehen.",
-      "DUPLICATE_SCENE_LIGHT": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, überzählig, oder hat nirgendwo hinzugehen.",
-      "UNKNOWN_SCENE_LIGHT": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, überzählig, oder hat nirgendwo hinzugehen.",
-      "SCENE_LIGHT_BUDGET": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, überzählig, oder hat nirgendwo hinzugehen.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, überzählig, oder hat nirgendwo hinzugehen.",
+      "INVALID_SCENE_LIGHT": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, oder hat nirgendwo hinzugehen.",
+      "DUPLICATE_SCENE_LIGHT": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, oder hat nirgendwo hinzugehen.",
+      "UNKNOWN_SCENE_LIGHT": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, oder hat nirgendwo hinzugehen.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Ein Licht ist fehlerhaft geformt, doppelt, unbekannt, oder hat nirgendwo hinzugehen.",
       "INVALID_SCENE_ENVIRONMENT": "Die Belichtung oder die Umgebung der Szene sind keine gültigen Zahlen.",
       "INVALID_MATERIAL": "Eine Materialänderung ist unbekannt, außerhalb ihres Bereichs, würde es in eine andere Zeichenklasse verschieben oder eine Textur kacheln, die es teilt.",
       "UNKNOWN_MATERIAL": "Eine Materialänderung ist unbekannt, außerhalb ihres Bereichs, würde es in eine andere Zeichenklasse verschieben oder eine Textur kacheln, die es teilt.",
@@ -2868,7 +2867,7 @@
     "summary": "Veröffentlichte Einstellungen der direkten Beleuchtung.",
     "description": "Das sind benannte Produktentscheidungen, keine vergrabenen Konstanten: jede Laufzeitgrenze liest sie erneut, und die Diagnose veröffentlicht sie unverändert.",
     "members": {
-      "maxLights": "Insgesamt vom Vertrag akzeptierte Lichter; darüber hinaus lehnt `addLight` ab. Eine Bildschirmkachel behält jedes davon, das sie berührt; ihre Liste und die Pixelschleife sind dadurch begrenzt (X2).",
+      "tileLights": "Lichter, die die Liste einer Bildschirmkachel hält, in jeder ihrer zwei Tiefenscheiben: ihr Speicher ist dieser, pro Kachel, was die Szene auch hält. Eine Kachel, die mehr Lichter erreichen, hält keine Liste und durchläuft jedes Licht der Szene — die sie verfehlen, addieren eine exakte Null —, sodass nie ein Licht verloren geht (X2).",
       "tileSize": "Seitenlänge in Pixeln einer Bildschirmkachel der Lichtliste.",
       "samplesPerPixel": "Vollständig beleuchtete Lichter — Schattenlesung eingeschlossen — pro Pixel eines BEWEGTEN Bildes (X2): die anderen werden ohne ihren Schatten gewichtet, und die beleuchteten werden proportional ausgelost, sodass die Schätzung unverzerrt ist und die zeitliche Kantenglättung sie mittelt. Ein unbewegtes Bild beleuchtet jedes Licht seiner Kachel und konvergiert zur exakten Summe; dort spielt diese Zahl keine Rolle.",
       "shadowPage": "Seitenlänge einer Schattenseite in Texeln: die Einheit des physischen Pools, der virtuellen Karten und der Invalidierung. Ein bewegtes Objekt macht nur die Seiten ungültig, die seine projizierte Box bedeckt.",
@@ -4018,7 +4017,7 @@
     "summary": "Die Schichten leben auf vier Bits des Caches, also beträgt der tiefste Stapel, den der Compiler beschreiben kann, 15."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Lichter, die eine Schattenkachel im Atlas bezeichnen kann: eines pro deklariertem Schattenlicht."
+    "summary": "Schattenscheiben, die der Atlas adressiert, nach den eigenen Regeln der Seitentabelle (#818) — nie eine Grenze für die Lichter: ein schattenwerfendes Licht darüber hinaus leuchtet ohne Schatten, und das Bild zählt es (`shadowCastersUnsliced`)."
   },
   "maxStretch": {
     "summary": "Der größte Faktor, um den eine lineare 3×3-Abbildung eine Entfernung strecken kann: ihr größter Singulärwert, direkt aus der symmetrischen Matrix A^T A gewonnen.",
@@ -5189,14 +5188,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "Fließkommazahlen der Umgebung im GPU-Puffer."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Fließkommazahlen des gesamten GPU-Lichterpuffers: der Header, dann jedes Licht."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "Fließkommazahlen eines Lichts im GPU-Puffer: fünf `vec4f`, nie neu zugewiesen."
+    "summary": "Fließkommazahlen eines Lichts im GPU-Puffer: fünf `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "Header des Lichterpuffers: Anzahl, Kacheln in X, Kacheln in Y, reserviert."
+    "summary": "Kopf des Lichtpuffers: Anzahl, dann drei reservierte Wörter."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "Die Version des Lichtvertrags, die diese Engine liest."
@@ -5270,9 +5266,9 @@
     "summary": "Die Lichter einer Szene, so wie die GPU sie liest, angeordnet und auf dem neuesten Stand gehalten.",
     "members": {
       "settings": "Veröffentlichte Einstellungen der direkten Beleuchtung. Das sind benannte Produktentscheidungen, keine vergrabenen Konstanten: jede Laufzeitgrenze liest sie erneut, und die Diagnose veröffentlicht sie unverändert.",
-      "packed": "Jedes Licht, für die GPU angeordnet.",
+      "packed": "Jedes Licht, für die GPU gepackt: ein neues Array, wenn die Tabelle wächst.",
       "environmentPacked": "Die Bestrahlungsstärke der Umgebung, so wie die GPU sie liest, hinter den Lichtern (`../core/environment.ts`).",
-      "revision": "Bei jeder Änderung erhöht.",
+      "revision": "Bei jeder Änderung erhöht, pro Platz.",
       "sliceOf": "Die Atlaskachel eines Lichts lebt im Puffer selbst: sie wird nicht doppelt gehalten.",
       "ids": "Der Name des Lichts an jedem Platz.",
       "count": "Wie viele Lichter.",
@@ -5289,7 +5285,7 @@
       "remove": "Entfernt ein Licht.",
       "setEnvironment": "Legt die Umgebung fest.",
       "assignSlice": "Zeichnet die Atlaskachel auf, die ein Licht belegt, ohne den Rest seiner Felder zu berühren. Die Revision der Speicherung steigt nur, wenn sich die Kachel wirklich geändert hat: sonst wird nichts an die GPU gesendet.",
-      "view": "Wirklich belegte Fließkommazahlen: der GPU-Schreibvorgang sendet nie leere Plätze."
+      "capacity": "Plätze, die die Tabelle hält: der GPU-Lichtpuffer ist so lang."
     }
   },
   "SceneLink": {

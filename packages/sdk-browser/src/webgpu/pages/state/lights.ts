@@ -1,13 +1,10 @@
 import {
-  SCENE_ENVIRONMENT_FLOATS,
-  SCENE_LIGHT_BUFFER_FLOATS,
   createSceneLightStore,
   createShadowPlan,
   type SceneLightStore,
   type ShadowPlan,
 } from '../../../../../sdk-core/src/index.ts';
 import { MAX_SHADOW_REGIONS, type GpuShadowAtlas } from '../../../gpu/shadow/atlas.ts';
-import { ltcTable } from '../../../../../sdk-core/src/lighting/ltcTable.ts';
 import type { GpuShadowCull } from '../../../gpu/shadow/cull.ts';
 import type { GpuLightTiles } from '../../../lighting/tiles/tiles.ts';
 import { createShadowRuns, type ShadowRuns } from '../../shadow/runs.ts';
@@ -144,32 +141,6 @@ export function createWebgpuLightState(
     shadowReason: null,
     firstFrameLogged: false,
   };
-}
-
-/** Contract light buffer, fixed size — every light slot, the environment's irradiance, then the
- *  fitted lobe of the rectangles, written here once: never reallocated, never indexed beyond. */
-export function createSceneLightContractBuffer(device: GPUDevice) {
-  const table = ltcTable(),
-    fixed = (SCENE_LIGHT_BUFFER_FLOATS + SCENE_ENVIRONMENT_FLOATS) * 4;
-  const buffer = device.createBuffer({
-    label: 'Trillion3D direct lights v1',
-    size: fixed + table.byteLength,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(buffer, fixed, table);
-  return buffer;
-}
-
-/** Pushes the store to the GPU if and only if its revision has changed since the last image. */
-export function uploadSceneLights(device: GPUDevice, lights: WebgpuLightState) {
-  const { store, buffer } = lights;
-  if (!buffer) return false;
-  if (lights.uploadedEpoch === store.epoch) return false;
-  lights.uploadedEpoch = store.epoch;
-  device.queue.writeBuffer(buffer, 0, store.packed);
-  // The environment's irradiance sits behind the last light slot (`DirectLights.environment`).
-  device.queue.writeBuffer(buffer, SCENE_LIGHT_BUFFER_FLOATS * 4, store.environmentPacked);
-  return true;
 }
 
 /** Closes the frame's shadow work: what its batches drew joins the cumulative total a host reads

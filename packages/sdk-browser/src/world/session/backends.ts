@@ -52,15 +52,12 @@ export async function prepareExplorerBackends(session: ExplorerSession, inputs: 
   let importedLightIds: string[] = [];
   if (options.importedLights !== false) {
     const imported = await loadImportedLights(base, signal);
-    const { declared, dropped } = declareImportedLights(sceneLights, imported.lights);
-    importedLightIds = declared;
-    if (declared.length || dropped || Object.keys(imported.rejected).length)
+    importedLightIds = declareImportedLights(sceneLights, imported.lights);
+    if (importedLightIds.length || Object.keys(imported.rejected).length)
       diagnose('imported-lights', 'Lights declared by the source file', {
         kind: 'preparation',
-        declared: declared.length,
-        dropped,
+        declared: importedLightIds.length,
         rejected: imported.rejected,
-        maxLights: sceneLights.settings.maxLights,
         scope,
       });
   }

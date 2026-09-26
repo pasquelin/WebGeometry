@@ -31,7 +31,7 @@ export async function prepareDirectLights(rt: WebgpuPagesRuntime, device: GPUDev
     return;
   }
   try {
-    lights.tiles = await createGpuLightTiles(device, lights.buffer);
+    lights.tiles = await createGpuLightTiles(device);
   } catch (error) {
     if (isCancelled(rt.signal)) throw error;
     lights.shadowReason = `light tiles unavailable: ${String(error)}`;

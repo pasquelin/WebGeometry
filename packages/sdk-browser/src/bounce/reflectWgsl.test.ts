@@ -68,12 +68,12 @@ test('without bounce the resolve reflects nothing; with it, the cache is bound a
     /^fn reflectedRadiance\([^)]*\)->vec3f\{\n if\(bounce\.counts\.w==0u\)\{return vec3f\(0\.0\);\}/,
   );
   const { device, bindGroups } = fakeDevice(),
-    lighting = await createDeferredLighting(device, {} as GPUBuffer),
+    lighting = await createDeferredLighting(device),
     view = {} as GPUTextureView,
     surface = { views: () => [view, view, view, view] } as unknown as SurfaceBuffer,
     buffer = () => ({}) as GPUBuffer;
   const boundCache = (direct: DirectLightResources) => {
-    lighting.bind(surface, view, view, true, direct);
+    lighting.bind(surface, view, view, true, { lights: buffer(), ...direct });
     const entries = Array.from(bindGroups.at(-1)!.entries);
     return entries.find((entry) => entry.binding === BOUNCE_SURFACE_BINDING)?.resource;
   };

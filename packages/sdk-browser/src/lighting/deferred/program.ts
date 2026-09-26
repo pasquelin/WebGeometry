@@ -6,9 +6,12 @@ import { CONTRACT_SHADOW_BINDINGS } from '../direct/lightingWgsl.ts';
 import { BOUNCE_SURFACE_BINDING } from '../../bounce/reflectWgsl.ts';
 import type { ComposeInput } from './shaders.ts';
 import { makeFullscreenPipeline } from './fullscreen.ts';
+import { createWebgpuBindIdentity } from '../../webgpu/core/bindIdentity.ts';
 
 /** Direct-lighting contract resources the pass rereads; when absent, they are replaced. */
 export interface DirectLightResources {
+  /** The declared lights, grown with the scene: the one buffer a contract program reads them from. */
+  lights?: GPUBuffer;
   tiles?: GPUBuffer;
   /** Shadow records and page table, and the buffer the resolve records its shadow reads in. */
   slices?: GPUBuffer;
@@ -36,7 +39,6 @@ export type ComposedImage = { color: GPUTextureView; share?: GPUTextureView };
 export type AccumulatedImage = Required<ComposedImage>;
 export interface DeferredBindings {
   uniform: GPUBuffer;
-  directLights: GPUBuffer;
   placeholders: {
     tiles: GPUBuffer;
     slices: GPUBuffer;
@@ -88,13 +90,9 @@ export async function createDeferredProgram(
     still: await compile('still'),
     accumulated: await compile('accumulated'),
   };
-  let boundSurface: SurfaceBuffer | undefined,
-    boundTiles: GPUBuffer | undefined,
-    boundAtlas: GPUTextureView | undefined,
-    boundTransmittance: GPUTextureView | undefined,
-    boundRequests: GPUBuffer | undefined,
-    boundProbes: GPUBuffer | undefined,
-    boundProxy: GPUBuffer | undefined,
+  /** What the light group names: rebuilt when one of them is replaced (`bindIdentity.ts`). */
+  let identity = createWebgpuBindIdentity(),
+    boundSurface: SurfaceBuffer | undefined,
     boundHdr: GPUTextureView | undefined,
     /** The bound surface's flags: the share the lit image is composed with. */
     boundFlags: GPUTextureView | undefined,
@@ -138,7 +136,8 @@ export async function createDeferredProgram(
       direct: DirectLightResources,
     ) {
       const { placeholders } = bindings;
-      const tiles = direct.tiles ?? placeholders.tiles,
+      const lights = direct.lights,
+        tiles = direct.tiles ?? placeholders.tiles,
         slices = direct.slices ?? placeholders.slices,
         atlas = direct.atlas ?? placeholders.atlasView,
         transmittance = direct.transmittance?.view ?? placeholders.transmittanceView,
@@ -147,32 +146,27 @@ export async function createDeferredProgram(
         probes = direct.probes,
         proxy = direct.proxy ?? placeholders.proxy;
       boundHdr = hdr;
-      if (
-        boundSurface === surface &&
-        boundTiles === tiles &&
-        boundAtlas === atlas &&
-        boundTransmittance === transmittance &&
-        boundRequests === requests &&
-        boundProbes === probes &&
-        boundProxy === proxy
-      )
-        return;
+      const { next } = identity;
+      next[0] = surface;
+      next[1] = lights;
+      next[2] = tiles;
+      next[3] = atlas;
+      next[4] = transmittance;
+      next[5] = requests;
+      next[6] = probes;
+      next[7] = proxy;
+      if (!identity.moved()) return;
       boundSurface = surface;
       boundFlags = surface.views()[3];
-      boundTiles = tiles;
-      boundAtlas = atlas;
-      boundTransmittance = transmittance;
-      boundRequests = requests;
-      boundProbes = probes;
-      boundProxy = proxy;
       const entries: GPUBindGroupEntry[] = [
         ...surface.views().map((resource, binding) => ({ binding, resource })),
         { binding: 4, resource: depth },
         { binding: 5, resource: { buffer: bindings.uniform } },
       ];
-      if (sources.direct)
+      if (sources.direct) {
+        if (!lights) throw new Error('the contract program binds no declared-light buffer');
         entries.push(
-          { binding: 6, resource: { buffer: bindings.directLights } },
+          { binding: 6, resource: { buffer: lights } },
           { binding: 7, resource: { buffer: tiles } },
           { binding: 8, resource: { buffer: slices } },
           { binding: 9, resource: atlas },
@@ -183,6 +177,7 @@ export async function createDeferredProgram(
           { binding: CONTRACT_SHADOW_BINDINGS.transmittance, resource: transmittance },
           { binding: CONTRACT_SHADOW_BINDINGS.translucentDepth, resource: translucentDepth },
         );
+      }
       if (sources.bounce && direct.bounceGrid && direct.probes && direct.surfaceCache)
         entries.push(
           { binding: 11, resource: { buffer: direct.bounceGrid } },
@@ -192,8 +187,8 @@ export async function createDeferredProgram(
       lightGroup = device.createBindGroup({ layout: layouts.lighting, entries });
     },
     release() {
-      boundSurface = boundTiles = boundAtlas = boundTransmittance = undefined;
-      boundRequests = boundProbes = boundProxy = boundHdr = boundFlags = lightGroup = undefined;
+      identity = createWebgpuBindIdentity();
+      boundSurface = boundHdr = boundFlags = lightGroup = undefined;
       composed = new WeakMap();
     },
   };

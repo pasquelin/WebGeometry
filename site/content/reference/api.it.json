@@ -1181,8 +1181,8 @@
     "summary": "La regola valuta prove; non inventa mai un riferimento e non legge mai un orologio da sola."
   },
   "createSceneLightStore": {
-    "summary": "Luci della scena, in numero fisso.",
-    "description": "Il buffer viene allocato una volta per `maxLights` luci e non viene mai riallocato; aggiungere, regolare o rimuovere una luce scrive solo i suoi sedici float e aumenta la sua revisione. La `revision` per luce segnala a un lettore che una luce è cambiata: nessuna struttura viene ricostruita per fotogramma. Il pianificatore delle ombre legge da sé la forma della luce, quindi un cambio di intensità o di colore non rende obsoleta alcuna pagina d’ombra."
+    "summary": "Luci della scena, quante la scena ne dichiara: `capacity` posti, raddoppiati quando pieni e mai ridotti.",
+    "description": "Aggiungere, regolare o rimuovere una luce scrive i suoi float e aumenta la sua `revision`, che segnala a un lettore che è cambiata: nulla viene ricostruito per fotogramma. Il pianificatore delle ombre legge da sé la forma della luce, quindi un cambio di intensità o di colore non rende obsoleta alcuna pagina d’ombra."
   },
   "createSceneRoot": {
     "summary": "Crea una gerarchia di scena vuota e versionata.",
@@ -1575,11 +1575,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "Il percorso WebGL2 proprio del motore non sa disegnare questo modello.",
       "PAGE_BUDGET": "Le pagine di cui la vista ha bisogno non entrano nel budget di memoria, oppure questo percorso non ha un budget.",
       "UNSUPPORTED_MEMORY_BUDGETS": "Le pagine di cui la vista ha bisogno non entrano nel budget di memoria, oppure questo percorso non ha un budget.",
-      "INVALID_SCENE_LIGHT": "Una luce è malformata, duplicata, sconosciuta, in eccesso, o non ha dove andare.",
-      "DUPLICATE_SCENE_LIGHT": "Una luce è malformata, duplicata, sconosciuta, in eccesso, o non ha dove andare.",
-      "UNKNOWN_SCENE_LIGHT": "Una luce è malformata, duplicata, sconosciuta, in eccesso, o non ha dove andare.",
-      "SCENE_LIGHT_BUDGET": "Una luce è malformata, duplicata, sconosciuta, in eccesso, o non ha dove andare.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Una luce è malformata, duplicata, sconosciuta, in eccesso, o non ha dove andare.",
+      "INVALID_SCENE_LIGHT": "Una luce è malformata, duplicata, sconosciuta, o non ha dove andare.",
+      "DUPLICATE_SCENE_LIGHT": "Una luce è malformata, duplicata, sconosciuta, o non ha dove andare.",
+      "UNKNOWN_SCENE_LIGHT": "Una luce è malformata, duplicata, sconosciuta, o non ha dove andare.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Una luce è malformata, duplicata, sconosciuta, o non ha dove andare.",
       "INVALID_SCENE_ENVIRONMENT": "L'esposizione o l'ambiente della scena non sono numeri validi.",
       "INVALID_MATERIAL": "Una modifica del materiale è sconosciuta, fuori intervallo, lo sposterebbe in un’altra classe di disegno, o ripeterebbe una mappa che condivide.",
       "UNKNOWN_MATERIAL": "Una modifica del materiale è sconosciuta, fuori intervallo, lo sposterebbe in un’altra classe di disegno, o ripeterebbe una mappa che condivide.",
@@ -2868,7 +2867,7 @@
     "summary": "Impostazioni pubblicate dell'illuminazione diretta.",
     "description": "Sono scelte di prodotto nominate, non costanti sepolte: ogni limite a runtime le rilegge, e la diagnostica le pubblica così come sono.",
     "members": {
-      "maxLights": "Luci accettate in totale dal contratto; oltre, `addLight` rifiuta. Una tessera di schermo mantiene ognuna di quelle che la toccano; la sua lista e il ciclo per pixel sono limitati da questo numero (X2).",
+      "tileLights": "Luci che la lista di una tessera di schermo tiene, in ciascuna delle sue due fette di profondità: la sua memoria è questa, per tessera, qualunque cosa tenga la scena. Una tessera raggiunta da più luci non tiene lista e percorre ogni luce della scena — quelle che la mancano aggiungono uno zero esatto —, così nessuna luce va mai persa (X2).",
       "tileSize": "Lato in pixel di una tessera di schermo della lista di luci.",
       "samplesPerPixel": "Luci illuminate per intero — lettura dell'ombra inclusa — per pixel di un'immagine IN MOVIMENTO (X2): le altre sono pesate senza la loro ombra, e quelle illuminate sono estratte a sorte in proporzione, quindi la stima è senza distorsioni e l'antialiasing temporale ne fa la media. Un'immagine ferma illumina ogni luce della sua tessera e converge verso la somma esatta; lì, questo numero non gioca alcun ruolo.",
       "shadowPage": "Lato di una pagina d’ombra, in texel: l’unità del pool fisico, delle mappe virtuali e dell’invalidazione. Un oggetto in movimento invalida solo le pagine coperte dal suo box proiettato.",
@@ -4018,7 +4017,7 @@
     "summary": "Gli strati vivono su quattro bit della cache, quindi la pila più profonda che il compilatore può descrivere vale 15."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Luci che una fetta d'ombra può designare nell'atlante: una per luce con ombra dichiarata."
+    "summary": "Fette d’ombra che l’atlante indirizza, secondo le regole proprie della tabella delle pagine (#818) — mai un limite sulle luci: una luce con ombra oltre di esse illumina senza ombra, e il fotogramma la conta (`shadowCastersUnsliced`)."
   },
   "maxStretch": {
     "summary": "Il fattore più grande per cui un'applicazione lineare 3×3 può allungare una distanza: il suo valore singolare più grande, ottenuto direttamente dalla matrice simmetrica A^T A.",
@@ -5189,14 +5188,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "Float dell'ambiente nel buffer GPU."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Float dell'intero buffer GPU delle luci: l'intestazione, poi ogni luce."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "Float di una luce nel buffer GPU: cinque `vec4f`, mai riallocati."
+    "summary": "Float di una luce nel buffer GPU: cinque `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "Intestazione del buffer delle luci: numero, tessere in X, tessere in Y, riservato."
+    "summary": "Intestazione del buffer delle luci: numero, poi tre parole riservate."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "La versione del contratto di luce letta da questo motore."
@@ -5270,9 +5266,9 @@
     "summary": "Le luci di una scena così come le legge la GPU, ordinate e mantenute aggiornate.",
     "members": {
       "settings": "Impostazioni pubblicate dell'illuminazione diretta. Sono scelte di prodotto nominate, non costanti sepolte: ogni limite a runtime le rilegge, e la diagnostica le pubblica così come sono.",
-      "packed": "Ogni luce, disposta per la GPU.",
+      "packed": "Ogni luce, impacchettata per la GPU: un nuovo array quando la tabella cresce.",
       "environmentPacked": "L'irradianza dell'ambiente così come la legge la GPU, dietro le luci (`../core/environment.ts`).",
-      "revision": "Incrementata a ogni cambiamento.",
+      "revision": "Aumentato a ogni cambiamento, per posto.",
       "sliceOf": "La fetta di atlante di una luce vive nel buffer stesso: non viene mantenuta due volte.",
       "ids": "Il nome della luce di ogni posto.",
       "count": "Quante luci.",
@@ -5289,7 +5285,7 @@
       "remove": "Rimuove una luce.",
       "setEnvironment": "Imposta l'ambiente.",
       "assignSlice": "Registra la fetta di atlante occupata da una luce, senza toccare il resto dei suoi campi. La revisione della memorizzazione sale solo se la fetta è davvero cambiata: altrimenti nulla viene inviato alla GPU.",
-      "view": "Float realmente occupati: la scrittura GPU non invia mai posti vuoti."
+      "capacity": "Posti che la tabella tiene: il buffer GPU delle luci è lungo così."
     }
   },
   "SceneLink": {
