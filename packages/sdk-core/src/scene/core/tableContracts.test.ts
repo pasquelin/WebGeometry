@@ -68,11 +68,11 @@ test('a partition root of another version or shape is refused, and a cell is rea
     () => assertSceneTables({ ...tables(), partition: { ...partition, pages: [EMPTY] } }),
     hasCode('INVALID_SCENE_TABLES'),
   );
-  assert.deepEqual(assertCellNodes({ version: 3, nodes: [] }), []);
-  assert.throws(() => assertCellNodes({ version: 2, nodes: [] }), hasCode('INVALID_SCENE_TABLES'));
+  assert.deepEqual(assertCellNodes({ version: 2, nodes: [] }), []);
+  assert.throws(() => assertCellNodes({ version: 1, nodes: [] }), hasCode('INVALID_SCENE_TABLES'));
 });
 
-test('the pages under the root give back every cell in order, their box, meshes and mesh pages', async () => {
+test('the pages under the root give back every cell in order, their box and their meshes', async () => {
   // The root names an index page `a` and a region page `b`; `a` names the region pages `c`, `d`.
   const [m, n] = [slot('e', [0, 0, 0, 0, 0, 0]), slot('f', [0, 0, 0, 0, 0, 0])];
   const bodies: Record<string, unknown> = {
@@ -92,11 +92,6 @@ test('the pages under the root give back every cell in order, their box, meshes 
   assert.deepEqual(urls, ['0', '1', '2', '3']);
   assert.deepEqual(paged.bounds, [-3, 0, 0, 2, 5, 1]);
   assert.deepEqual(paged.meshes, [0, 1, 2, 3]);
-  const regions = [
-    { cells: 2, meshPages: [m, n] },
-    { cells: 1, meshPages: [] },
-  ];
-  assert.deepEqual(paged.regions, [...regions, { cells: 1, meshPages: [n] }]);
   // A slot that is not fixed-width hexadecimal, or a page of another version, is refused.
   const bad = { version: 3, pages: ['z'.repeat(168), ...root.slice(1)] };
   await assert.rejects(readTablePartition(bad, read), hasCode('INVALID_SCENE_TABLES'));

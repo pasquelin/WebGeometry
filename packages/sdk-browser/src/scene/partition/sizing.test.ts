@@ -43,7 +43,7 @@ function twoRows() {
       const url = `https://cache.test/key/${parent}-${at}.json`;
       const node = { parent, mesh: 0, matrix: null, translation: [100 * at, 0, 0] };
       const nodes = [{ ...node, rotation: null, scale: null }];
-      bodies.set(url, new TextEncoder().encode(JSON.stringify({ version: 3, nodes })));
+      bodies.set(url, new TextEncoder().encode(JSON.stringify({ version: 2, nodes })));
       const box = [100 * at, 0, 0, 100 * at + 1, 1, 1];
       cells.push({ url, sha256: '', bytes: 1, parents: [[parent, box]], meshes: [[0, 1]] });
     }

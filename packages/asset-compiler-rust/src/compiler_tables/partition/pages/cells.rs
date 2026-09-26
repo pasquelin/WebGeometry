@@ -2,6 +2,9 @@
 //! (#792).
 use super::*;
 
+/// The slots of the mesh pages each mesh's primitives lie in, by mesh rank.
+pub(crate) type MeshSlots = BTreeMap<u64, Vec<String>>;
+
 /// Writes the pages of the cells `tree` halved, whose records and world boxes are `records` and
 /// `bounds`; returns the root. A region page lists beside its records the slots of the mesh pages
 /// its cells' primitives lie in, `mesh_pages` by mesh rank (#792), each once.
@@ -12,12 +15,8 @@ pub(crate) fn write_pages(
     mesh_pages: &MeshSlots,
     directory: &Path,
 ) -> Result<Value> {
-    let mut starts = vec![0];
-    for record in records {
-        starts.push(starts[starts.len() - 1] + serde_json::to_vec(record)?.len() + 1);
-    }
     let kind = &CELL_PAGES;
-    let leaf = |cells: Range<usize>| {
+    let leaf = |cells: Range<usize>, _| {
         let records = &records[cells];
         let meshes = records
             .iter()
@@ -26,6 +25,6 @@ pub(crate) fn write_pages(
         let pages: BTreeSet<&String> = pages.flatten().collect();
         Ok(json!({kind.records: records, "meshPages": pages}))
     };
-    let pager = Pager::new(kind, starts, bounds, directory, &leaf)?;
+    let pager = Pager::new(kind, records, Some(bounds), directory, &leaf)?;
     Ok(json!({"version": kind.version, "pages": pager.root(tree)?}))
 }

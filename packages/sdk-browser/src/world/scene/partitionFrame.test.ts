@@ -149,7 +149,7 @@ function grid(side: number) {
         rotation: null,
         scale: null,
       }));
-      bodies.set(url, new TextEncoder().encode(JSON.stringify({ version: 3, nodes })));
+      bodies.set(url, new TextEncoder().encode(JSON.stringify({ version: 2, nodes })));
       const bounds = [x * 10, 0, z * 10, x * 10 + 8, 1, z * 10 + 8];
       cells.push({ url, sha256: '', bytes: 1, parents: [[null, bounds]], meshes: [[mesh, 4]] });
     }

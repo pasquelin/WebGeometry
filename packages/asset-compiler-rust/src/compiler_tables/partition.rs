@@ -23,8 +23,10 @@ use split::{split_cells, Placed, Region};
 /// A box, `[minX, minY, minZ, maxX, maxY, maxZ]`.
 type Box6 = [f64; 6];
 
-/// Version of a cell file, of a page and of the root the core carries.
+/// Version of a page and of the root the core carries.
 const PARTITION_VERSION: u32 = 3;
+/// Version of a cell file.
+const CELL_VERSION: u32 = 2;
 
 /// The core the runtime reads first, the root of the cells it reads by distance, and their count.
 pub(super) struct Partitioned {
@@ -181,7 +183,7 @@ fn write_cells(
             *counts.entry(mesh).or_default() += 1;
         }
         let parents: Vec<Value> = parents.iter().map(|(p, b)| json!([p, b])).collect();
-        let body = json!({"version": PARTITION_VERSION, "nodes": cell.iter().map(|p| &p.entry).collect::<Vec<_>>()});
+        let body = json!({"version": CELL_VERSION, "nodes": cell.iter().map(|p| &p.entry).collect::<Vec<_>>()});
         let written = product(
             directory,
             &format!("scene-cell-{at}.json"),

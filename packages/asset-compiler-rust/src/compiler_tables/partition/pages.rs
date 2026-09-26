@@ -15,8 +15,6 @@ pub(crate) use read::*;
 pub(crate) const PAGE_BYTES: usize = crate::STREAM_BUNDLE_BYTES;
 /// How many pages the root and an index page list at most.
 pub(crate) const FAN_OUT: usize = 8;
-/// The slots of the mesh pages each mesh's primitives lie in, by mesh rank (#792).
-pub(crate) type MeshSlots = BTreeMap<u64, Vec<String>>;
 /// A slot: the page's SHA-256 in 64 hexadecimal digits, its size in 8, then its box — the union
 /// of its records' at the declared poses — as the bits of six `f64` in 16 each. Zeros: no page.
 pub(crate) const SLOT_WIDTH: usize = 64 + 8 + 6 * 16;
@@ -59,34 +57,42 @@ pub(crate) fn write_page(
     Ok(slot)
 }
 
+/// The region page over a range of records, its version aside; `true` when it is written, not
+/// only measured: only then does it write the files beside it.
+pub(crate) type Leaf<'a> = dyn Fn(Range<usize>, bool) -> Result<Value> + 'a;
+
 /// The records of one kind of page, their boxes, and where each record starts once written.
 pub(crate) struct Pager<'a> {
     kind: &'a Kind,
     /// The bytes of a region page of no record, as `leaf` lays it out.
     empty: usize,
-    /// Where each record starts in a region page's list, and where the last ends.
+    /// Where each record starts in a region page's list, a comma after each, and where the last
+    /// ends: a lower bound of a page's bytes, which its other members may grow.
     starts: Vec<usize>,
-    /// The box of each record; none, and every page is unboxed.
-    bounds: &'a [Box6],
+    /// The box of each record; `None`, every page unboxed.
+    bounds: Option<&'a [Box6]>,
     directory: &'a Path,
-    /// The region page over a range of records, its version aside.
-    leaf: &'a dyn Fn(Range<usize>) -> Result<Value>,
-    /// Each range measured, and its region page when it is one.
-    measured: RefCell<BTreeMap<(usize, usize), Option<Value>>>,
-    /// The region pages written, in record order: their records and slot.
-    leaves: RefCell<Vec<(Range<usize>, String)>>,
+    leaf: &'a Leaf<'a>,
+    /// Whether each range measured is a region page.
+    measured: RefCell<BTreeMap<(usize, usize), bool>>,
+    /// Every page written and its slot, a region page with its records.
+    written: RefCell<Vec<(Option<Range<usize>>, String)>>,
 }
 
 impl<'a> Pager<'a> {
-    /// The pager of `kind` over records starting at `starts`, boxed by `bounds`, whose region pages
-    /// `leaf` lays out: the bytes of an empty region page are measured on `leaf` itself.
+    /// The pager of `kind` over `records`, boxed by `bounds`, whose region pages `leaf` lays out:
+    /// the bytes of an empty region page are measured on `leaf` itself.
     pub(crate) fn new(
         kind: &'a Kind,
-        starts: Vec<usize>,
-        bounds: &'a [Box6],
+        records: &[Value],
+        bounds: Option<&'a [Box6]>,
         directory: &'a Path,
-        leaf: &'a dyn Fn(Range<usize>) -> Result<Value>,
+        leaf: &'a Leaf<'a>,
     ) -> Result<Self> {
+        let mut starts = vec![0];
+        for record in records {
+            starts.push(starts[starts.len() - 1] + serde_json::to_vec(record)?.len() + 1);
+        }
         let mut pager = Pager {
             kind,
             empty: 0,
@@ -95,35 +101,32 @@ impl<'a> Pager<'a> {
             directory,
             leaf,
             measured: RefCell::default(),
-            leaves: RefCell::default(),
+            written: RefCell::default(),
         };
-        pager.empty = serde_json::to_vec(&pager.region(0..0)?)?.len();
+        pager.empty = serde_json::to_vec(&pager.region(0..0, false)?)?.len();
         Ok(pager)
     }
 
-    /// The region page over `records`, its version stamped.
-    fn region(&self, records: Range<usize>) -> Result<Value> {
-        let mut body = (self.leaf)(records)?;
+    /// The region page over `records`, its version stamped; its files written when `written`.
+    fn region(&self, records: Range<usize>, written: bool) -> Result<Value> {
+        let mut body = (self.leaf)(records, written)?;
         body["version"] = json!(self.kind.version);
         Ok(body)
     }
 
     /// Whether `region` is a region page: one record, or records whose page fits `PAGE_BYTES`. Its
-    /// page is laid out once, and only when its records and their commas alone would fit.
+    /// page is measured once, and only when its records and the commas between them would fit.
     fn fits(&self, region: &Region) -> Result<bool> {
         let (cells, one) = (&region.cells, region.halves.is_none());
         let key = (cells.start, cells.end);
-        if let Some(page) = self.measured.borrow().get(&key) {
-            return Ok(page.is_some());
+        if let Some(fits) = self.measured.borrow().get(&key) {
+            return Ok(*fits);
         }
         let least = self.empty + self.starts[cells.end] - self.starts[cells.start];
-        let mut page = None;
-        if one || least <= PAGE_BYTES + 1 {
-            let body = self.region(cells.clone())?;
-            page = (one || serde_json::to_vec(&body)?.len() <= PAGE_BYTES).then_some(body);
-        }
-        let fits = page.is_some();
-        self.measured.borrow_mut().insert(key, page);
+        let fits = one
+            || least.saturating_sub(1) <= PAGE_BYTES
+                && serde_json::to_vec(&self.region(cells.clone(), false)?)?.len() <= PAGE_BYTES;
+        self.measured.borrow_mut().insert(key, fits);
         Ok(fits)
     }
 
@@ -155,16 +158,14 @@ impl<'a> Pager<'a> {
         let cells = region.cells.clone();
         let leaf = self.fits(region)?;
         let body = if leaf {
-            let measured = self.measured.borrow_mut().remove(&(cells.start, cells.end));
-            measured.flatten().expect("a region page, measured")
+            self.region(cells.clone(), true)?
         } else {
             json!({"version": self.kind.version, "pages": self.slots(region)?})
         };
-        let boxes = self.bounds.get(cells.clone()).unwrap_or(&[]);
+        let boxes = self.bounds.map_or(&[][..], |bounds| &bounds[cells.clone()]);
         let slot = write_page(self.kind, self.directory, &body, boxes)?;
-        if leaf {
-            self.leaves.borrow_mut().push((cells, slot.clone()));
-        }
+        let records = leaf.then_some(cells);
+        self.written.borrow_mut().push((records, slot.clone()));
         Ok(slot)
     }
 
@@ -175,8 +176,9 @@ impl<'a> Pager<'a> {
         Ok(slots)
     }
 
-    /// The region pages written, in record order: the records each lists, and its slot.
-    pub(crate) fn leaves(self) -> Vec<(Range<usize>, String)> {
-        self.leaves.into_inner()
+    /// Every page written and its slot, a region page with the records it lists: the region
+    /// pages in record order, each index page after the pages it lists.
+    pub(crate) fn written(self) -> Vec<(Option<Range<usize>>, String)> {
+        self.written.into_inner()
     }
 }

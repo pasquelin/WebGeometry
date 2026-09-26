@@ -124,30 +124,17 @@ fn the_manifest_reads_its_primitives_through_an_index_page() {
 
 #[test]
 fn a_reused_folder_proves_its_cells_through_the_pages() {
-    let (options, _, directory) = compiled(grid(48, 4.0, 1.0), false);
+    let (options, tables, directory) = compiled(grid(48, 4.0, 1.0), false);
     let (_, events) = compile_with_events(&options);
     assert_eq!(events[0]["completed"], 1, "reused whole");
-    // A rebuild reuses every geometry page, which the mesh pages its region pages name report:
-    // the region page is the one the tables of the last build name.
-    let first_page = || {
-        let tables = read_json(&directory.join("scene-tables.json"));
-        let slot = tables["partition"]["pages"][0]
-            .as_str()
-            .expect("slot")
-            .to_string();
-        format!("scene-page-{}.json", &slot[..64])
-    };
+    let slot = tables["partition"]["pages"][0].as_str().expect("slot");
+    let page = format!("scene-page-{}.json", &slot[..64]);
     let old = serde_json::to_vec(&json!({"version": 3})).expect("json");
-    for (file, bytes, reason) in [
-        (Some("scene-cell-0.json"), &b"{}"[..], "scene-cell-0.json"),
-        (None, b"{}", "is not the page its slot names"),
-        (
-            Some("scene-tables.json"),
-            &old,
-            "scene tables of another version",
-        ),
+    for (name, bytes, reason) in [
+        ("scene-cell-0.json", &b"{}"[..], "scene-cell-0.json"),
+        (page.as_str(), b"{}", "is not the page its slot names"),
+        ("scene-tables.json", &old, "scene tables of another version"),
     ] {
-        let name = &file.map_or_else(first_page, str::to_string);
         let intact = fs::read(directory.join(name)).expect("product");
         fs::write(directory.join(name), bytes).expect("corrupt");
         let (second, events) = compile_with_events(&options);

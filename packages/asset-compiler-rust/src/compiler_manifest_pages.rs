@@ -4,11 +4,13 @@
 //! the previews' sidecar; a mesh page, slim primitives and their sidecar, cut under `PAGE_BYTES`
 //! (#792). Files are named by content.
 use super::*;
-use crate::compiler_tables::partition::{pages::*, split::halving};
+use crate::compiler_tables::partition::pages::*;
 use crate::manifest_binary::{columns, Templates, MANIFEST_BINARY_VERSION};
 use crate::texture_preview::TexturePreview;
 use serde_json::Map;
-use std::{cell::RefCell, ops::Range};
+
+mod mesh;
+pub(crate) use mesh::*;
 
 /// The manifest's pages: a mesh page lists its slim primitives.
 pub(crate) const MANIFEST_PAGES: Kind = Kind {
@@ -32,61 +34,24 @@ pub(crate) const TEMPLATES: Templates = Templates {
     bundle: "../../objects/{sha}.bin",
 };
 
-/// The mesh pages of a compile, written before the tables whose region pages name them (#792).
-pub(crate) struct MeshPages {
-    /// The root's slots, the empty ones last.
-    pub slots: Vec<String>,
-    /// The slots of the region pages each mesh's primitives lie in, by mesh rank.
-    pub by_mesh: MeshSlots,
-    /// The fingerprints of every page and sidecar written, which the sweep keeps.
-    kept: BTreeSet<String>,
-}
-
-/// Writes `primitives` in order as mesh pages in `directory`, cut through the pager: a region page
-/// is one primitive, or primitives whose page fits `PAGE_BYTES`, each with its own sidecar.
-pub(crate) fn write_mesh_pages(primitives: &[Value], directory: &Path) -> Result<MeshPages> {
-    let kind = &MANIFEST_PAGES;
-    let (whole, _) = columns(&Map::new(), primitives, &TEMPLATES, &[])?;
-    let mut starts = vec![0];
-    for slim in whole[kind.records]
-        .as_array()
-        .map_or(&[][..], Vec::as_slice)
-    {
-        starts.push(starts[starts.len() - 1] + serde_json::to_vec(slim)?.len() + 1);
-    }
-    // The sidecar of each range laid out: only a written region page's reaches the disk.
-    let sidecars = RefCell::new(BTreeMap::new());
-    let leaf = |range: Range<usize>| -> Result<Value> {
-        let key = (range.start, range.end);
-        let (mut page, bytes) = columns(&Map::new(), &primitives[range], &TEMPLATES, &[])?;
-        let sha256 = hash(&bytes);
-        page["binary"]["url"] = json!(sidecar_file(&sha256));
-        page["binary"]["sha256"] = json!(&sha256);
-        sidecars.borrow_mut().insert(key, (sha256, bytes));
-        Ok(page)
-    };
-    let pager = Pager::new(kind, starts, &[], directory, &leaf)?;
-    let slots = pager.root(&halving(0..primitives.len()))?;
-    let (mut by_mesh, mut kept) = (MeshSlots::new(), BTreeSet::new());
-    for (range, slot) in pager.leaves() {
-        let (sha256, bytes) = sidecars
-            .borrow_mut()
-            .remove(&(range.start, range.end))
-            .expect("laid out");
+/// The page of `primitives` under `top` and `previews`, without the run's report, naming its
+/// sidecar: written in `directory` when one is given, its fingerprint returned; else only measured,
+/// under a fingerprint of zeros.
+fn columned(
+    top: &Map<String, Value>,
+    primitives: &[Value],
+    previews: &[TexturePreview],
+    directory: Option<&Path>,
+) -> Result<(Value, String)> {
+    let (page, bytes) = columns(top, primitives, &TEMPLATES, previews)?;
+    let mut page = without_run_report(page);
+    let sha256 = directory.map_or_else(|| "0".repeat(64), |_| hash(&bytes));
+    if let Some(directory) = directory {
         atomic(&directory.join(sidecar_file(&sha256)), &bytes)?;
-        kept.extend([sha256, slot[..64].to_string()]);
-        for mesh in primitives[range].iter().filter_map(|p| p["mesh"].as_u64()) {
-            let pages = by_mesh.entry(mesh).or_insert_with(Vec::new);
-            if pages.last() != Some(&slot) {
-                pages.push(slot.clone());
-            }
-        }
     }
-    Ok(MeshPages {
-        slots,
-        by_mesh,
-        kept,
-    })
+    page["binary"]["url"] = json!(sidecar_file(&sha256));
+    page["binary"]["sha256"] = json!(&sha256);
+    Ok((page, sha256))
 }
 
 /// Writes the manifest `result` as pages in `directory` — `extra` among its fields, the texture
@@ -100,7 +65,10 @@ pub(crate) fn write_manifest(
     directory: &Path,
 ) -> Result<()> {
     let mut top = result.as_object().expect("a manifest").clone();
-    top.remove(MANIFEST_PAGES.records);
+    if let Some(Value::Array(primitives)) = top.remove(MANIFEST_PAGES.records) {
+        let report = primitives.iter().map(|p| p[RUN_REPORT].clone());
+        top.insert(RUN_REPORT.into(), report.collect());
+    }
     if let Value::Object(extra) = extra {
         top.extend(extra);
     }
@@ -108,11 +76,7 @@ pub(crate) fn write_manifest(
     for field in FIXED {
         root.extend(top.remove_entry(field));
     }
-    let (mut head, bytes) = columns(&top, &[], &TEMPLATES, previews)?;
-    let sha256 = hash(&bytes);
-    atomic(&directory.join(sidecar_file(&sha256)), &bytes)?;
-    head["binary"]["url"] = json!(sidecar_file(&sha256));
-    head["binary"]["sha256"] = json!(&sha256);
+    let (mut head, sha256) = columned(&top, &[], previews, Some(directory))?;
     head["version"] = json!(MANIFEST_PAGES.version);
     let slot = write_page(&MANIFEST_PAGES, directory, &head, &[])?;
     let mut kept = mesh.kept.clone();

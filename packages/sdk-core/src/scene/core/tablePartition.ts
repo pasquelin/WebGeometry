@@ -8,8 +8,10 @@
  */
 import { EngineError } from '../../contracts/cache.ts';
 
-/** The version of the partition, of its pages and of its cell files this runtime reads. */
+/** The version of the partition and of its pages this runtime reads. */
 const PARTITION_VERSION = 3;
+/** The version of the cell files this runtime reads. */
+const CELL_VERSION = 2;
 /** A kind of page (`partition/pages.rs`): the prefix of its files, the version every page carries,
  *  the member a region page lists its records under, and the codes of a refusal. */
 export interface PageKind {
@@ -47,16 +49,7 @@ export interface TableCell {
   meshes: readonly (readonly [number, number])[];
 }
 
-/** A region page (#792): how many cells it lists, next in cell order, and the mesh pages they use. */
-export interface TableRegion {
-  /** How many cells it lists. */
-  cells: number;
-  /** The slots of the manifest's mesh pages its cells' primitives lie in, each once. */
-  meshPages: readonly string[];
-}
-
-/** The partition of a scene: its cells, the box around them all, the meshes they place, and the
- *  region pages that list them. */
+/** The partition of a scene: its cells, the box around them all, and the meshes they place. */
 export interface TablePartition {
   /** The box around every cell, at the poses the file declares. */
   bounds: readonly number[];
@@ -64,8 +57,6 @@ export interface TablePartition {
   meshes: readonly number[];
   /** The cells. */
   cells: readonly TableCell[];
-  /** The region pages, in cell order. */
-  regions: readonly TableRegion[];
 }
 
 /** One node a cell places: the core node it hangs under (`null`, the scene), its mesh, and its
@@ -166,8 +157,8 @@ export async function readLeaves(
 }
 
 /** The partition under `root`, its pages read side by side through `read` (which verifies them
- *  against their slot): the cells in order, the union of the root's boxes, the meshes placed, and
- *  each region page's cell count and mesh pages. */
+ *  against their slot): the cells in order, the union of the root's boxes, the meshes placed. A
+ *  region page names the mesh pages its cells use (#792), which #751 fetches by region. */
 export async function readTablePartition(
   root: TablePartitionRoot,
   read: (page: TablePage) => Promise<Uint8Array>,
@@ -177,23 +168,20 @@ export async function readTablePartition(
   const cells = pages.flatMap((page) => page[CELL_PAGES.records] as TableCell[]);
   if (!cells.every((cell) => Array.isArray(cell?.meshes) && Array.isArray(cell.parents)))
     throw new EngineError(CELL_PAGES.invalid, 'scene partition misses its cells', {});
-  const regions = pages.map(({ meshPages, [CELL_PAGES.records]: listed }) => {
-    if (!Array.isArray(meshPages) || !meshPages.every(isSlot))
-      throw new EngineError(CELL_PAGES.invalid, 'a region page misses its mesh pages', {});
-    return { cells: (listed as unknown[]).length, meshPages };
-  });
+  if (!pages.every(({ meshPages }) => Array.isArray(meshPages) && meshPages.every(isSlot)))
+    throw new EngineError(CELL_PAGES.invalid, 'a region page misses its mesh pages', {});
   const bounds = [0, 1, 2, 3, 4, 5].map((axis) =>
     (axis < 3 ? Math.min : Math.max)(...slots.map((slot) => slot.bounds[axis])),
   );
   const meshes = [...new Set(cells.flatMap((cell) => cell.meshes.map(([mesh]) => mesh)))];
-  return { bounds, meshes: meshes.sort((a, b) => a - b), cells, regions };
+  return { bounds, meshes: meshes.sort((a, b) => a - b), cells };
 }
 
 /** The nodes of a cell file, or a named refusal. */
 export function assertCellNodes(value: unknown): readonly CellNode[] {
   const cell = value as { version?: number; nodes?: CellNode[] } | null;
-  if (!cell || cell.version !== PARTITION_VERSION || !Array.isArray(cell.nodes))
-    throw new EngineError('INVALID_SCENE_TABLES', 'scene cell is not a version 3 node list', {
+  if (!cell || cell.version !== CELL_VERSION || !Array.isArray(cell.nodes))
+    throw new EngineError('INVALID_SCENE_TABLES', 'scene cell is not a version 2 node list', {
       version: cell?.version ?? null,
     });
   return cell.nodes;
