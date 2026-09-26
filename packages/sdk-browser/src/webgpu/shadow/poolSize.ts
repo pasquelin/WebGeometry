@@ -30,9 +30,9 @@ export const shadowPoolFor = (wanted: number) => (budgetBytes: number) => {
 };
 
 /** GPU bytes the shadow pool holds: its buffers and depth pages, their transmittance and static
- *  layers once made. */
-export const shadowPoolHeld = ({ shadows, staticLayer }: WebgpuLightState) =>
-  (shadows?.allocationBytes ?? 0) + (staticLayer?.bytes ?? 0);
+ *  layers once made, and its request buffer. */
+export const shadowPoolHeld = ({ shadows, staticLayer, pageRequests }: WebgpuLightState) =>
+  (shadows?.allocationBytes ?? 0) + (staticLayer?.bytes ?? 0) + (pageRequests?.bytes ?? 0);
 
 /**
  * Sizes the shadow pool once, from the screen the first frame draws and the lights that cast a
@@ -63,13 +63,18 @@ export function sizeShadowPool(rt: WebgpuPagesRuntime) {
   if (!casters) return;
   const viewport = [...rt.setup.viewport],
     wanted = shadowPoolSize(viewport[0], viewport[1], casters),
-    asked = Math.min(shadowPoolFor(wanted)(Infinity).allocatedBytes, SHADOW_ATLAS_BYTES);
-  const granting = grantedShadowPool(
-    device,
-    asked,
-    shadowPoolFor(wanted),
-    diag.engineDiagnostic,
-    (pool) => atlas.makePool(pool.side, pool.layers),
+    shape = shadowPoolShape(wanted),
+    asked = Math.min(shadowAtlasBytes(shape.side, shape.layers), SHADOW_ATLAS_BYTES),
+    ceiled = asked < shadowAtlasBytes(shape.side, shape.layers);
+  // The budget's ceiling, not the device, holds a pool drawn at `asked` short of `wanted`.
+  const draw = (budgetBytes: number) => {
+    const pool = shadowPoolFor(wanted)(budgetBytes);
+    return ceiled && budgetBytes === asked && pool.clamp === 'device-limit'
+      ? { ...pool, clamp: 'ceiling' as PoolClamp }
+      : pool;
+  };
+  const granting = grantedShadowPool(device, asked, draw, diag.engineDiagnostic, (pool) =>
+    atlas.makePool(pool.side, pool.layers),
   );
   const done = granting.then(
     (granted) => {

@@ -20,13 +20,3 @@ export const layerPasses = (label: string, depths: GPUTextureView[], colours?: G
     colorAttachments: colours ? [{ view: colours[layer], loadOp: 'load', storeOp: 'store' }] : [],
     depthStencilAttachment: { view, depthLoadOp: 'load', depthStoreOp: 'store' },
   }));
-
-/** Ends the pass open before, if any, and begins `descriptor`'s: a layer that holds a page. */
-export function layerPass(
-  encoder: GPUCommandEncoder,
-  before: GPURenderPassEncoder | undefined,
-  descriptor: GPURenderPassDescriptor,
-) {
-  before?.end();
-  return encoder.beginRenderPass(descriptor);
-}

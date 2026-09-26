@@ -259,7 +259,7 @@ history.
 **Shadow maps are virtual, and only the pages the image reads exist.** Every shadow light has a
 virtual map cut into pages of 128 texels, and one page-table word per virtual page; the pages are
 drawn in a pool whose size is a budget fixed at the world's first frame, derived from its screen
-(`shadowPoolSide`) and allocated only once a light casts a shadow — a world without one pays neither
+(`shadowPoolSize`) and allocated only once a light casts a shadow — a world without one pays neither
 its bytes nor its per-frame work. A pixel reads the sun level whose texel is at most its footprint and
 more than half of it, so a `64 × 64`-pixel tile on one surface reads at most the 2 × 2 pages it
 straddles, and a third more while coarser levels stand in for pages not drawn yet: a frame asks for

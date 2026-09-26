@@ -1,6 +1,7 @@
 import { SHADOW_PAGE } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { createCheckedShaderModule } from '../core/shaderModule.ts';
 import { layerPasses, layerViews } from './layers.ts';
+import { shadowAtlasBytes } from './atlas.ts';
 
 /** Label of the pass that fills the static layer: timed with the Shadows stage. */
 export const SHADOW_LAYER_PASS = 'Trillion3D shadow static layer v1';
@@ -52,7 +53,7 @@ export async function createShadowStaticLayer(device: GPUDevice, texture: GPUTex
       groups: targets.map((resource) =>
         device.createBindGroup({ layout, entries: [{ binding: 0, resource }] }),
       ),
-      bytes: size * size * 4 * targets.length,
+      bytes: shadowAtlasBytes(size / SHADOW_PAGE, targets.length),
       dispose() {
         texture.destroy();
       },

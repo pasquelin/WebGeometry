@@ -39,7 +39,7 @@ export type GpuShadowAtlas = Awaited<ReturnType<typeof createGpuShadowAtlas>>;
  * by dynamic offset.
  *
  * The texture waits for `sizePool`: its side is derived from the screen the first frame draws
- * (`shadowPoolSide`), which the world may not know when it prepares — until then no page exists
+ * (`shadowPoolSize`), which the world may not know when it prepares — until then no page exists
  * and the shading reads the placeholder.
  */
 export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBindGroupLayout) {

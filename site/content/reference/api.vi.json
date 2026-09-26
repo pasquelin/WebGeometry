@@ -1634,7 +1634,7 @@
       "shadowNearMin": "Khoảng cách bóng đổ gần nhất.",
       "shadowNormalOffsetTexels": "Độ lệch của điểm lấy mẫu dọc theo pháp tuyến, tính bằng texel của bản đồ được đọc: nửa texel, phần dư cho những gì không phải mặt phẳng của bề mặt nhận — độ cong của nó trong một texel, việc làm tròn cả hai độ sâu. Độ dốc của bề mặt nhận được phủ bởi một phần dư độ sâu trên tầm với của PCF, và quá 45° bởi một độ lệch bổ sung, cùng đơn vị texel (`shadowDepthMargin`, `shadowNormalTexels`): không độ lệch nào là một độ dài của cảnh.",
       "shadowPagesPerBatch": "Số trang bóng một lô GPU vẽ: kích thước bộ đệm của một lô, không bao giờ là giới hạn của khung hình. Một khung hình vẽ mọi trang nó đánh dấu, trong bao nhiêu lô cần thiết.",
-      "lampFaceSize": "Cạnh của mip mịn nhất của một mặt đèn, tính bằng texel: 32 × 32 trang 128 (bể: `shadowPoolSide`).",
+      "lampFaceSize": "Cạnh của mip mịn nhất của một mặt đèn, tính bằng texel: 32 × 32 trang 128 (bể: `shadowPoolSize`).",
       "shadowRequestCap": "Số trang ảo mà phép tô bóng được yêu cầu mỗi khung hình; phần còn lại yêu cầu lại ở khung sau.",
       "sunLevels": "Các mức clipmap của một đèn định hướng. Mức `L` có texel `2^L` mét, và một điểm ảnh đọc mức có texel không lớn hơn dấu chân của chính nó: mười sáu mức phủ tỉ lệ xa/gần 2^15. Sau mức cuối, bóng xa đảm nhận.",
       "sunLevelPages": "Số trang mỗi cạnh của vùng một mức clipmap quanh camera. Đây là dung lượng, không phải tinh chỉnh: mỗi điểm ảnh đọc mật độ riêng khi `height / tan(halfFovY)` không vượt `sunLevelPages · shadowPage / 2` = 4096 (khung 4K với trường dọc 55°); vượt quá, các điểm ảnh ngoài đọc mức kế tiếp, mật độ một nửa."

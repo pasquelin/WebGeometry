@@ -1616,7 +1616,7 @@
       "shadowNearMin": "最近的阴影距离。",
       "shadowNormalOffsetTexels": "采样点沿法线方向的偏移量,以所读贴图的纹素为单位:半个纹素,用于覆盖不属于接收面平面的部分 —— 其在一个纹素内的曲率,以及两个深度的舍入。接收面的坡度由覆盖 PCF 范围的深度余量来处理,超过 45° 的部分由额外的偏移处理,单位同样是纹素(`shadowDepthMargin`, `shadowNormalTexels`):任何偏移都不是场景中的长度。",
       "shadowPagesPerBatch": "一个 GPU 批次绘制的阴影页数：每批缓冲区的大小，而不是一帧的上限。一帧会绘制它标记的每一页，需要多少批就用多少批。",
-      "lampFaceSize": "灯光面最细 mip 的边长（纹素）：32 × 32 个 128 的页（池：`shadowPoolSide`）。",
+      "lampFaceSize": "灯光面最细 mip 的边长（纹素）：32 × 32 个 128 的页（池：`shadowPoolSize`）。",
       "shadowRequestCap": "着色每帧可请求的虚拟页数；其余的在下一帧再次请求。",
       "sunLevels": "平行光的 clipmap 级别。级别 `L` 的纹素为 `2^L` 米，像素读取纹素不超过自身足迹的级别：十六个级别覆盖 2^15 的远近比。最后一级之外由远处阴影接管。",
       "sunLevelPages": "相机周围一个 clipmap 级别范围每边的页数。这是容量而非调节：只要 `height / tan(halfFovY)` 不超过 `sunLevelPages · shadowPage / 2` = 4096（垂直视场 55° 的 4K 画布），每个像素都读取自己的密度；超出后外侧像素以一半密度读取下一级。"

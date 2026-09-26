@@ -3,7 +3,10 @@
 import * as THREE from 'three';
 import { createSceneLightStore } from '../../../packages/sdk-core/src/scene/light/store.ts';
 import { createShadowPlan } from '../../../packages/sdk-core/src/scene/light-shadow/plan.ts';
-import { shadowPoolSide } from '../../../packages/sdk-core/src/scene/light-shadow/virtual.ts';
+import {
+  shadowPoolShape,
+  shadowPoolSize,
+} from '../../../packages/sdk-core/src/scene/light-shadow/virtual.ts';
 import { packClusterSpheres } from '../../../packages/sdk-browser/src/webgpu/shadow/bounds.ts';
 import { graine, mesure, rapport } from '../../core/index.ts';
 import { referenceClusterSphere } from '../../oracles/browser/lamp-shadows.ts';
@@ -71,7 +74,11 @@ function scene(nombre: number) {
       range: 20,
       castsShadow: true,
     });
-  return { store, plan: createShadowPlan(shadowPoolSide(1280, 720)), frame: 0 };
+  return {
+    store,
+    plan: createShadowPlan(shadowPoolShape(shadowPoolSize(1280, 720)).side),
+    frame: 0,
+  };
 }
 
 // Each frame, a node moves within lamp range: invalidation and admission work. A still
