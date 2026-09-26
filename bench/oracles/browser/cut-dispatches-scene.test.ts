@@ -6,13 +6,13 @@
 // page the former descent kept, 11,905 pages against 6,000 (#486).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sceneView } from '../../../tests/browser/probes/cutDispatchesScene.ts';
+import { DISPATCH_SCENE, sceneView } from '../../../tests/browser/probes/cutDispatchesScene.ts';
 import { evaluateDagSelectionKernel } from '../../../packages/sdk-browser/src/gpu/dag/selection.ts';
 import { DAG_NODE_FLOATS } from '../../../packages/sdk-browser/src/gpu/dag/types.ts';
 import { NODE_FLOOR } from '../../../packages/sdk-browser/src/gpu/dag/packNodes.ts';
 
 test('the dispatch scene draws the same cut whether the descent drops on the floor or not', () => {
-  const { packed, uniforms, resident } = sceneView(12000, 8);
+  const { packed, uniforms, resident } = sceneView(DISPATCH_SCENE.feuilles, DISPATCH_SCENE.niveaux);
   const drawn = (nodes: Float32Array) =>
     evaluateDagSelectionKernel({ ...packed, nodes }, uniforms, resident).drawablePageIds;
   // A zero floor drops nothing: the former descent's verdicts.

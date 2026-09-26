@@ -7,17 +7,20 @@ import {
 } from '../../../packages/sdk-browser/src/gpu/dag/pack.ts';
 import { cameraSelectionUniforms } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
 import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
+import { frontCamera } from '../../../packages/sdk-browser/src/page/selection/dag.fixture.ts';
 import { ruleResidency } from '../../../packages/sdk-browser/src/gpu/dag/readiness.fixture.ts';
 import {
   scenePages,
   sceneRoots,
 } from '../../../packages/sdk-browser/src/gpu/dag/cutFrontierScene.fixture.ts';
 
+/** The dispatch bench's scene size, shared with its Node guard (`cut-dispatches-scene.test.ts`). */
+export const DISPATCH_SCENE = { feuilles: 12000, niveaux: 8 } as const;
+
 /** The scene: a pyramid of levels, one pose, every page resident, front view. The hierarchy is
  *  the compiler's, one node per detail tier under the root. Residency goes through the engine's
- *  own upload: both bit sets of the cut rule and each node's open count (#486). Setting the ready
- *  bits alone says every finer group is missing, and the rule then draws each coarse page a
- *  descent keeps, so the cut drawn depends on the descent the bench is comparing. */
+ *  own upload, both bit sets of the cut rule and each node's open count (#486): ready bits alone
+ *  make the cut drawn depend on the descent (`cut-dispatches-scene.test.ts`). */
 export function scene(feuilles: number, niveaux: number) {
   const roots = sceneRoots(scenePages(feuilles, niveaux), [new G.Matrix4()], true);
   const packed = packDagSelection(roots);
@@ -25,15 +28,11 @@ export function scene(feuilles: number, niveaux: number) {
   return { packed, roots, resident };
 }
 
-/** The dispatch bench's view of the scene: its camera, and the worlds brought back to that
- *  camera's render origin. */
+/** The benches' view of the scene: its camera, and the worlds brought back to that camera's
+ *  render origin. */
 export function sceneView(feuilles: number, niveaux: number) {
   const { packed, roots, resident } = scene(feuilles, niveaux);
-  const camera = G.perspectiveCamera(55, 16 / 9, 0.1, 200);
-  camera.position.set(0, 0, 16);
-  camera.lookAt(0, 0, 0);
-  camera.updateMatrixWorld();
-  const uniforms = cameraSelectionUniforms(cameraMoteur(camera), 1, [1280, 720]);
+  const uniforms = cameraSelectionUniforms(cameraMoteur(frontCamera(16, 200)), 1, [1280, 720]);
   packedWorldsToRenderOrigin(packed, roots, uniforms.cameraWorld);
   return { packed, uniforms, resident };
 }
