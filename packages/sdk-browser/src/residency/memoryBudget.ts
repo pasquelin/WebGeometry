@@ -17,14 +17,15 @@ import { BOUNCE_SETTINGS } from '../../../sdk-core/src/bounce/contracts.ts';
 import { bounceProbeBytes } from '../bounce/limits.ts';
 import { effectChainBytesAt } from '../effects/targets.ts';
 
-/** The pool the shadows are counted at, 3840 × 2160 under one sun (`shadowPoolSize`): the most
- *  a pool takes (`webgpu/shadow/poolSize.ts`). */
-const { side, layers } = shadowPoolShape(shadowPoolSize(3840, 2160));
-export const SHADOW_POOL_PAGES = side * side * layers;
+/** The pool the shadows are counted at, 3840 × 2160 under one sun (`shadowPoolSize`): its atlas
+ *  bytes are the most the grant allots a pool (`webgpu/shadow/poolSize.ts`). */
+const { side, layers } = shadowPoolShape(shadowPoolSize(3840, 2160)),
+  SHADOW_POOL_PAGES = side * side * layers;
+export const SHADOW_ATLAS_BYTES = shadowAtlasBytes(side, layers);
 /** The shadows at that pool — the atlas, its static and transmittance layers, the buffers beside
  *  it, the page table first, and what the most batches a frame draws add (`batchBudget.ts`). */
 export const SHADOW_POOL_BYTES =
-  2 * shadowAtlasBytes(side, layers) +
+  2 * SHADOW_ATLAS_BYTES +
   shadowTransmittanceBytes(side, layers) +
   SHADOW_BUFFER_BYTES +
   shadowRequestBytes(SHADOW_POOL_PAGES) +

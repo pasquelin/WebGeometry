@@ -8,7 +8,7 @@ import { SHADOW_DEPTH_SHADER } from './shader.ts';
 import { MAX_SHADOW_REGIONS, createShadowRecordPack } from './recordPack.ts';
 import { createCheckedShaderModule } from '../core/shaderModule.ts';
 import { DEPTH_COMPARE } from '../../camera/depthConvention.ts';
-import { arrayView, layerViews } from './layers.ts';
+import { arrayView, layerPasses, layerViews } from './layers.ts';
 import { createShadowTransmittance, type ShadowTransmittance } from './transmittance.ts';
 import { shadowBatchWrites } from './batchWrites.ts';
 import { SHADOW_FACE_STRIDE as FACE_STRIDE } from './batchBudget.ts';
@@ -129,6 +129,7 @@ export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBin
       },
       view: undefined as GPUTextureView | undefined,
       targets: [] as GPUTextureView[],
+      passes: [] as GPURenderPassDescriptor[],
       dataBuffer,
       /** Host mirror of the records: what the shading rereads. */
       records: records as Readonly<Float32Array>,
@@ -147,6 +148,7 @@ export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBin
         texture = granted;
         atlas.view = arrayView(granted);
         atlas.targets = layerViews(granted);
+        atlas.passes = layerPasses(SHADOW_PASS, atlas.targets);
         atlas.allocationBytes += shadowAtlasBytes(poolSide, layers);
         pack.setPoolSide(poolSide);
       },

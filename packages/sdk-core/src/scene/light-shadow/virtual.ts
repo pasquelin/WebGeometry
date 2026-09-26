@@ -24,20 +24,14 @@ export const SUN_WINDOW: number = LIGHT_SETTINGS.sunLevelPages;
 export const LAMP_MIPS = Math.log2(LAMP_SIDE) + 1;
 /** Pages a side of a sun's `2W × 2H` texel rectangle: one per `P / 2` screen pixels. */
 const tiles = (pixels: number) => Math.ceil((2 * Math.max(1, pixels)) / SHADOW_PAGE);
-/** Pages one light reads in a frame over a smooth `w × h` screen, `c` the share of its pixels
- *  that read that light (1 for a sun): its texel rectangle, and a third more while pages wait. */
-const lightPages = (w: number, h: number, c: number) =>
-  Math.ceil((4 * c * tiles(w) * tiles(h)) / 3);
-/** The pool the first frame asks: every shadowed light's read, twice — the report the pool holds
- *  and the next one, which a turn of the camera may renew in full. */
-export function priorPoolPages(w: number, h: number, coverage: ArrayLike<number>) {
-  let sum = 0;
-  for (let i = 0; i < coverage.length; i++) sum += lightPages(w, h, coverage[i]);
-  return 2 * sum;
-}
+/** The pool the first frame asks for `lights` shadowed lights, each read over the whole smooth
+ *  `w × h` screen — its texel rectangle, and a third more while pages wait —, twice: the report
+ *  the pool holds and the next one, which a turn of the camera may renew in full. */
+export const priorPoolPages = (w: number, h: number, lights: number) =>
+  2 * lights * Math.ceil((4 * tiles(w) * tiles(h)) / 3);
 /**
- * Physical pages of the shadow pool, for a `width × height` screen and the screen share each
- * shadowed light is read over (`coverage`): a fixed budget, derived once from the screen the first
+ * Physical pages of the shadow pool, for a `width × height` screen and its `lights` shadowed
+ * lights: a fixed budget, derived once from the screen the first
  * frame draws, never read off the machine.
  *
  * What one frame reads. A pixel reads ONE sun level — the one whose texel is at most its
@@ -68,9 +62,9 @@ export function priorPoolPages(w: number, h: number, coverage: ArrayLike<number>
  * 2 520 pages a frame, 5 040 held — two layers of 51 × 51 pages. The only limits are the device's
  * and the memory grant (`webgpu/shadow/poolSize.ts`).
  */
-export function shadowPoolSize(width: number, height: number, coverage: ArrayLike<number> = [1]) {
+export function shadowPoolSize(width: number, height: number, lights = 1) {
   const worst = 2 * Math.ceil((4 * 4 * tiles(width) * tiles(height)) / 3);
-  return Math.max(Math.min(worst, LAYER_PAGES), priorPoolPages(width, height, coverage));
+  return Math.max(Math.min(worst, LAYER_PAGES), priorPoolPages(width, height, lights));
 }
 /** Entries a request report lists, for a pool of `pages`: never fewer than the pool holds — a full
  *  list names every page the pool can keep. */

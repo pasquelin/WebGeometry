@@ -138,10 +138,11 @@ function encoded(casters: boolean) {
         x: (i: number) => 256 * i,
         y: () => 128,
         layer: () => 0,
+        inLayer: () => 3,
       },
     },
   } as unknown as WebgpuPagesRuntime;
-  const pool = { targets: [{}], depthTargets: [{}], opaqueGroups: ['opaque'] },
+  const pool = { passes: [{ label: SHADOW_TRANSMITTANCE_PASS }], opaqueGroups: ['opaque'] },
     layer = { clear: 'clear', depth: 'depth', blend: 'blend', ...pool };
   encodeTransmittance(rt, {} as GPUDevice, encoder as never, 3, layer as never, false);
   const [begin, ...calls] = r.calls;

@@ -13,19 +13,20 @@ export const layerViews = (texture: GPUTexture) =>
     texture.createView({ dimension: '2d', baseArrayLayer: layer, arrayLayerCount: 1 }),
   );
 
-/** Ends the pass of the layer before `at`, if any, and begins layer `at`'s on its targets. */
+/** The render pass of each layer, over its depth `depths[l]` and colour `colours?.[l]`: made once. */
+export const layerPasses = (label: string, depths: GPUTextureView[], colours?: GPUTextureView[]) =>
+  depths.map((view, layer): GPURenderPassDescriptor => ({
+    label,
+    colorAttachments: colours ? [{ view: colours[layer], loadOp: 'load', storeOp: 'store' }] : [],
+    depthStencilAttachment: { view, depthLoadOp: 'load', depthStoreOp: 'store' },
+  }));
+
+/** Ends the pass open before, if any, and begins `descriptor`'s: a layer that holds a page. */
 export function layerPass(
   encoder: GPUCommandEncoder,
-  label: string,
-  at: number,
-  before: GPURenderPassEncoder,
-  depth: GPUTextureView,
-  colour?: GPUTextureView,
+  before: GPURenderPassEncoder | undefined,
+  descriptor: GPURenderPassDescriptor,
 ) {
-  if (at) before.end();
-  return encoder.beginRenderPass({
-    label,
-    colorAttachments: colour ? [{ view: colour, loadOp: 'load', storeOp: 'store' }] : [],
-    depthStencilAttachment: { view: depth, depthLoadOp: 'load', depthStoreOp: 'store' },
-  });
+  before?.end();
+  return encoder.beginRenderPass(descriptor);
 }

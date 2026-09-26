@@ -50,10 +50,10 @@ test('the pool holds two frames of four pages a 64-pixel tile while that fits on
 
 test('past one layer, the pool holds twice what each shadowed light reads of the screen', () => {
   // 3 456 × 2 234, one sun: 54 × 35 tiles, 2 520 pages a frame, 5 040 held, in two layers.
-  assert.equal(priorPoolPages(3456, 2234, [1]), 5040);
+  assert.equal(priorPoolPages(3456, 2234, 1), 5040);
   assert.equal(shadowPoolSize(3456, 2234), 5040);
   assert.deepEqual(shadowPoolShape(5040), { side: 51, layers: 2 });
-  assert.equal(shadowPoolSize(3456, 2234, [1, 1]), 10080, 'a second full-screen light, twice');
+  assert.equal(shadowPoolSize(3456, 2234, 2), 10080, 'a second full-screen light, twice');
   assert.deepEqual(shadowPoolShape(8192), { side: 64, layers: 2 });
 });
 

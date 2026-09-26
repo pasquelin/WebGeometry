@@ -1,6 +1,5 @@
 import { DRAW_INDIRECT_STRIDE } from '../../../gpu/draw/draw.ts';
-import { MAX_SHADOW_REGIONS, SHADOW_PASS } from '../../../gpu/shadow/atlas.ts';
-import { SHADOW_LAYER_PASS } from '../../../gpu/shadow/staticLayer.ts';
+import { MAX_SHADOW_REGIONS } from '../../../gpu/shadow/atlas.ts';
 import { layerPass } from '../../../gpu/shadow/layers.ts';
 import { HIZ_UNTESTED } from '../../../gpu/shadow/occlusion.ts';
 import { REGION_RESTORE, REGION_STATIC } from '../../shadow/regions.ts';
@@ -8,10 +7,7 @@ import { shadowRegionGroup } from '../../shadow/regionGroups.ts';
 import { MAX_LAYERS, SHADOW_PAGE } from '../../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import type { WebgpuPagesRuntime } from '../runtime.ts';
 import { encodeShadowCasters } from '../../shadow/casters.ts';
-import {
-  SHADOW_TRANSMITTANCE_PASS,
-  type ShadowTransmittance,
-} from '../../../gpu/shadow/transmittance.ts';
+import type { ShadowTransmittance } from '../../../gpu/shadow/transmittance.ts';
 
 /** Pyramid slot of each region this frame, `HIZ_UNTESTED` for a region drawn as culled, and the
  *  region each slot was given to. */
@@ -93,12 +89,12 @@ export function encodeShadowAtlas(
   cull.counts.sample(encoder, cull.indirect, count, run.frame);
   lights.shadowDraws += count;
   const drawsBefore = run.gpuDrawCalls;
-  const draw = (targets: GPUTextureView[], label: string, layer: boolean, tested: boolean) => {
+  const draw = (passes: GPURenderPassDescriptor[], layer: boolean, tested: boolean) => {
     let pass!: GPURenderPassEncoder;
-    for (let i = 0; i < count * targets.length; i++) {
+    for (let i = 0; i < count * passes.length; i++) {
       const region = i % count,
         at = (i - region) / count;
-      if (!region) pass = layerPass(encoder, label, at, pass, targets[at]);
+      if (!region && regions.inLayer(at)) pass = layerPass(encoder, pass, passes[at]);
       const start = regions.startOf(region);
       if (layer !== (start === REGION_STATIC) || regions.layer(region) !== at) continue;
       const visible = tested && start === REGION_RESTORE;
@@ -126,9 +122,9 @@ export function encodeShadowAtlas(
     }
     pass.end();
   };
-  if (regions.layered) draw(staticLayer!.targets, SHADOW_LAYER_PASS, true, false);
+  if (regions.layered) draw(staticLayer!.passes, true, false);
   const tested = encodeOcclusion(rt, encoder, count);
-  draw(shadows.targets, SHADOW_PASS, false, tested);
+  draw(shadows.passes, false, tested);
   const casters = rt.services.blendCasters.used > 0;
   const transmittance = casters ? shadows.ensureTransmittance(encoder) : shadows.transmittance;
   if (transmittance) encodeTransmittance(rt, device, encoder, count, transmittance, tested);
@@ -158,20 +154,13 @@ export function encodeTransmittance(
     { shadows, cull, regions, occlusion } = lights;
   const casters = rt.services.blendCasters.used > 0;
   const half = SHADOW_PAGE / 2,
-    { targets } = layer;
+    { passes } = layer;
   let pass!: GPURenderPassEncoder;
-  for (let i = 0; i < count * targets.length; i++) {
+  for (let i = 0; i < count * passes.length; i++) {
     const region = i % count,
       at = (i - region) / count;
-    if (!region) {
-      pass = layerPass(
-        encoder,
-        SHADOW_TRANSMITTANCE_PASS,
-        at,
-        pass,
-        layer.depthTargets[at],
-        targets[at],
-      );
+    if (!region && regions.inLayer(at)) {
+      pass = layerPass(encoder, pass, passes[at]);
       pass.setBindGroup(2, layer.opaqueGroups[at]);
     }
     const start = regions.startOf(region);

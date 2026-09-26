@@ -2,7 +2,7 @@ import { FLAG_HAS_MAP, FLAG_HAS_UV, FLAG_SAMPLED } from '../../visibility/types.
 import { DEPTH_CLEAR, DEPTH_COMPARE } from '../../camera/depthConvention.ts';
 import type { PageSurface } from '../../page/surface.ts';
 import { SHADOW_PAGE } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
-import { arrayView, layerViews } from './layers.ts';
+import { arrayView, layerPasses, layerViews } from './layers.ts';
 
 /**
  * THE TRANSMITTANCE LAYER of the shadow pool: what the translucent casters let through, at half
@@ -161,8 +161,7 @@ export function createShadowTransmittance(
     view: arrayView(colour),
     depthView: arrayView(nearest),
     /** Each layer's two views, drawn into by its pages. */
-    targets,
-    depthTargets,
+    passes: layerPasses(SHADOW_TRANSMITTANCE_PASS, depthTargets, targets),
     bytes: shadowTransmittanceBytes(poolSide, poolLayers.length),
     /** Each layer of the pool's depth, read by the blended fragments. */
     opaqueGroups: poolLayers.map((resource) =>

@@ -10,9 +10,10 @@ import {
   EFFECT_TARGET_BYTES,
   SHADOW_HOST_BYTES,
   SHADOW_POOL_BYTES,
-  SHADOW_POOL_PAGES,
+  SHADOW_ATLAS_BYTES,
 } from '../../residency/memoryBudget.ts';
-import { SHADOW_BUFFER_BYTES, shadowAtlasBytes } from '../../gpu/shadow/atlas.ts';
+import { SHADOW_BUFFER_BYTES } from '../../gpu/shadow/atlas.ts';
+import { shadowPoolFor } from '../../webgpu/shadow/poolSize.ts';
 import { SHADOW_BATCH_GPU_BYTES, SHADOW_BATCH_HOST_BYTES } from '../../gpu/shadow/batchBudget.ts';
 import { shadowTransmittanceBytes } from '../../gpu/shadow/transmittance.ts';
 import {
@@ -90,9 +91,8 @@ test("the default totals split into each pool's own default", () => {
 
 test('the shadow share counts the pool at 3840 × 2160 under one sun, and the page table', () => {
   assert.ok(SHADOW_BUFFER_BYTES >= SHADOW_TABLE_ENTRIES * 4);
-  const { side, layers } = shadowPoolShape(SHADOW_POOL_PAGES);
-  assert.deepEqual([side, layers, shadowPoolSize(3840, 2160)], [53, 2, 5440], 'two 53² layers');
-  const pool = 2 * shadowAtlasBytes(side, layers) + shadowTransmittanceBytes(side, layers);
+  assert.deepEqual(shadowPoolShape(shadowPoolSize(3840, 2160)), { side: 53, layers: 2 });
+  const pool = 2 * SHADOW_ATLAS_BYTES + shadowTransmittanceBytes(53, 2);
   assert.ok(SHADOW_POOL_BYTES > pool + SHADOW_BUFFER_BYTES + SHADOW_BATCH_GPU_BYTES, 'requests');
   assert.equal(budget('webgpu', null).split.shadowPool, SHADOW_POOL_BYTES);
 });
@@ -138,8 +138,8 @@ test('the shadow pool of any screen fits its share, and totals below 512 MiB nev
   const screens = [1, 1, 1280, 720, 3840, 2160, 16384, 16384, Infinity, Infinity];
   for (let i = 0; i < screens.length; i += 2) {
     const [w, h] = [screens[i], screens[i + 1]];
-    const { side, layers } = shadowPoolShape(Math.min(shadowPoolSize(w, h), SHADOW_POOL_PAGES));
-    const taken = 2 * shadowAtlasBytes(side, layers) + SHADOW_BUFFER_BYTES;
+    const granted = shadowPoolFor(shadowPoolSize(w, h))(SHADOW_ATLAS_BYTES).allocatedBytes;
+    const taken = 2 * granted + SHADOW_BUFFER_BYTES;
     assert.ok(taken <= shadowPool, `${w}×${h}`);
   }
   for (const total of [64 * MiB, 256 * MiB, 511 * MiB, FIXED - 1]) {
