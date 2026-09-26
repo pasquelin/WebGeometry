@@ -12,10 +12,7 @@ import {
 } from '../../../../packages/sdk-browser/src/webgpu/pages/render/winding.ts';
 import { noteResidenceChange } from '../../../../packages/sdk-browser/src/webgpu/shadow/bounds.ts';
 import { createWebgpuLightState } from '../../../../packages/sdk-browser/src/webgpu/pages/state/lights.ts';
-import {
-  shadowPoolShape,
-  shadowPoolSize,
-} from '../../../../packages/sdk-core/src/scene/light-shadow/virtual.ts';
+import { shadowPoolSide } from '../../../../packages/sdk-core/src/scene/light-shadow/virtual.ts';
 import { pageRecFixture } from './pageRecFixture.ts';
 import * as ancien from '../../../oracles/browser/core-math.ts';
 import { referenceOrder } from '../../../oracles/browser/core-math-priority.ts';
@@ -31,7 +28,7 @@ import type { PageRec } from '../../../../packages/sdk-browser/src/page/selectio
 // One light, so `store.count` holds and `noteResidenceChange` actually notes a change; its
 // scheduler's `representationChanged` is replaced per case below to capture the bounds it is
 // called with, instead of applying them.
-const lumieres = createWebgpuLightState(shadowPoolShape(shadowPoolSize(1280, 720)).side);
+const lumieres = createWebgpuLightState(shadowPoolSide(1280, 720));
 lumieres.store.add({
   id: 'l0',
   kind: 'point',

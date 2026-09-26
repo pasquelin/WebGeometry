@@ -1,5 +1,6 @@
 import { createShadowPlan } from '../../../../sdk-core/src/index.ts';
 import {
+  shadowPoolSide,
   shadowPoolSize,
   shadowPoolShape,
 } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
@@ -14,8 +15,8 @@ import { SHADOW_ATLAS_BYTES } from '../../residency/memoryBudget.ts';
 import type { WebgpuPagesRuntime } from '../pages/runtime.ts';
 import type { WebgpuLightState } from '../pages/state/lights.ts';
 
-/** The smallest shadow pool: the side a one-pixel screen asks (`shadowPoolSize`). */
-const FLOOR_SIDE = shadowPoolShape(shadowPoolSize(1, 1)).side;
+/** The smallest shadow pool: the side a one-pixel screen asks (`shadowPoolSide`). */
+const FLOOR_SIDE = shadowPoolSide(1, 1);
 
 /** The shadow pool `budgetBytes` holds for a screen that asks `wanted` pages: the fewest layers
  *  that hold what fits, of the largest side that fits, never below the floor. Short of `wanted`

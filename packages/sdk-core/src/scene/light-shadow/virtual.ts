@@ -102,6 +102,9 @@ export function shadowPoolShape(pages: number) {
   const layers = Math.ceil(wanted / LAYER_PAGES);
   return { side: Math.ceil(Math.sqrt(wanted / layers)), layers };
 }
+/** Pages a layer side of the pool one shadowed light over a `width × height` screen asks. */
+export const shadowPoolSide = (width: number, height: number) =>
+  shadowPoolShape(shadowPoolSize(width, height)).side;
 
 /** Non-negative remainder. */
 export const ringOf = (value: number, size: number) => ((value % size) + size) % size;
