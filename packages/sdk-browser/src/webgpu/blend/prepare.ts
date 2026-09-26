@@ -88,7 +88,6 @@ export function prepareWebgpuBlend(
       sourceGeometry: copy.geometry,
       worldBox,
       bounds: undefined as Float64Array | undefined,
-      map: mat.map,
       flags,
       paged,
       // Reset by `refreshEyeKeys` before each sort; here only so they exist.

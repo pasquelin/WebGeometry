@@ -2,11 +2,7 @@ import type { HostMesh } from '../../host/resources.ts';
 import type { PageSurface } from '../../page/surface.ts';
 import type { MatrixElements } from '../../math/matrixElements.ts';
 import type { PlacementOf } from '../../placement/rows.ts';
-import {
-  FRUSTUM_PLANE_VALUES,
-  type DiagnosticMode,
-  type Texture,
-} from '../../../../sdk-core/src/index.ts';
+import { FRUSTUM_PLANE_VALUES, type DiagnosticMode } from '../../../../sdk-core/src/index.ts';
 import { createWebgpuBindIdentity } from '../core/bindIdentity.ts';
 import type { BlendLighting } from '../core/bindEntries.ts';
 import type { BlendOverdraw } from './overdraw.ts';
@@ -43,7 +39,6 @@ export type BlendGpuItem = {
    *  Absent, the item never has a box; present, `bounds` points at it or is `undefined` because
    *  the bounds obtained were not usable (`worlds.ts`). */
   worldBox?: Float64Array;
-  map?: Texture;
   /** Material flags (`../../visibility/types.ts`) in the low sixteen bits; above them the one-based water
    *  rank of a transmissive item, zero for a blend (`../water/surfaceWgsl.ts`). */
   flags: number;

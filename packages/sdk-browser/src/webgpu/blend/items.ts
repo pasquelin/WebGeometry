@@ -28,7 +28,7 @@ export function writeBlendItemRecord(
   const base = index * BLEND_ITEM_WORDS,
     // Read as the host holds it now: a surface rewritten in place is refilled here (#335).
     mat = refreshSurface(item.surface);
-  const layer = layerSlot(tables.mapLayer, item.map),
+  const layer = layerSlot(tables.mapLayer, mat.map),
     emissive = layerSlot(tables.mapLayer, mat.emissiveMap),
     rough = layerSlot(tables.dataLayer, mat.roughnessMap),
     metal = layerSlot(tables.dataLayer, mat.metalnessMap),
