@@ -33,11 +33,8 @@ fn close(a: &[f64], b: &[f64]) -> bool {
 fn committed() -> (Value, Vec<u8>) {
     let folder =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/formats/gltf-world");
-    let read = |name: &str| fs::read(folder.join(name)).expect(name);
-    (
-        serde_json::from_slice(&read("world.gltf")).expect("json"),
-        read("world.bin"),
-    )
+    let bin = fs::read(folder.join("world.bin")).expect("bin");
+    (read_json(&folder.join("world.gltf")), bin)
 }
 
 #[test]

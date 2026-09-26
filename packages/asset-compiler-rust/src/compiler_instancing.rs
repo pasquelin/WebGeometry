@@ -6,56 +6,48 @@
 use super::*;
 
 const EXTENSION: &str = "EXT_mesh_gpu_instancing";
+/// The instance attributes, the node field each one fills, and its width.
+const POSES: [(&str, &str, usize); 3] = [
+    ("TRANSLATION", "translation", 3),
+    ("ROTATION", "rotation", 4),
+    ("SCALE", "scale", 3),
+];
+/// What an instance takes from its node: the mesh and what binds to that mesh.
+const CARRIED: [&str; 3] = ["mesh", "skin", "weights"];
 
-/// The `width`-wide values of the accessor `attributes[name]`, one per instance, or `None` when
-/// the node does not name that attribute.
-fn attribute(
-    g: &Value,
-    bin: &[u8],
-    attributes: &Value,
-    name: &str,
-    width: usize,
-) -> Result<Option<Vec<Vec<f64>>>> {
-    let Some(index) = attributes.get(name) else {
-        return Ok(None);
-    };
-    let values = accessor(g, bin, required_index(Some(index), name)?, None)?;
-    if values.width != width {
-        return Err(invalid(format!("{EXTENSION} {name} has the wrong type")));
-    }
-    (0..values.count)
-        .map(|i| (0..width).map(|c| values.value(i, c)).collect())
-        .collect::<Result<_>>()
-        .map(Some)
-}
-
-/// One child node per instance, carrying `mesh` (and the morph `weights` that go with it).
+/// One child node per instance, carrying the node's mesh, skin and morph weights.
 fn instances(g: &Value, bin: &[u8], node: &Value, attributes: &Value) -> Result<Vec<Value>> {
-    let poses = [("TRANSLATION", 3), ("ROTATION", 4), ("SCALE", 3)]
-        .map(|(name, width)| attribute(g, bin, attributes, name, width).map(|v| (name, v)));
-    let mut count = None;
-    let mut out: Vec<Value> = Vec::new();
-    for pose in poses {
-        let (name, Some(values)) = pose? else {
+    let mut template = serde_json::Map::new();
+    for field in CARRIED {
+        if let Some(value) = node.get(field) {
+            template.insert(field.into(), value.clone());
+        }
+    }
+    let mut out: Option<Vec<Value>> = None;
+    for (attribute, field, width) in POSES {
+        let Some(index) = attributes.get(attribute) else {
             continue;
         };
-        if *count.get_or_insert(values.len()) != values.len() {
+        let values = accessor(g, bin, required_index(Some(index), attribute)?, None)?;
+        if values.width != width {
+            return Err(invalid(format!(
+                "{EXTENSION} {attribute} has the wrong type"
+            )));
+        }
+        let out = out.get_or_insert_with(|| vec![Value::Object(template.clone()); values.count]);
+        if out.len() != values.count {
             return Err(invalid(format!("{EXTENSION} attributes differ in count")));
         }
-        out.resize_with(values.len(), || json!({"mesh": node["mesh"]}));
-        let field = name.to_ascii_lowercase();
-        for (child, value) in out.iter_mut().zip(values) {
-            child[&field] = json!(value);
+        for (child, pose) in out
+            .iter_mut()
+            .zip(values.collect_f32()?.chunks_exact(width))
+        {
+            child[field] = json!(pose);
         }
     }
-    if count.is_none() {
-        return Err(invalid(format!("{EXTENSION} names no attribute")));
-    }
-    for (at, child) in out.iter_mut().enumerate() {
-        if let Some(weights) = node.get("weights") {
-            child["weights"] = weights.clone();
-        }
-        if let Some(name) = node.get("name").and_then(Value::as_str) {
+    let mut out = out.ok_or_else(|| invalid(format!("{EXTENSION} names no attribute")))?;
+    if let Some(name) = node.get("name").and_then(Value::as_str) {
+        for (at, child) in out.iter_mut().enumerate() {
             child["name"] = json!(format!("{name}#{at}"));
         }
     }
@@ -71,8 +63,10 @@ pub(super) fn expand_gpu_instances(g: &mut Value, bin: &[u8]) -> Result<()> {
     };
     let mut expanded = Vec::new();
     for (id, node) in nodes.iter().enumerate() {
-        let path = format!("/extensions/{EXTENSION}/attributes");
-        if let (Some(attributes), Some(_)) = (node.pointer(&path), node.get("mesh")) {
+        let attributes = node
+            .get("extensions")
+            .and_then(|e| e.get(EXTENSION)?.get("attributes"));
+        if let (Some(attributes), Some(_)) = (attributes, node.get("mesh")) {
             expanded.push((id, instances(g, bin, node, attributes)?));
         }
     }
@@ -81,20 +75,21 @@ pub(super) fn expand_gpu_instances(g: &mut Value, bin: &[u8]) -> Result<()> {
     }
     let nodes = g["nodes"].as_array_mut().expect("nodes checked above");
     for (id, children) in expanded {
+        let first = nodes.len();
         let node = nodes[id]
             .as_object_mut()
-            .ok_or_else(|| invalid("node is an object"))?;
-        node.remove("mesh");
-        node.remove("weights");
+            .expect("an instanced node is an object");
+        for field in CARRIED {
+            node.remove(field);
+        }
         if let Some(extensions) = node.get_mut("extensions").and_then(Value::as_object_mut) {
             extensions.remove(EXTENSION);
         }
-        let first = nodes.len();
-        let ids = (first..first + children.len()).map(|child| json!(child));
-        match nodes[id].get_mut("children").and_then(Value::as_array_mut) {
-            Some(list) => list.extend(ids),
-            None => nodes[id]["children"] = json!(ids.collect::<Vec<_>>()),
-        }
+        node.entry("children")
+            .or_insert_with(|| json!([]))
+            .as_array_mut()
+            .ok_or_else(|| invalid("node.children is not an array"))?
+            .extend((first..first + children.len()).map(|child| json!(child)));
         nodes.extend(children);
     }
     for list in ["extensionsUsed", "extensionsRequired"] {
