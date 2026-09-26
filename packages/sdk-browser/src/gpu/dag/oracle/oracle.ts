@@ -20,6 +20,10 @@ import type { CutRuleAt } from './predicates.ts';
  *  (`../readiness.fixture.ts`). */
 export type DagCutResidency = { ready: ArrayLike<number>; childReady: ArrayLike<number> };
 
+/** What the oracle returns: the cut, and the request words in the order `dagWanted` stages them,
+ *  before the GPU sorts them. */
+export type DagOracleResult = SelectionResult & { requestWords: number[] };
+
 /**
  * Node oracle for the kernel, in the same shape the shader uses. Not called by the renderer.
  *
@@ -39,7 +43,7 @@ export function evaluateDagSelectionKernel(
   resident?: DagCutResidency,
   cacheCone = false,
   rule?: CutRuleAt,
-) {
+): DagOracleResult {
   if (
     resident &&
     (resident.ready.length !== packed.pageCount || resident.childReady.length !== packed.pageCount)
@@ -148,8 +152,5 @@ export function evaluateDagSelectionKernel(
     selectedTriangles: totaux.drawn,
     transparentTriangles: totaux.transparent,
     drawnTriangles: totaux.drawn,
-  } as SelectionResult & {
-    /** The request words in the order `dagWanted` stages them, before the GPU sorts them. */
-    requestWords: number[];
-  };
+  } as DagOracleResult;
 }

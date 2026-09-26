@@ -27,6 +27,7 @@ import {
   scenePages,
   sceneRoots,
 } from '../../../packages/sdk-browser/src/gpu/dag/cutFrontierScene.fixture.ts';
+import { requestPriority } from '../../../packages/sdk-browser/src/gpu/dag/request.ts';
 import { selectionGpu } from './selectionKernelGpu.ts';
 import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
 import type { PackedDag } from '../../../packages/sdk-browser/src/gpu/dag/types.ts';
@@ -118,7 +119,7 @@ const lignes = cas.map((c) => {
     // interchangeable on both sides, and the step is what ranking reads.
     // The GPU sorts its requests itself (`dagSortRequests`) and the host reads them as they
     // come: the PRIORITY SEQUENCE is compared as the GPU wrote it.
-    prioritesGpu: lu ? lu.demandes.map((mot) => mot >>> 22) : null,
+    prioritesGpu: lu ? lu.demandes.map(requestPriority) : null,
     prioritesOracle: c.oracle.requestPriorities,
   };
 });

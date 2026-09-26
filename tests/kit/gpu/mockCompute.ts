@@ -182,7 +182,8 @@ export function simulateComputeDispatch(
 /** `dagSortRequests`: the staged requests into the sample, by rank, through the kernel's mirror. */
 function sortStagedRequests(out: Uint8Array, pageCount: number) {
   const ints = new Uint32Array(out.buffer, out.byteOffset, out.byteLength / 4),
-    at = stagedRequestsWord(selectionListCap(pageCount)),
-    count = Math.min(ints[0], selectionListCap(pageCount));
+    listCap = selectionListCap(pageCount),
+    at = stagedRequestsWord(listCap),
+    count = Math.min(ints[0], listCap);
   ints.set(sortRequestWords(ints.subarray(at, at + count)), SELECTION_HEADER_WORDS);
 }

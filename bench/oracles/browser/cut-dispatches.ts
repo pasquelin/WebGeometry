@@ -26,7 +26,7 @@ import {
 import { primitiveFrameWords } from '../../../packages/sdk-browser/src/gpu/dag/worlds.ts';
 import {
   selectionListCap,
-  stagedRequestsWord,
+  stagedOutputBytes,
 } from '../../../packages/sdk-browser/src/gpu/dag/layout.ts';
 
 /** What `ressourcesAvant` reads of the bench's packed scene: the same fields the shipped
@@ -61,7 +61,6 @@ export function ressourcesAvant(
   module: GPUShaderModule,
   layout: GPUBindGroupLayout,
   packed: PackedAvant,
-  readbackBytes: number,
 ) {
   const pageCount = packed.pageCount,
     worldCount = Math.max(1, packed.worldCount);
@@ -88,14 +87,7 @@ export function ressourcesAvant(
     flags: { buffer: tampon(Math.max(16, (packed.nodeCount * 2 + pageCount * 4) * 4)) },
     // The shipped `dagWanted` stages the camera's requests behind the drawn list, where the
     // shipped `dagSortRequests` reads them (`shader/snapshotWgsl.ts`).
-    out: {
-      buffer: tampon(
-        Math.max(
-          readbackBytes,
-          (stagedRequestsWord(selectionListCap(pageCount)) + selectionListCap(pageCount)) * 4,
-        ),
-      ),
-    },
+    out: { buffer: tampon(stagedOutputBytes(selectionListCap(pageCount))) },
     work: { buffer: tampon(Math.max(8, (base + 10 + VIEW_WORD_ROWS + 1) * 4)) },
     worlds: { buffer: tampon(64, packed.worlds) },
     frames: { buffer: tampon(16, frameData) },
