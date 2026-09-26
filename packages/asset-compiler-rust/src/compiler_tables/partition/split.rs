@@ -59,6 +59,18 @@ fn halve(mut group: Vec<Placed>, out: &mut Vec<Vec<Placed>>) -> Region {
     }
 }
 
+/// The halving of `records` in order, in two down to single records: the tree of records that have
+/// no place to halve by, as the manifest's primitives.
+pub(crate) fn halving(records: Range<usize>) -> Region {
+    let middle = records.start + records.len() / 2;
+    let halves = (records.len() > 1)
+        .then(|| Box::new([halving(records.start..middle), halving(middle..records.end)]));
+    Region {
+        cells: records,
+        halves,
+    }
+}
+
 /// The cells of `placed`, and the tree that halved them.
 pub(super) fn split_cells(placed: Vec<Placed>) -> (Vec<Vec<Placed>>, Region) {
     let mut cells = Vec::new();

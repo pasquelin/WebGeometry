@@ -25,7 +25,10 @@ fn every_page_writes_its_cone_and_a_page_without_one_writes_the_open_cone() {
     let cone = cone_of(&bytes, 0);
     assert_eq!(cone[..3], axis);
     assert_eq!(cone[3].to_bits(), angle.to_bits());
-    assert_eq!(cone_of(&bytes, 1), crate::normal_cone::OPEN_CONE);
+    assert_eq!(
+        cone_of(&bytes, 1),
+        trillion3d_page_codec::normal_cone::OPEN_CONE
+    );
 }
 
 #[test]

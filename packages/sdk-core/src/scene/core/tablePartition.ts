@@ -8,8 +8,10 @@
  */
 import { EngineError } from '../../contracts/cache.ts';
 
-/** The version of the partition, of its pages and of its cell files this runtime reads. */
-const PARTITION_VERSION = 2;
+/** The version of the partition and of its pages this runtime reads. */
+const PARTITION_VERSION = 3;
+/** The version of the cell files this runtime reads. */
+const CELL_VERSION = 2;
 /** A kind of page (`partition/pages.rs`): the prefix of its files, the version every page carries,
  *  the member a region page lists its records under, and the codes of a refusal. */
 export interface PageKind {
@@ -107,13 +109,15 @@ const bits = /* @__PURE__ */ new DataView(/* @__PURE__ */ new ArrayBuffer(8));
 const text = /* @__PURE__ */ new TextDecoder();
 /** The `f64` whose bits are the sixteen hexadecimal digits `hex`. */
 const float64 = (hex: string) => (bits.setBigUint64(0, BigInt(`0x${hex}`)), bits.getFloat64(0));
+/** Whether `slot` is 168 hexadecimal digits. */
+const isSlot = (slot: unknown): slot is string =>
+  typeof slot === 'string' && /^[0-9a-f]{168}$/.test(slot);
 
 /** The page of `kind` that `slot` names and its box, `null` for an empty slot, or a named refusal. A
  *  slot is the page's SHA-256 in 64 hexadecimal digits, its size in 8, its box as six `f64` bit
  *  patterns in 16. */
 function slotPage(kind: PageKind, slot: unknown) {
-  if (typeof slot !== 'string' || !/^[0-9a-f]{168}$/.test(slot))
-    throw new EngineError(kind.invalid, 'a page slot is not fixed-width hex', {});
+  if (!isSlot(slot)) throw new EngineError(kind.invalid, 'a page slot is not fixed-width hex', {});
   const bytes = parseInt(slot.slice(64, 72), 16);
   if (bytes === 0) return null;
   const sha256 = slot.slice(0, 64);
@@ -153,7 +157,8 @@ export async function readLeaves(
 }
 
 /** The partition under `root`, its pages read side by side through `read` (which verifies them
- *  against their slot): the cells in order, the union of the root's boxes, the meshes placed. */
+ *  against their slot): the cells in order, the union of the root's boxes, the meshes placed. A
+ *  region page names the mesh pages its cells use (#792), which #751 fetches by region. */
 export async function readTablePartition(
   root: TablePartitionRoot,
   read: (page: TablePage) => Promise<Uint8Array>,
@@ -163,6 +168,8 @@ export async function readTablePartition(
   const cells = pages.flatMap((page) => page[CELL_PAGES.records] as TableCell[]);
   if (!cells.every((cell) => Array.isArray(cell?.meshes) && Array.isArray(cell.parents)))
     throw new EngineError(CELL_PAGES.invalid, 'scene partition misses its cells', {});
+  if (!pages.every(({ meshPages }) => Array.isArray(meshPages) && meshPages.every(isSlot)))
+    throw new EngineError(CELL_PAGES.invalid, 'a region page misses its mesh pages', {});
   const bounds = [0, 1, 2, 3, 4, 5].map((axis) =>
     (axis < 3 ? Math.min : Math.max)(...slots.map((slot) => slot.bounds[axis])),
   );
@@ -173,9 +180,13 @@ export async function readTablePartition(
 /** The nodes of a cell file, or a named refusal. */
 export function assertCellNodes(value: unknown): readonly CellNode[] {
   const cell = value as { version?: number; nodes?: CellNode[] } | null;
-  if (!cell || cell.version !== PARTITION_VERSION || !Array.isArray(cell.nodes))
-    throw new EngineError('INVALID_SCENE_TABLES', 'scene cell is not a version 2 node list', {
-      version: cell?.version ?? null,
-    });
+  if (!cell || cell.version !== CELL_VERSION || !Array.isArray(cell.nodes))
+    throw new EngineError(
+      'INVALID_SCENE_TABLES',
+      `scene cell is not a version ${CELL_VERSION} node list`,
+      {
+        version: cell?.version ?? null,
+      },
+    );
   return cell.nodes;
 }

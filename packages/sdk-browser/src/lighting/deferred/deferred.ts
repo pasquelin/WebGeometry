@@ -31,15 +31,11 @@ export const DEFERRED_LIGHTING_PASS = 'Trillion3D deferred lighting';
  * no one said so. A program that arrives while its variant is no longer wanted causes one
  * more frame to be redone, never a wrong frame.
  */
-export async function createDeferredLighting(
-  device: GPUDevice,
-  directLights: GPUBuffer,
-  onReady?: () => void,
-) {
+export async function createDeferredLighting(device: GPUDevice, onReady?: () => void) {
   const view = createDeferredView(device);
   const uniform = view.buffer;
   const placeholders = createDeferredPlaceholders(device);
-  const bindings = { uniform, directLights, placeholders };
+  const bindings = { uniform, placeholders };
   try {
     const unlit = await createDeferredProgram(
       device,

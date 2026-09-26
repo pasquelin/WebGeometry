@@ -8,7 +8,7 @@
 use super::partition::{cells, compiled, compiled_full, grid};
 use super::*;
 use crate::compiler_manifest_pages::{read_manifest, MANIFEST_PAGES};
-use crate::compiler_tables::partition::{pages::*, split::Region};
+use crate::compiler_tables::partition::{pages::*, split::halving};
 use crate::tests::cache::reuse::compile_with_events;
 
 /// Every file of `directory` whose name starts with `prefix`: its size and its body.
@@ -66,19 +66,12 @@ fn the_root_has_one_size_whatever_the_world_and_every_page_its_limit() {
         assert!(largest <= Some(PAGE_BYTES), "{largest:?} bytes");
         let cell_files = files(directory, "scene-cell-").len();
         assert_eq!(cells(directory).len(), cell_files, "every cell, once");
+        super::mesh_pages::assert_mesh_pages(directory, tables);
         fs::remove_dir_all(options.source.parent().expect("root")).expect("cleanup");
     }
     // Sixteen times the area at the same density: the whole tables keep their bytes.
     let (small, large) = (size(&worlds[0].1), size(&worlds[1].1));
     assert_eq!(small, large, "the core does not grow with the world");
-}
-
-/// The halving of `cells` in two down to single cells: the shape `split.rs` records.
-fn halving(cells: std::ops::Range<usize>) -> Region {
-    let middle = cells.start + cells.len() / 2;
-    let halves = (cells.len() > 1)
-        .then(|| Box::new([halving(cells.start..middle), halving(middle..cells.end)]));
-    Region { cells, halves }
 }
 
 #[test]
@@ -87,11 +80,17 @@ fn index_pages_list_at_most_the_fan_out_and_give_every_record_back_in_order() {
     let record = |at| json!({"url": format!("scene-cell-{at}.json"), "sha256": "0".repeat(64), "bytes": at, "parents": [], "meshes": [[0, 1]]});
     let records: Vec<Value> = (0..12_000).map(record).collect();
     let bounds = vec![[0.0, 0.0, 0.0, 1.0, 1.0, 1.0]; records.len()];
-    let root = write_pages(&halving(0..12_000), &records, &bounds, &directory).expect("pages");
-    // The root names every page by its fingerprint: the pages of #750, byte for byte (#796).
+    let meshes = MeshSlots::from([(0, vec!["a".repeat(SLOT_WIDTH)])]);
+    let root = write_pages(&halving(0..12_000), &records, &bounds, &meshes, &directory);
+    let root = root.expect("pages");
+    // The root names every page by its fingerprint: the pages of #750, each naming its mesh pages
+    // (#792), byte for byte.
     let named = hash(&serde_json::to_vec(&root).expect("json"));
-    let pages = "82acb9d51d873ffb057832bcf0980118b9441b7962b42a6be5bfcd37dfb520d2";
-    assert_eq!(named, pages, "the index and region pages develop wrote");
+    let pages = "1e0040cec0549bf952ef3d7f4ba6580d469d8d3c3082f53ef46c8d9c3b0b8fbd";
+    assert_eq!(
+        named, pages,
+        "the index and region pages of partition version 3"
+    );
     let written = files(&directory, "scene-page-");
     let index = written.iter().filter(|(_, page)| page["pages"].is_array());
     assert!(index.count() > 0, "index pages are written");
@@ -131,6 +130,9 @@ fn a_reused_folder_proves_its_cells_through_the_pages() {
     let slot = tables["partition"]["pages"][0].as_str().expect("slot");
     let page = format!("scene-page-{}.json", &slot[..64]);
     let old = serde_json::to_vec(&json!({"version": 3})).expect("json");
+    // A rebuild of the key writes the same mesh pages, whatever it found already built (#792).
+    let mesh_pages = || read_json(&directory.join(MANIFEST_FILE))["pages"].clone();
+    let built = mesh_pages();
     for (name, bytes, reason) in [
         ("scene-cell-0.json", &b"{}"[..], "scene-cell-0.json"),
         (page.as_str(), b"{}", "is not the page its slot names"),
@@ -144,6 +146,7 @@ fn a_reused_folder_proves_its_cells_through_the_pages() {
         assert!(announced.contains(reason), "{reason}: {announced}");
         let rebuilt = fs::read(directory.join(name)).expect("rebuilt");
         assert_eq!(rebuilt, intact, "{reason}");
+        assert_eq!(mesh_pages(), built, "{reason}: the same mesh pages");
     }
     fs::remove_dir_all(options.source.parent().expect("root")).expect("cleanup");
 }

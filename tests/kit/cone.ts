@@ -1,8 +1,25 @@
 // The normal cone the WebGPU prepare built from the host vertices until #272, kept as the reference
-// the compiler's cooked cone is checked against (`asset-compiler-rust/src/normal_cone.rs`,
-// `tests/integration/cooked-cones.test.ts`) and the input the cone tests and probes build from.
-// No engine source calls it: the engine reads the cooked cone.
+// the compiler's cooked cone and the run-time cut's are checked against
+// (`packages/page-codec-wasm/src/normal_cone.rs`, `tests/integration/cooked-cones.test.ts`,
+// `packages/sdk-browser/src/world/page/cutCones.test.ts`) and the input the cone tests and probes
+// build from. No engine source calls it: the engine reads the cone `normal_cone.rs` built.
 import { OPEN_CONE, type NormalCone } from '../../packages/sdk-browser/src/page/cone/cone.ts';
+
+/** Ulps a built angle may stand above this reference's: twice `ANGLE_MARGIN_ULPS` (4,
+ *  `normal_cone.rs`). */
+const WIDEST = 2n * 4n;
+/** The float64 words of `values`: bit for bit, and ulps apart for two numbers of one sign. */
+const words = (values: number[]) =>
+  Array.from(new BigUint64Array(Float64Array.from(values).buffer));
+
+/** Whether `cone`, built by `normal_cone.rs`, holds `reference` (`triangleCone` on the same
+ *  triangles): the same axis bit for bit, an angle no narrower and at most `WIDEST` ulps wider. */
+export function coneHolds(cone: NormalCone, reference: NormalCone): boolean {
+  const built = words([...cone.axis, cone.angle]),
+    expected = words([...reference.axis, reference.angle]);
+  const wider = built[3] - expected[3];
+  return built.slice(0, 3).join() === expected.slice(0, 3).join() && wider >= 0n && wider <= WIDEST;
+}
 
 function faceCross(positions: ArrayLike<number>, ia: number, ib: number, ic: number) {
   const ax = positions[ia],

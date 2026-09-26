@@ -15,9 +15,9 @@ function whole() {
   );
 }
 
-for (const index of [false, true])
-  test(`the paged manifest reads back what one column file gave${index ? ', through an index page' : ''}`, async () => {
-    const { root, files } = pagedManifest(manifest(), index);
+for (const [index, cut] of [false, true].flatMap((i) => [false, true].map((c) => [i, c])))
+  test(`the paged manifest reads back what one column file gave${index ? ', through an index page' : ''}${cut ? ', one mesh page per primitive' : ''}`, async () => {
+    const { root, files } = pagedManifest(manifest(), index, cut);
     const read = async ({ url }: { url: string }) => files.get(url)!;
     assert.deepEqual(await readPagedManifest(root, read), whole());
   });

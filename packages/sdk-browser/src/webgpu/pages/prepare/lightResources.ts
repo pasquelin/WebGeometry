@@ -133,6 +133,7 @@ const contractResources: DirectLightResources = {};
 export function directLightResources(rt: WebgpuPagesRuntime) {
   const { lights } = rt,
     active = wantsContractLighting(rt);
+  contractResources.lights = lights.buffer;
   contractResources.tiles = active ? lights.tiles?.buffer : undefined;
   contractResources.slices = active ? lights.shadows?.dataBuffer : undefined;
   contractResources.requests = active ? lights.shadows?.requestBuffer : undefined;

@@ -1,9 +1,10 @@
 /**
  * THE RUNTIME CUTTER: drawn triangles cut into engine pages, off the main thread.
  *
- * What runs here touches no platform object — no URL, no DOM, no host library — so the page
- * worker runs it (`page/decode/task.ts`, op `cut`) and the main thread runs the same function when
- * no worker lives. The triangles travel as one buffer (`packDrawn`), and the pages come back as
+ * What runs here touches no platform object — no URL, no DOM, no host library — but the SDK
+ * module, which builds each cluster's normal cone (`cutCones.ts`); so the page worker runs it
+ * (`page/decode/task.ts`, op `cut`) and the main thread runs the same function when no worker
+ * lives. The triangles travel as one buffer (`packDrawn`), and the pages come back as
  * bytes with their descriptors and digests: serving them at an address is the caller's.
  */
 import { encodeGeometryPage, UV_EXPONENT } from '../../../../page-codec/geometryPage.ts';
@@ -14,19 +15,29 @@ import { sphereFromBounds } from '../../../../sdk-core/src/math/primitives/spher
 import type { PageCutPage, PageCutPayload } from '../../../../sdk-core/src/page/decodeContracts.ts';
 import type { DrawnTriangles } from '../../../../sdk-core/src/world/geometry/drawn.ts';
 import { sha256Hex } from '../../measurement/sha256Hex.ts';
+import { clusterCones } from './cutCones.ts';
 
 /** A cluster holds at most this many triangles and vertices: the page format's cluster, the one
  *  the compiler cuts (`docs/FORMAT.md`). */
 const CLUSTER_TRIANGLES = 128,
   CLUSTER_VERTICES = 255;
 
-/** Drawn triangles as one buffer: five lengths, then the five arrays, every one four-byte wide. */
+/** Whether the cut pages of `drawn` keep their normal cone: not a line's quads, which the rasters
+ *  widen on screen, nor a sprite's, which they turn to the camera — what those face is not what
+ *  was cut, so a cone of the cut triangles would cull them wrongly. */
+const drawnCones = (drawn: DrawnTriangles) => !drawn.lines && drawn.spriteRadius === undefined;
+
+/** The words before the arrays: five lengths, then whether the pages keep a cone. */
+const HEADER_WORDS = 6;
+
+/** Drawn triangles as one buffer: its header (`HEADER_WORDS`), then the five arrays, every one
+ *  four-byte wide. */
 export function packDrawn(drawn: DrawnTriangles): ArrayBuffer {
   const parts = [drawn.positions, drawn.normals, drawn.uvs, drawn.colors, drawn.indices];
   const lengths = parts.map((part) => part?.length ?? 0);
-  const packed = new Uint32Array(5 + lengths.reduce((a, b) => a + b, 0));
-  packed.set(lengths);
-  let at = 5;
+  const packed = new Uint32Array(HEADER_WORDS + lengths.reduce((a, b) => a + b, 0));
+  packed.set([...lengths, Number(drawnCones(drawn))]);
+  let at = HEADER_WORDS;
   for (const part of parts)
     if (part) {
       packed.set(new Uint32Array(part.buffer, part.byteOffset, part.length), at);
@@ -35,37 +46,43 @@ export function packDrawn(drawn: DrawnTriangles): ArrayBuffer {
   return packed.buffer;
 }
 
-/** The triangles `packDrawn` wrote, as views on its buffer. */
-export function unpackDrawn(buffer: ArrayBuffer): DrawnTriangles {
-  const lengths = new Uint32Array(buffer, 0, 5);
-  let at = 20;
+/** The triangles `packDrawn` wrote, as views on its buffer, and whether their pages keep a cone. */
+export function unpackDrawn(buffer: ArrayBuffer): { drawn: DrawnTriangles; cones: boolean } {
+  const header = new Uint32Array(buffer, 0, HEADER_WORDS),
+    cones = header[5] === 1;
+  let at = header.byteLength;
   const take = <T>(make: (b: ArrayBuffer, offset: number, length: number) => T, i: number) => {
-    const view = lengths[i] ? make(buffer, at, lengths[i]) : null;
-    at += lengths[i] * 4;
+    const view = header[i] ? make(buffer, at, header[i]) : null;
+    at += header[i] * 4;
     return view;
   };
   const float = (b: ArrayBuffer, offset: number, length: number) =>
     new Float32Array(b, offset, length);
-  return {
+  const drawn = {
     positions: take(float, 0)!,
     normals: take(float, 1)!,
     uvs: take(float, 2),
     colors: take(float, 3),
     indices: take((b, offset, length) => new Uint32Array(b, offset, length), 4)!,
   };
+  return { drawn, cones };
 }
 
 /**
  * Cuts drawn triangles into single-level clusters of the format's size, in index order, each
  * written as its index page and its quantized geometry page (`encodeGeometryPage`), with no
- * simplification — every cluster is a root, drawn as it is. The position grid is the one the
+ * simplification — every cluster is a root, drawn as it is — and, when `cones` holds, with the
+ * cone of its triangles' normals (`cutCones.ts`). The position grid is the one the
  * compiler takes from the primitive's own extent: 2^16 steps across its widest axis. Texture
  * coordinates sit on the format's 2^-14, or on the finest grid the widest cluster's range fits
  * when it does not — a dashed line's distance along it (`drawn.ts`) spans past 1024 units on a
  * long line: every page is cut, none refused, and each coordinate stays within a 32-bit float's
  * own step of that range.
  */
-export async function cutDrawnTriangles(drawn: DrawnTriangles): Promise<PageCutPayload> {
+export async function cutDrawnTriangles(
+  drawn: DrawnTriangles,
+  cones: boolean,
+): Promise<PageCutPayload> {
   const { positions, normals, uvs, colors, indices } = drawn;
   const bounds = new Float64Array(6);
   boxEmpty(bounds, 0);
@@ -83,6 +100,7 @@ export async function cutDrawnTriangles(drawn: DrawnTriangles): Promise<PageCutP
   const uvExponent = uvs
     ? gridExponentFor(widestUvSpan(uvs, indices, ranges), UV_EXPONENT)
     : UV_EXPONENT;
+  const built = cones ? await clusterCones(positions, indices, ranges) : null;
   const cut = [];
   let maxPositionError = 0;
   for (const [start, end] of ranges) {
@@ -98,7 +116,7 @@ export async function cutDrawnTriangles(drawn: DrawnTriangles): Promise<PageCutP
     cut.push({ start, corners, page, box, sphere, geometry: page.data.slice().buffer });
   }
   const pages: PageCutPage[] = await Promise.all(
-    cut.map(async ({ start, corners, page, box, sphere, geometry }) => ({
+    cut.map(async ({ start, corners, page, box, sphere, geometry }, k) => ({
       index: corners.buffer,
       geometry,
       indexSha256: await sha256Hex(corners.buffer),
@@ -112,6 +130,7 @@ export async function cutDrawnTriangles(drawn: DrawnTriangles): Promise<PageCutP
       indexCount: page.indexCount,
       flags: page.flags,
       uncompressedBytes: page.uncompressedBytes,
+      ...(built ? { cone: built[k] } : {}),
     })),
   );
   return { pages, positionExponent, uvExponent, maxPositionError };

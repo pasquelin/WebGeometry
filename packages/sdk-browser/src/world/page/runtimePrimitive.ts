@@ -46,6 +46,7 @@ function servePrimitive(cut: PageCutPayload, kind: DrawnKind): RuntimePrimitive 
     group: null,
     source: null,
     ...(kind.lines ? { depthLayer: LINE_DEPTH_LAYER } : {}),
+    ...(page.cone ? { cone: page.cone } : {}),
     geometry: {
       ...served(page.geometry, page.geometrySha256, urls),
       vertexCount: page.vertexCount,

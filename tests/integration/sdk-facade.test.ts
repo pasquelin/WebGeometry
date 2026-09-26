@@ -98,7 +98,7 @@ test('generated inventory and explicit facade files are current', async () => {
   const inventory: Inventory = JSON.parse(
     await readFile(new URL('../../site/data/api-inventory.json', import.meta.url), 'utf8'),
   );
-  assert.equal(inventory.exports.length, 749);
+  assert.equal(inventory.exports.length, 748);
   assert.deepEqual(inventory.collisions, []);
   // The page words of the world families shadow the engine contracts of the same name in the
   // browser condition; the inventory names every such pair.
@@ -163,7 +163,7 @@ test('a maths-only bundle keeps baseline bytes and excludes platform modules', a
   const inputs = Object.keys(proposed.metafile.inputs);
   assert.ok(inputs.some((path) => path.endsWith('/math/batch/batch.ts')));
   assert.ok(!inputs.some((path) => path.includes('/sdk-browser/') || path.includes('/sdk-node/')));
-  assert.equal(baseline.outputFiles[0].contents.length, 5_044);
+  assert.equal(baseline.outputFiles[0].contents.length, 5_006);
   assert.equal(proposed.outputFiles[0].contents.length, 1_780);
   assert.equal(browserProposed.outputFiles[0].contents.length, 3_329);
   assert.ok(

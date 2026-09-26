@@ -43,7 +43,8 @@ export type GpuBounceProbes = Awaited<ReturnType<typeof createGpuBounceProbes>>;
 export async function createGpuBounceProbes(
   device: GPUDevice,
   proxy: SceneProxy,
-  lights: GPUBuffer,
+  /** The declared-light buffer, read at each encode: it is replaced when the scene outgrows it. */
+  lights: () => GPUBuffer,
   budgetMs: number,
 ) {
   const cascades = createBounceCascades(proxy.bounds);

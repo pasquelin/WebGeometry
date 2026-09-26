@@ -55,10 +55,9 @@ ${INVERSE_PI_WGSL}
 fn directIrradiance(P:vec3f,N:vec3f,reach:f32)->vec3f{
  var total=vec3f(0.0);
  var shadows=0u;
- let count=min(directLights.count,MAX_LIGHTS);
+ let count=directLights.count;
  let offset=P+N*1e-3;
- for(var index=0u;index<MAX_LIGHTS;index++){
-  if(index>=count){break;}
+ for(var index=0u;index<count;index++){
   let light=directLights.items[index];
   // A rectangle casts no shadow: its irradiance is its whole contribution.
   if(isRect(light)){total+=light.colorIntensity.rgb*light.colorIntensity.w*rectIrradiance(light,P,N).w;continue;}
