@@ -16,7 +16,9 @@ test('the shipped stages reach the frozen descent only through the calls it answ
     /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
     '',
   );
-  const calls = stages.matchAll(new RegExp(`\\b(?:${frozen.join('|')})\\([^()]*\\)`, 'g'));
+  const calls = stages.matchAll(
+    new RegExp(`\\b(?:${frozen.join('|')})\\((?:[^()]|\\([^()]*\\))*\\)`, 'g'),
+  );
   // Each is the frozen layout's own business: `resetCounters` zeroes its counters, `drawnAppend`
   // logs a drawn page where its `dagClearDrawn` reads it, and `dagWanted` bounds its dispatch by
   // its candidate count. A call added here reads the frozen layout: take the callee from the
