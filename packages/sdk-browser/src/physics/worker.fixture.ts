@@ -1,7 +1,14 @@
-import { POSE_WORDS } from '../../../sdk-core/src/physics/index.ts';
+import { readFile } from 'node:fs/promises';
+import { DEFAULT_PHYSICS_BUDGET, POSE_WORDS } from '../../../sdk-core/src/physics/index.ts';
 import { Camera } from '../../../sdk-core/src/world/camera/camera.ts';
 import { Group } from '../../../sdk-core/src/world/object/object3d.ts';
-import type { PhysicsResults } from './protocol.ts';
+import {
+  PHYSICS_PROTOCOL,
+  resultWords,
+  type FromPhysics,
+  type PhysicsResults,
+  type ToPhysics,
+} from './protocol.ts';
 import { createWorldPhysics } from './worldPhysics.ts';
 
 /** A physics worker faked in place of `Worker`: it keeps the command words the page sends it. */
@@ -58,4 +65,38 @@ export async function fakePhysicsWorld() {
   const [worker] = workers;
   worker.onmessage({ data: { type: 'ready' } });
   return { scene, physics, worker, restore };
+}
+
+/**
+ * The physics worker's own code run in this thread on `clock`, started on an 8-body budget and
+ * ready: its ticks wait in `ticks` (with the delay asked) until the test runs them, and its results
+ * are kept in `sent`, each buffer copied as it was sent. The globals it replaces stay replaced.
+ */
+export async function startedWorker(clock: () => number) {
+  Object.defineProperty(performance, 'now', { value: clock, configurable: true });
+  const scope = globalThis as unknown as Record<string, unknown>;
+  const bytes = await readFile(new URL('./joltPhysics.wasm', import.meta.url));
+  scope.fetch = async () => new Response(bytes);
+  scope.location = { href: import.meta.url };
+  const ticks: [() => void, number][] = [];
+  const sent: FromPhysics[] = [];
+  let onReady = () => {};
+  const ready = new Promise<void>((resolve) => (onReady = resolve));
+  scope.postMessage = (message: FromPhysics) => {
+    sent.push(
+      message.type === 'results' ? { ...message, buffer: message.buffer.slice(0) } : message,
+    );
+    if (message.type === 'ready') {
+      scope.setTimeout = (tick: () => void, ms: number) => ticks.push([tick, ms]);
+      onReady();
+    }
+  };
+  await import('./physicsWorker.ts');
+  const receive = (data: ToPhysics) =>
+    (scope.onmessage as (event: { data: ToPhysics }) => void)({ data });
+  const budget = { ...DEFAULT_PHYSICS_BUDGET, bodies: 8, memoryBytes: 64 << 20 };
+  const buffers = [0, 1].map(() => new ArrayBuffer(resultWords(budget) * 4));
+  receive({ type: 'start', protocol: PHYSICS_PROTOCOL, wasm: 'x', budget, threads: 1, buffers });
+  await ready;
+  return { ticks, sent, receive, budget };
 }

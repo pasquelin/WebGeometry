@@ -4,6 +4,22 @@
  * is normalised; the arithmetic is the drawn image's, so none of it may be reordered.
  */
 
+/** The turn (x, y, z, w) scaled to unit length, into `quaternion` from `q`. */
+function normalised(
+  quaternion: Float64Array,
+  q: number,
+  x: number,
+  y: number,
+  z: number,
+  w: number,
+) {
+  const n = 1 / (Math.sqrt(x * x + y * y + z * z + w * w) || 1);
+  quaternion[q] = x * n;
+  quaternion[q + 1] = y * n;
+  quaternion[q + 2] = z * n;
+  quaternion[q + 3] = w * n;
+}
+
 /** The `count` slots listed in `list` on their targets exactly. */
 export function landAll(
   list: Int32Array,
@@ -48,11 +64,7 @@ export function interpolateAll(
       y = quaternion[q + 1] + (s * target[o + 4] - quaternion[q + 1]) * step,
       z = quaternion[q + 2] + (s * target[o + 5] - quaternion[q + 2]) * step,
       w = quaternion[q + 3] + (s * target[o + 6] - quaternion[q + 3]) * step;
-    const n = 1 / (Math.sqrt(x * x + y * y + z * z + w * w) || 1);
-    quaternion[q] = x * n;
-    quaternion[q + 1] = y * n;
-    quaternion[q + 2] = z * n;
-    quaternion[q + 3] = w * n;
+    normalised(quaternion, q, x, y, z, w);
   }
 }
 
@@ -87,10 +99,6 @@ export function extrapolateAll(
       y = ty + h * (wy * tw + wz * tx - wx * tz),
       z = tz + h * (wz * tw + wx * ty - wy * tx),
       w = tw - h * (wx * tx + wy * ty + wz * tz);
-    const n = 1 / (Math.sqrt(x * x + y * y + z * z + w * w) || 1);
-    quaternion[q] = x * n;
-    quaternion[q + 1] = y * n;
-    quaternion[q + 2] = z * n;
-    quaternion[q + 3] = w * n;
+    normalised(quaternion, q, x, y, z, w);
   }
 }

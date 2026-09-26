@@ -1,10 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import {
   ASLEEP_BIT,
   CommandWriter,
-  DEFAULT_PHYSICS_BUDGET,
   MAX_CATCH_UP_STEPS,
   ObjectPhysics,
   PHYSICS_STEP,
@@ -17,8 +15,8 @@ import { Group } from '../../../sdk-core/src/world/object/object3d.ts';
 import type { Bodied } from './bodies.ts';
 import { body, startModule } from './module.fixture.ts';
 import { createPhysicsPoses } from './poses.ts';
-import { poseRecord } from './worker.fixture.ts';
-import { PHYSICS_PROTOCOL, resultWords, type FromPhysics, type ToPhysics } from './protocol.ts';
+import { poseRecord, startedWorker } from './worker.fixture.ts';
+import { resultWords } from './protocol.ts';
 
 /** `count` seated crates in slots 0.., their rows in one batch, and the frames' `placed` calls. */
 function seated(count: number) {
@@ -120,29 +118,7 @@ test('slow steps never cost the worker a step: the ceiling a tick, each one fixe
     if (reads++ % 2 === 1) now += 25;
     return read;
   };
-  Object.defineProperty(performance, 'now', { value: clock, configurable: true });
-  const scope = globalThis as unknown as Record<string, unknown>;
-  const bytes = await readFile(new URL('./joltPhysics.wasm', import.meta.url));
-  scope.fetch = async () => new Response(bytes);
-  scope.location = { href: import.meta.url };
-  const ticks: [() => void, number][] = [];
-  const sent: FromPhysics[] = [];
-  let onReady = () => {};
-  const ready = new Promise<void>((resolve) => (onReady = resolve));
-  scope.postMessage = (message: FromPhysics) => {
-    if (message.type === 'results') sent.push({ ...message, buffer: message.buffer.slice(0) });
-    if (message.type === 'ready') {
-      scope.setTimeout = (tick: () => void, ms: number) => ticks.push([tick, ms]);
-      onReady();
-    }
-  };
-  await import('./physicsWorker.ts');
-  const receive = (data: ToPhysics) =>
-    (scope.onmessage as (event: { data: ToPhysics }) => void)({ data });
-  const budget = { ...DEFAULT_PHYSICS_BUDGET, bodies: 8, memoryBytes: 64 << 20 };
-  const buffers = [0, 1].map(() => new ArrayBuffer(resultWords(budget) * 4));
-  receive({ type: 'start', protocol: PHYSICS_PROTOCOL, wasm: 'x', budget, threads: 1, buffers });
-  await ready;
+  const { ticks, sent, receive, budget } = await startedWorker(clock);
   ticks.shift()![0]();
   const writer = new CommandWriter();
   writer.gravity([0, -9.81, 0]);
