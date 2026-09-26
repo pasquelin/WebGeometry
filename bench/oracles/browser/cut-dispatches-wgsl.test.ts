@@ -13,15 +13,16 @@ test('the shipped stages reach the frozen descent only through the calls it answ
     /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
     '',
   );
-  const calls = stages.matchAll(
-    new RegExp(`\\b(?:${frozen.join('|')})\\((?:[^()]|\\([^()]*\\))*\\)`, 'g'),
-  );
+  const callee = `\\b(?:${frozen.join('|')})\\(`;
+  const calls = [...stages.matchAll(new RegExp(`${callee}(?:[^()]|\\([^()]*\\))*\\)`, 'g'))];
+  // A call nested deeper than one level escapes the text match: every callee is still counted.
+  assert.equal(calls.length, stages.match(new RegExp(callee, 'g'))?.length ?? 0);
   // Each is the frozen layout's own business: `resetCounters` zeroes its counters, `drawnAppend`
   // logs a drawn page where its `dagClearDrawn` reads it, and `dagWanted` bounds its dispatch by
   // its candidate count. A call added here reads the frozen layout: take the callee from the
   // shipped descent (`AVANT_SHIMS`) unless both layouts give it the same answer.
   // Every call site, not each distinct text: a second `candCounter()` elsewhere is a new reader too.
-  assert.deepEqual([...calls].map((m) => m[0]).sort(), [
+  assert.deepEqual(calls.map((m) => m[0]).sort(), [
     'candCounter()',
     'drawnAppend(i)',
     'resetCounters()',
