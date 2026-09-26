@@ -152,6 +152,7 @@ test('the shadow pool rule never draws above the screen nor below the smallest o
   });
   assert.equal(draw(shadowAtlasBytes(64)).side, 51);
   assert.equal(draw(shadowAtlasBytes(20)).clamp, 'device-limit');
+  assert.equal(shadowPoolFor(20160)(shadowAtlasBytes(51, 2)).layers, 2, 'no layer past the grant');
   const floor = draw(1);
   assert.equal(floor.side, shadowPoolShape(pages(1, 1)).side);
   assert.equal(floor.clamp, 'minimum');

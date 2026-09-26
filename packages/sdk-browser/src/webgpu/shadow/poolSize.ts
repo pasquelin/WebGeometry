@@ -17,13 +17,15 @@ import type { WebgpuLightState } from '../pages/state/lights.ts';
 /** The smallest shadow pool: the side a one-pixel screen asks (`shadowPoolSize`). */
 const FLOOR_SIDE = shadowPoolShape(shadowPoolSize(1, 1)).side;
 
-/** The shadow pool `budgetBytes` holds for a screen that asks `wanted` pages: its layers, of the
- *  largest side that fits, never above their own, never below the floor. */
+/** The shadow pool `budgetBytes` holds for a screen that asks `wanted` pages: the fewest layers
+ *  that hold what fits, of the largest side that fits, never below the floor. */
 export const shadowPoolFor = (wanted: number) => (budgetBytes: number) => {
-  const { side: full, layers } = shadowPoolShape(wanted),
+  const pages = Math.min(wanted, Math.floor(budgetBytes / shadowAtlasBytes(1)));
+  const { side: full, layers } = shadowPoolShape(pages),
     fits = Math.floor(Math.sqrt(budgetBytes / shadowAtlasBytes(1, layers)));
-  const side = Math.max(Math.min(FLOOR_SIDE, full), Math.min(full, fits));
-  const clamp: PoolClamp = side <= FLOOR_SIDE ? 'minimum' : side < full ? 'device-limit' : null;
+  const side = Math.max(Math.min(FLOOR_SIDE, shadowPoolShape(wanted).side), Math.min(full, fits));
+  const clamp: PoolClamp =
+    side <= FLOOR_SIDE ? 'minimum' : side * side * layers < wanted ? 'device-limit' : null;
   return { budgetBytes, side, layers, allocatedBytes: shadowAtlasBytes(side, layers), clamp };
 };
 
