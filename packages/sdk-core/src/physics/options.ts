@@ -97,11 +97,13 @@ export const DEFAULT_MATTER: PhysicsMatter = { density: 1000, friction: 0.5, res
 export interface PhysicsBudget {
   /** Bodies of every kind at once. */
   bodies: number;
-  /** Triangles of every static triangle shape at once. */
-  triangles: number;
   /** Decorative bodies at once. */
   decorative: number;
-  /** Bytes of the physics module's memory: a hard ceiling, the module cannot grow past it. */
+  /**
+   * Bytes of the physics module's memory: a hard ceiling, the module cannot grow past it. Half of
+   * it holds the static collision at once: a compiled model's tiles stream within it around the
+   * eye and the moving bodies, the farthest leaving first; a static triangle mesh past it is refused.
+   */
   memoryBytes: number;
   /**
    * Pairs of bodies whose bounds overlap in one step. A dense pile holds about four per body; a
@@ -134,7 +136,6 @@ export interface PhysicsBudget {
 /** The engine's default physics budgets. */
 export const DEFAULT_PHYSICS_BUDGET: Readonly<PhysicsBudget> = Object.freeze({
   bodies: 16384,
-  triangles: 2_000_000,
   decorative: 1024,
   memoryBytes: 128 * 1024 * 1024,
   bodyPairs: 65536,
@@ -144,6 +145,14 @@ export const DEFAULT_PHYSICS_BUDGET: Readonly<PhysicsBudget> = Object.freeze({
   // Declared: four cloths of 64 × 64 vertices; the step's cost grows with it, linearly.
   softVertices: 16384,
 });
+
+/** The share of `memoryBytes` the static collision holds at once. */
+const COLLISION_SHARE = 0.5;
+/** Bytes Jolt holds a static triangle by: what a cooked tile takes, bounding tree included. */
+export const TRIANGLE_BYTES = 16;
+/** Bytes of static collision `budget` holds at once: tiles and static triangle meshes together. */
+export const collisionBytesOf = (budget: Pick<PhysicsBudget, 'memoryBytes'>) =>
+  Math.floor(budget.memoryBytes * COLLISION_SHARE);
 
 /** A fixed step of 60 Hz: the simulation's clock, whatever the display's rate. */
 export const PHYSICS_STEP = 1 / 60;
@@ -157,4 +166,17 @@ export function physicsBudgetError(budget: keyof PhysicsBudget, limit: number, r
     `Physics budget "${budget}" exceeded: ${requested} asked, ${limit} allowed (world.budget.physics.${budget}).`,
     { budget, limit, requested },
   );
+}
+
+/** Refuses `requested` of `key` past its limit in `budget`; the static collision, in bytes, names
+ *  the memory it is a share of. */
+export function checkPhysicsBudget(
+  budget: Readonly<PhysicsBudget>,
+  key: 'bodies' | 'decorative' | 'softVertices' | 'collisionBytes',
+  requested: number,
+) {
+  const collision = key === 'collisionBytes';
+  const limit = collision ? collisionBytesOf(budget) : budget[key];
+  if (requested > limit)
+    throw physicsBudgetError(collision ? 'memoryBytes' : key, limit, requested);
 }

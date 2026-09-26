@@ -7162,9 +7162,8 @@
     "summary": "Die Standard-Physikbudgets der Engine.",
     "members": {
       "bodies": "Körper jeder Art gleichzeitig.",
-      "triangles": "Dreiecke aller statischen Dreiecksformen gleichzeitig.",
       "decorative": "Dekorative Körper gleichzeitig.",
-      "memoryBytes": "Bytes Speicher des Physikmoduls: eine harte Obergrenze, das Modul kann nicht darüber wachsen.",
+      "memoryBytes": "Bytes Speicher des Physikmoduls: eine harte Obergrenze, das Modul kann nicht darüber wachsen. Die Hälfte davon hält die statische Kollision auf einmal: Die Kacheln eines kompilierten Modells werden darin rund um das Auge und die bewegten Körper gestreamt, die entferntesten gehen zuerst; ein statisches Dreiecksnetz darüber hinaus wird abgelehnt.",
       "threads": "Threads, die die Simulation voranbringen, der des Physik-Workers eingeschlossen. Über 1 braucht es eine cross-origin-isolierte Seite (geteilter Speicher); sonst läuft die Simulation auf einem. Nie mehr als die logischen Kerne der Maschine minus den der Seite.",
       "bodyPairs": "Körperpaare, deren Hüllen sich in einem Schritt überlappen. Ein dichter Stapel hat etwa vier pro Körper; ein Schritt, der mehr findet, verpasst Kontakte und meldet `PHYSICS_BUDGET`.",
       "contactConstraints": "In einem Schritt gelöste berührende Paare. Ein ruhender Stapel hat etwa zwei pro Körper; ein Schritt, der mehr findet, verpasst Kontakte und meldet `PHYSICS_BUDGET`.",
@@ -7245,9 +7244,8 @@
     "summary": "Die festen Grenzen der Physik einer Welt; nie vom Gerät gelesen.",
     "members": {
       "bodies": "Körper jeder Art gleichzeitig.",
-      "triangles": "Dreiecke aller statischen Dreiecksformen gleichzeitig.",
       "decorative": "Dekorative Körper gleichzeitig.",
-      "memoryBytes": "Bytes Speicher des Physikmoduls: eine harte Obergrenze, das Modul kann nicht darüber wachsen.",
+      "memoryBytes": "Bytes Speicher des Physikmoduls: eine harte Obergrenze, das Modul kann nicht darüber wachsen. Die Hälfte davon hält die statische Kollision auf einmal: Die Kacheln eines kompilierten Modells werden darin rund um das Auge und die bewegten Körper gestreamt, die entferntesten gehen zuerst; ein statisches Dreiecksnetz darüber hinaus wird abgelehnt.",
       "threads": "Threads, die die Simulation voranbringen, der des Physik-Workers eingeschlossen. Über 1 braucht es eine cross-origin-isolierte Seite (geteilter Speicher); sonst läuft die Simulation auf einem. Nie mehr als die logischen Kerne der Maschine minus den der Seite.",
       "bodyPairs": "Körperpaare, deren Hüllen sich in einem Schritt überlappen. Ein dichter Stapel hat etwa vier pro Körper; ein Schritt, der mehr findet, verpasst Kontakte und meldet `PHYSICS_BUDGET`.",
       "contactConstraints": "In einem Schritt gelöste berührende Paare. Ein ruhender Stapel hat etwa zwei pro Körper; ein Schritt, der mehr findet, verpasst Kontakte und meldet `PHYSICS_BUDGET`.",

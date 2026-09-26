@@ -7162,9 +7162,8 @@
     "summary": "Motorun varsayılan fizik bütçeleri.",
     "members": {
       "bodies": "Aynı anda her türden cisim.",
-      "triangles": "Aynı anda tüm statik üçgen şekillerinin üçgenleri.",
       "decorative": "Aynı anda dekoratif cisimler.",
-      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez.",
+      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez. Yarısı statik çarpışmayı aynı anda tutar: derlenmiş bir modelin karoları bunun içinde gözün ve hareket eden cisimlerin çevresinde akıtılır, en uzaktakiler önce çıkar; bunu aşan statik bir üçgen ağı reddedilir.",
       "threads": "Simülasyonu ilerleten iş parçacıkları, fizik işçisininki dahil. 1'in üstü çapraz köken yalıtımlı bir sayfa (paylaşılan bellek) ister; aksi halde simülasyon tek iş parçacığında ilerler. Asla makinenin mantıksal çekirdeklerinden sayfanınkini çıkarınca kalan sayıyı aşmaz.",
       "bodyPairs": "Bir adımda sınırları örtüşen cisim çiftleri. Yoğun bir yığında cisim başına yaklaşık dört tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",
       "contactConstraints": "Bir adımda çözülen temas eden çiftler. Oturmuş bir yığında cisim başına yaklaşık iki tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",
@@ -7245,9 +7244,8 @@
     "summary": "Bir dünyanın fiziğinin sabit sınırları; makineden asla okunmaz.",
     "members": {
       "bodies": "Aynı anda her türden cisim.",
-      "triangles": "Aynı anda tüm statik üçgen şekillerinin üçgenleri.",
       "decorative": "Aynı anda dekoratif cisimler.",
-      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez.",
+      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez. Yarısı statik çarpışmayı aynı anda tutar: derlenmiş bir modelin karoları bunun içinde gözün ve hareket eden cisimlerin çevresinde akıtılır, en uzaktakiler önce çıkar; bunu aşan statik bir üçgen ağı reddedilir.",
       "threads": "Simülasyonu ilerleten iş parçacıkları, fizik işçisininki dahil. 1'in üstü çapraz köken yalıtımlı bir sayfa (paylaşılan bellek) ister; aksi halde simülasyon tek iş parçacığında ilerler. Asla makinenin mantıksal çekirdeklerinden sayfanınkini çıkarınca kalan sayıyı aşmaz.",
       "bodyPairs": "Bir adımda sınırları örtüşen cisim çiftleri. Yoğun bir yığında cisim başına yaklaşık dört tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",
       "contactConstraints": "Bir adımda çözülen temas eden çiftler. Oturmuş bir yığında cisim başına yaklaşık iki tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",

@@ -7162,9 +7162,8 @@
     "summary": "Les budgets physiques par défaut du moteur.",
     "members": {
       "bodies": "Corps de toute sorte à la fois.",
-      "triangles": "Triangles de toutes les formes triangulées statiques à la fois.",
       "decorative": "Corps décoratifs à la fois.",
-      "memoryBytes": "Octets de mémoire du module physique : un plafond dur, le module ne peut pas le dépasser.",
+      "memoryBytes": "Octets de mémoire du module physique : un plafond dur, le module ne peut pas le dépasser. La moitié tient la collision statique à la fois : les tuiles d’un modèle compilé y arrivent autour de l’œil et des corps en mouvement, les plus lointaines partant d’abord ; un maillage triangulé statique au-delà est refusé.",
       "threads": "Fils qui font avancer la simulation, celui du worker physique compris. Au-delà de 1, la page doit être isolée cross-origin (mémoire partagée) ; sinon la simulation avance sur un seul. Jamais plus que les cœurs logiques de la machine moins celui de la page.",
       "bodyPairs": "Paires de corps dont les boîtes se chevauchent en un pas. Une pile dense en tient environ quatre par corps ; un pas qui en trouve plus manque des contacts et lève `PHYSICS_BUDGET`.",
       "contactConstraints": "Paires en contact résolues en un pas. Une pile posée en tient environ deux par corps ; un pas qui en trouve plus manque des contacts et lève `PHYSICS_BUDGET`.",
@@ -7245,9 +7244,8 @@
     "summary": "Les enveloppes fixes de la physique d’un monde ; jamais lues sur la machine.",
     "members": {
       "bodies": "Corps de toute sorte à la fois.",
-      "triangles": "Triangles de toutes les formes triangulées statiques à la fois.",
       "decorative": "Corps décoratifs à la fois.",
-      "memoryBytes": "Octets de mémoire du module physique : un plafond dur, le module ne peut pas le dépasser.",
+      "memoryBytes": "Octets de mémoire du module physique : un plafond dur, le module ne peut pas le dépasser. La moitié tient la collision statique à la fois : les tuiles d’un modèle compilé y arrivent autour de l’œil et des corps en mouvement, les plus lointaines partant d’abord ; un maillage triangulé statique au-delà est refusé.",
       "threads": "Fils qui font avancer la simulation, celui du worker physique compris. Au-delà de 1, la page doit être isolée cross-origin (mémoire partagée) ; sinon la simulation avance sur un seul. Jamais plus que les cœurs logiques de la machine moins celui de la page.",
       "bodyPairs": "Paires de corps dont les boîtes se chevauchent en un pas. Une pile dense en tient environ quatre par corps ; un pas qui en trouve plus manque des contacts et lève `PHYSICS_BUDGET`.",
       "contactConstraints": "Paires en contact résolues en un pas. Une pile posée en tient environ deux par corps ; un pas qui en trouve plus manque des contacts et lève `PHYSICS_BUDGET`.",

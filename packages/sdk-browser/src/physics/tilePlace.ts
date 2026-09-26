@@ -4,7 +4,7 @@ import type {
   CookedTile,
 } from '../../../sdk-core/src/physics/index.ts';
 import { readCookedPhysics } from '../../../sdk-core/src/physics/index.ts';
-import { boxTransform } from '../../../sdk-core/src/math/primitives/box.ts';
+import { boxPointDistance, boxTransform } from '../../../sdk-core/src/math/primitives/box.ts';
 import { Box3 } from '../../../sdk-core/src/world/math/box3.ts';
 import { Matrix4 } from '../../../sdk-core/src/world/math/matrix4.ts';
 import { Quaternion } from '../../../sdk-core/src/world/math/quaternion.ts';
@@ -36,6 +36,9 @@ export interface Placed {
 
 /** Seconds of travel a moving body's tiles are loaded ahead of it. */
 const LOOKAHEAD_S = 1;
+/** How much farther than it came in a resident tile stays, so one at the edge of a reach is not
+ *  loaded and released every frame. */
+const HYSTERESIS = 1.5;
 
 const place = new Matrix4(),
   local = new Matrix4(),
@@ -113,4 +116,17 @@ export function moversOf(meshes: readonly (Bodied | null)[]) {
     out.push(half + Math.hypot(v.x, v.y, v.z) * LOOKAHEAD_S);
   }
   return out;
+}
+
+/**
+ * How near tile `p` is wanted: 0 within reach of a moving body of `movers` (`moversOf`), its
+ * distance to `eye` within `range`, else `Infinity`; a resident tile `HYSTERESIS` times as far.
+ */
+export function nearness(p: Placed, eye: ArrayLike<number>, range: number, movers: number[]) {
+  const keep = p.id >= 0 ? HYSTERESIS : 1;
+  for (let m = 0; m < movers.length; m += 4)
+    if (boxPointDistance(p.box, 0, movers[m], movers[m + 1], movers[m + 2]) <= movers[m + 3] * keep)
+      return 0;
+  const near = boxPointDistance(p.box, 0, eye[0], eye[1], eye[2]);
+  return near <= range * keep ? near : Infinity;
 }

@@ -7162,9 +7162,8 @@
     "summary": "I budget fisici predefiniti del motore.",
     "members": {
       "bodies": "Corpi di ogni tipo insieme.",
-      "triangles": "Triangoli di tutte le forme statiche a triangoli insieme.",
       "decorative": "Corpi decorativi insieme.",
-      "memoryBytes": "Byte di memoria del modulo fisico: un tetto rigido, il modulo non può crescere oltre.",
+      "memoryBytes": "Byte di memoria del modulo fisico: un tetto rigido, il modulo non può crescere oltre. Metà di essa contiene la collisione statica alla volta: le tessere di un modello compilato vi scorrono attorno all’occhio e ai corpi in movimento, le più lontane escono per prime; una mesh di triangoli statica oltre questo limite viene rifiutata.",
       "threads": "Thread che fanno avanzare la simulazione, compreso quello del worker fisico. Sopra 1 serve una pagina isolata cross-origin (memoria condivisa); altrimenti la simulazione avanza su uno. Mai più dei core logici della macchina meno quello della pagina.",
       "bodyPairs": "Coppie di corpi i cui volumi si sovrappongono in un passo. Una pila densa ne ha circa quattro per corpo; un passo che ne trova di più perde contatti e solleva `PHYSICS_BUDGET`.",
       "contactConstraints": "Coppie a contatto risolte in un passo. Una pila ferma ne ha circa due per corpo; un passo che ne trova di più perde contatti e solleva `PHYSICS_BUDGET`.",
@@ -7245,9 +7244,8 @@
     "summary": "I limiti fissi della fisica di un mondo; mai letti dalla macchina.",
     "members": {
       "bodies": "Corpi di ogni tipo insieme.",
-      "triangles": "Triangoli di tutte le forme statiche a triangoli insieme.",
       "decorative": "Corpi decorativi insieme.",
-      "memoryBytes": "Byte di memoria del modulo fisico: un tetto rigido, il modulo non può crescere oltre.",
+      "memoryBytes": "Byte di memoria del modulo fisico: un tetto rigido, il modulo non può crescere oltre. Metà di essa contiene la collisione statica alla volta: le tessere di un modello compilato vi scorrono attorno all’occhio e ai corpi in movimento, le più lontane escono per prime; una mesh di triangoli statica oltre questo limite viene rifiutata.",
       "threads": "Thread che fanno avanzare la simulazione, compreso quello del worker fisico. Sopra 1 serve una pagina isolata cross-origin (memoria condivisa); altrimenti la simulazione avanza su uno. Mai più dei core logici della macchina meno quello della pagina.",
       "bodyPairs": "Coppie di corpi i cui volumi si sovrappongono in un passo. Una pila densa ne ha circa quattro per corpo; un passo che ne trova di più perde contatti e solleva `PHYSICS_BUDGET`.",
       "contactConstraints": "Coppie a contatto risolte in un passo. Una pila ferma ne ha circa due per corpo; un passo che ne trova di più perde contatti e solleva `PHYSICS_BUDGET`.",

@@ -7162,9 +7162,8 @@
     "summary": "Os orçamentos de física predefinidos do motor.",
     "members": {
       "bodies": "Corpos de qualquer tipo ao mesmo tempo.",
-      "triangles": "Triângulos de todas as formas estáticas de triângulos ao mesmo tempo.",
       "decorative": "Corpos decorativos ao mesmo tempo.",
-      "memoryBytes": "Bytes de memória do módulo de física: um teto rígido, o módulo não pode crescer além dele.",
+      "memoryBytes": "Bytes de memória do módulo de física: um teto rígido, o módulo não pode crescer além dele. Metade dela guarda a colisão estática de uma vez: os blocos de um modelo compilado são transmitidos dentro dela em torno do olho e dos corpos em movimento, os mais distantes saem primeiro; uma malha de triângulos estática além disso é recusada.",
       "threads": "Threads que fazem avançar a simulação, incluindo a do worker de física. Acima de 1 precisa de uma página isolada entre origens (memória partilhada); caso contrário a simulação avança numa só. Nunca mais do que os núcleos lógicos da máquina menos o da página.",
       "bodyPairs": "Pares de corpos cujas caixas se sobrepõem num passo. Uma pilha densa tem cerca de quatro por corpo; um passo que encontre mais perde contactos e lança `PHYSICS_BUDGET`.",
       "contactConstraints": "Pares em contacto resolvidos num passo. Uma pilha assente tem cerca de dois por corpo; um passo que encontre mais perde contactos e lança `PHYSICS_BUDGET`.",
@@ -7245,9 +7244,8 @@
     "summary": "Os limites fixos da física de um mundo; nunca lidos da máquina.",
     "members": {
       "bodies": "Corpos de qualquer tipo ao mesmo tempo.",
-      "triangles": "Triângulos de todas as formas estáticas de triângulos ao mesmo tempo.",
       "decorative": "Corpos decorativos ao mesmo tempo.",
-      "memoryBytes": "Bytes de memória do módulo de física: um teto rígido, o módulo não pode crescer além dele.",
+      "memoryBytes": "Bytes de memória do módulo de física: um teto rígido, o módulo não pode crescer além dele. Metade dela guarda a colisão estática de uma vez: os blocos de um modelo compilado são transmitidos dentro dela em torno do olho e dos corpos em movimento, os mais distantes saem primeiro; uma malha de triângulos estática além disso é recusada.",
       "threads": "Threads que fazem avançar a simulação, incluindo a do worker de física. Acima de 1 precisa de uma página isolada entre origens (memória partilhada); caso contrário a simulação avança numa só. Nunca mais do que os núcleos lógicos da máquina menos o da página.",
       "bodyPairs": "Pares de corpos cujas caixas se sobrepõem num passo. Uma pilha densa tem cerca de quatro por corpo; um passo que encontre mais perde contactos e lança `PHYSICS_BUDGET`.",
       "contactConstraints": "Pares em contacto resolvidos num passo. Uma pilha assente tem cerca de dois por corpo; um passo que encontre mais perde contactos e lança `PHYSICS_BUDGET`.",

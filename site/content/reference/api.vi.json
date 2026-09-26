@@ -7163,9 +7163,8 @@
     "summary": "Ngân sách vật lý mặc định của engine.",
     "members": {
       "bodies": "Vật thể mọi loại cùng lúc.",
-      "triangles": "Tam giác của mọi hình tam giác tĩnh cùng lúc.",
       "decorative": "Vật trang trí cùng lúc.",
-      "memoryBytes": "Số byte bộ nhớ của mô-đun vật lý: trần cứng, mô-đun không thể vượt quá.",
+      "memoryBytes": "Số byte bộ nhớ của mô-đun vật lý: trần cứng, mô-đun không thể vượt quá. Một nửa của nó giữ va chạm tĩnh cùng lúc: các ô của một mô hình đã biên dịch được truyền vào trong đó quanh mắt và các vật thể đang chuyển động, ô xa nhất rời đi trước; một lưới tam giác tĩnh vượt quá nó bị từ chối.",
       "threads": "Số luồng chạy mô phỏng, kể cả luồng của worker vật lý. Trên 1 cần trang được cô lập cross-origin (bộ nhớ dùng chung); nếu không, mô phỏng chạy trên một luồng. Không bao giờ vượt quá số lõi logic của máy trừ lõi của trang.",
       "bodyPairs": "Các cặp vật thể có hộp bao chồng lên nhau trong một bước. Một đống dày có khoảng bốn cặp mỗi vật; bước nào tìm thấy nhiều hơn sẽ bỏ sót tiếp xúc và báo `PHYSICS_BUDGET`.",
       "contactConstraints": "Các cặp chạm nhau được giải trong một bước. Một đống đã nằm yên có khoảng hai cặp mỗi vật; bước nào tìm thấy nhiều hơn sẽ bỏ sót tiếp xúc và báo `PHYSICS_BUDGET`.",
@@ -7246,9 +7245,8 @@
     "summary": "Các giới hạn cố định của vật lý một thế giới; không bao giờ đọc từ máy.",
     "members": {
       "bodies": "Vật thể mọi loại cùng lúc.",
-      "triangles": "Tam giác của mọi hình tam giác tĩnh cùng lúc.",
       "decorative": "Vật trang trí cùng lúc.",
-      "memoryBytes": "Số byte bộ nhớ của mô-đun vật lý: trần cứng, mô-đun không thể vượt quá.",
+      "memoryBytes": "Số byte bộ nhớ của mô-đun vật lý: trần cứng, mô-đun không thể vượt quá. Một nửa của nó giữ va chạm tĩnh cùng lúc: các ô của một mô hình đã biên dịch được truyền vào trong đó quanh mắt và các vật thể đang chuyển động, ô xa nhất rời đi trước; một lưới tam giác tĩnh vượt quá nó bị từ chối.",
       "threads": "Số luồng chạy mô phỏng, kể cả luồng của worker vật lý. Trên 1 cần trang được cô lập cross-origin (bộ nhớ dùng chung); nếu không, mô phỏng chạy trên một luồng. Không bao giờ vượt quá số lõi logic của máy trừ lõi của trang.",
       "bodyPairs": "Các cặp vật thể có hộp bao chồng lên nhau trong một bước. Một đống dày có khoảng bốn cặp mỗi vật; bước nào tìm thấy nhiều hơn sẽ bỏ sót tiếp xúc và báo `PHYSICS_BUDGET`.",
       "contactConstraints": "Các cặp chạm nhau được giải trong một bước. Một đống đã nằm yên có khoảng hai cặp mỗi vật; bước nào tìm thấy nhiều hơn sẽ bỏ sót tiếp xúc và báo `PHYSICS_BUDGET`.",

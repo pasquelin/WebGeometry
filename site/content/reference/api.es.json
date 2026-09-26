@@ -7162,9 +7162,8 @@
     "summary": "Los presupuestos de física por defecto del motor.",
     "members": {
       "bodies": "Cuerpos de cualquier tipo a la vez.",
-      "triangles": "Triángulos de todas las formas estáticas de triángulos a la vez.",
       "decorative": "Cuerpos decorativos a la vez.",
-      "memoryBytes": "Bytes de memoria del módulo de física: un techo duro, el módulo no puede crecer más allá.",
+      "memoryBytes": "Bytes de memoria del módulo de física: un techo duro, el módulo no puede crecer más allá. La mitad contiene la colisión estática a la vez: las teselas de un modelo compilado se transmiten dentro de ella alrededor del ojo y de los cuerpos en movimiento, las más lejanas salen primero; una malla de triángulos estática que la supere se rechaza.",
       "threads": "Hilos que avanzan la simulación, incluido el del worker de física. Por encima de 1 necesita una página aislada entre orígenes (memoria compartida); si no, la simulación avanza en uno. Nunca más que los núcleos lógicos de la máquina menos el de la página.",
       "bodyPairs": "Pares de cuerpos cuyas cajas se solapan en un paso. Una pila densa tiene unos cuatro por cuerpo; un paso que encuentra más pierde contactos y lanza `PHYSICS_BUDGET`.",
       "contactConstraints": "Pares en contacto resueltos en un paso. Una pila asentada tiene unos dos por cuerpo; un paso que encuentra más pierde contactos y lanza `PHYSICS_BUDGET`.",
@@ -7245,9 +7244,8 @@
     "summary": "Los límites fijos de la física de un mundo; nunca leídos de la máquina.",
     "members": {
       "bodies": "Cuerpos de cualquier tipo a la vez.",
-      "triangles": "Triángulos de todas las formas estáticas de triángulos a la vez.",
       "decorative": "Cuerpos decorativos a la vez.",
-      "memoryBytes": "Bytes de memoria del módulo de física: un techo duro, el módulo no puede crecer más allá.",
+      "memoryBytes": "Bytes de memoria del módulo de física: un techo duro, el módulo no puede crecer más allá. La mitad contiene la colisión estática a la vez: las teselas de un modelo compilado se transmiten dentro de ella alrededor del ojo y de los cuerpos en movimiento, las más lejanas salen primero; una malla de triángulos estática que la supere se rechaza.",
       "threads": "Hilos que avanzan la simulación, incluido el del worker de física. Por encima de 1 necesita una página aislada entre orígenes (memoria compartida); si no, la simulación avanza en uno. Nunca más que los núcleos lógicos de la máquina menos el de la página.",
       "bodyPairs": "Pares de cuerpos cuyas cajas se solapan en un paso. Una pila densa tiene unos cuatro por cuerpo; un paso que encuentra más pierde contactos y lanza `PHYSICS_BUDGET`.",
       "contactConstraints": "Pares en contacto resueltos en un paso. Una pila asentada tiene unos dos por cuerpo; un paso que encuentra más pierde contactos y lanza `PHYSICS_BUDGET`.",

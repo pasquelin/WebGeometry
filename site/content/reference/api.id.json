@@ -7163,9 +7163,8 @@
     "summary": "Anggaran fisika bawaan mesin.",
     "members": {
       "bodies": "Benda dari semua jenis sekaligus.",
-      "triangles": "Segitiga dari semua bentuk segitiga statis sekaligus.",
       "decorative": "Benda dekoratif sekaligus.",
-      "memoryBytes": "Byte memori modul fisika: batas keras, modul tak bisa tumbuh melewatinya.",
+      "memoryBytes": "Byte memori modul fisika: batas keras, modul tak bisa tumbuh melewatinya. Separuhnya menampung tabrakan statis sekaligus: ubin model terkompilasi dialirkan di dalamnya di sekitar mata dan benda yang bergerak, yang terjauh keluar lebih dulu; mesh segitiga statis yang melampauinya ditolak.",
       "threads": "Thread yang memajukan simulasi, termasuk milik worker fisika. Di atas 1 butuh halaman yang terisolasi lintas asal (memori bersama); selain itu simulasi berjalan pada satu. Tidak pernah lebih dari inti logis mesin dikurangi milik halaman.",
       "bodyPairs": "Pasangan benda yang batasnya bertumpuk dalam satu langkah. Tumpukan padat memuat sekitar empat per benda; langkah yang menemukan lebih banyak melewatkan kontak dan memunculkan `PHYSICS_BUDGET`.",
       "contactConstraints": "Pasangan yang bersentuhan yang diselesaikan dalam satu langkah. Tumpukan yang diam memuat sekitar dua per benda; langkah yang menemukan lebih banyak melewatkan kontak dan memunculkan `PHYSICS_BUDGET`.",
@@ -7246,9 +7245,8 @@
     "summary": "Batas tetap fisika sebuah dunia; tidak pernah dibaca dari mesin.",
     "members": {
       "bodies": "Benda dari semua jenis sekaligus.",
-      "triangles": "Segitiga dari semua bentuk segitiga statis sekaligus.",
       "decorative": "Benda dekoratif sekaligus.",
-      "memoryBytes": "Byte memori modul fisika: batas keras, modul tak bisa tumbuh melewatinya.",
+      "memoryBytes": "Byte memori modul fisika: batas keras, modul tak bisa tumbuh melewatinya. Separuhnya menampung tabrakan statis sekaligus: ubin model terkompilasi dialirkan di dalamnya di sekitar mata dan benda yang bergerak, yang terjauh keluar lebih dulu; mesh segitiga statis yang melampauinya ditolak.",
       "threads": "Thread yang memajukan simulasi, termasuk milik worker fisika. Di atas 1 butuh halaman yang terisolasi lintas asal (memori bersama); selain itu simulasi berjalan pada satu. Tidak pernah lebih dari inti logis mesin dikurangi milik halaman.",
       "bodyPairs": "Pasangan benda yang batasnya bertumpuk dalam satu langkah. Tumpukan padat memuat sekitar empat per benda; langkah yang menemukan lebih banyak melewatkan kontak dan memunculkan `PHYSICS_BUDGET`.",
       "contactConstraints": "Pasangan yang bersentuhan yang diselesaikan dalam satu langkah. Tumpukan yang diam memuat sekitar dua per benda; langkah yang menemukan lebih banyak melewatkan kontak dan memunculkan `PHYSICS_BUDGET`.",
