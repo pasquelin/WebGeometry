@@ -3213,6 +3213,8 @@
       "shadowPagesRequested": "Các trang bóng ảo mà ảnh đã đọc, như báo cáo yêu cầu mới nhất của nó nêu: những gì các bề mặt nhận của camera đánh dấu.",
       "shadowPagesCached": "Trong số đó, các trang đọc thẳng từ bể: cập nhật, không vẽ.",
       "shadowPoolPages": "Các trang vật lý của bể cố định đang giữ một trang ảo.",
+      "shadowPoolBytes": "Số byte GPU của pool bóng: các trang độ sâu, lớp tĩnh và lớp truyền qua khi đã tạo, và các bộ đệm bên cạnh. Null cho đến khi khung hình đầu tiên định cỡ pool.",
+      "shadowPoolLayers": "Số lớp của pool, mỗi lớp tối đa 4 096 trang, được định cỡ một lần theo màn hình và các đèn có bóng của khung hình đầu tiên. Null cho đến lúc đó.",
       "shadowPagesRefetched": "Các trang ảo được ánh xạ lại sau khi bể đẩy chúng ra để lấy chỗ, kể từ khi explorer mở: những lần vẽ lại mà một bể quá nhỏ so với những gì các khung đọc phải trả.",
       "shadowCastersKept": "Các vật đổ bóng mà bước loại theo trang giữ lại, gộp mọi trang đã vẽ, ở khung hình thiết bị lấy mẫu gần nhất — một trên mười lăm; `null` cho đến khi có mẫu trả về.",
       "shadowCastersHidden": "Các vật đổ bóng chuyển động mà phép thử che khuất thấy bị ẩn sau lớp tĩnh của trang chúng, ở khung lấy mẫu gần nhất; `null` cho đến khi có mẫu trả về."
@@ -4182,6 +4184,8 @@
       "shadowPagesRequested": "Các trang bóng ảo mà ảnh đã đọc, như báo cáo yêu cầu mới nhất của nó nêu: những gì các bề mặt nhận của camera đánh dấu.",
       "shadowPagesCached": "Trong số đó, các trang đọc thẳng từ bể: cập nhật, không vẽ.",
       "shadowPoolPages": "Các trang vật lý của bể cố định đang giữ một trang ảo.",
+      "shadowPoolBytes": "Số byte GPU của pool bóng: các trang độ sâu, lớp tĩnh và lớp truyền qua khi đã tạo, và các bộ đệm bên cạnh. Null cho đến khi khung hình đầu tiên định cỡ pool.",
+      "shadowPoolLayers": "Số lớp của pool, mỗi lớp tối đa 4 096 trang, được định cỡ một lần theo màn hình và các đèn có bóng của khung hình đầu tiên. Null cho đến lúc đó.",
       "shadowPagesRefetched": "Các trang ảo được ánh xạ lại sau khi bể đẩy chúng ra để lấy chỗ, kể từ khi explorer mở: những lần vẽ lại mà một bể quá nhỏ so với những gì các khung đọc phải trả.",
       "shadowCastersKept": "Các vật đổ bóng mà bước loại theo trang giữ lại, gộp mọi trang đã vẽ, ở khung hình thiết bị lấy mẫu gần nhất — một trên mười lăm; `null` cho đến khi có mẫu trả về.",
       "shadowCastersHidden": "Các vật đổ bóng chuyển động mà phép thử che khuất thấy bị ẩn sau lớp tĩnh của trang chúng, ở khung lấy mẫu gần nhất; `null` cho đến khi có mẫu trả về."

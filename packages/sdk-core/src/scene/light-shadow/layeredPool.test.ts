@@ -5,12 +5,11 @@ import assert from 'node:assert/strict';
 import { createSceneLightStore } from '../light/store.ts';
 import { createShadowPlan } from './plan.ts';
 import { SUN, cycle, sunPages } from './lightShadow.fixture.ts';
-import { shadowPoolPages, shadowPoolShape } from './virtual.ts';
+import { shadowPoolShape, shadowPoolSize } from './virtual.ts';
 
-/** The owner's pool, a sun planned over it, and the 50 × 50 pages of `step` levels above its
- *  finest around the camera: 2 500 a level, under half the pool. */
+/** The owner's pool, a sun over it, and 50 × 50 pages around the camera at a level: under half. */
 function sunOverPool() {
-  const { side, layers } = shadowPoolShape(shadowPoolPages(3456, 2234)),
+  const { side, layers } = shadowPoolShape(shadowPoolSize(3456, 2234)),
     store = createSceneLightStore(),
     plan = createShadowPlan(side, layers);
   store.add(SUN);

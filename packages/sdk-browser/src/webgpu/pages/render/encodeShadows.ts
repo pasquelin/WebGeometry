@@ -150,14 +150,14 @@ function ensureStaticLayer(rt: WebgpuPagesRuntime) {
     return;
   lights.staticLayerPending = true;
   const capacity = rt.layout.rows.casterSlots,
-    side = lights.plan.pool.side;
-  deviceMade(device, () => shadowLayerTexture(device, side))
+    { side, layers } = lights.plan.pool;
+  deviceMade(device, () => shadowLayerTexture(device, side, layers))
     .then((texture) => {
       if (texture) return createShadowStaticLayer(device, texture);
       rt.diag.engineDiagnostic('gpu-out-of-memory', 'The device refused the shadow static layer', {
         kind: 'warning',
         pool: 'shadow-static-layer',
-        requestedBytes: shadowAtlasBytes(side),
+        requestedBytes: shadowAtlasBytes(side, layers),
         grantedBytes: null,
       });
     })
@@ -166,7 +166,7 @@ function ensureStaticLayer(rt: WebgpuPagesRuntime) {
       // The pyramids and the occlusion test read the layer: a device that refuses them keeps the
       // layer, and draws the moving casters untested.
       try {
-        lights.pageHiz = await createShadowPageHiz(device, layer.view);
+        lights.pageHiz = await createShadowPageHiz(device, layer.targets);
         lights.occlusion = await createShadowOcclusion(device, capacity);
       } catch (error) {
         lights.pageHiz?.dispose();

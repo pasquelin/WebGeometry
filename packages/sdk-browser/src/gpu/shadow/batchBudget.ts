@@ -1,29 +1,25 @@
 import { SHADOW_CULL_FLOATS } from '../../../../sdk-core/src/index.ts';
-import { shadowPoolSide } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import { LAYER_PAGES } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { DRAW_INDIRECT_STRIDE, PAGE_BIND_ALIGN } from '../draw/contract.ts';
 import { DAG_MAX_VIEWS, DAG_UNIFORM_BYTES } from '../dag/shader/viewsWgsl.ts';
 import { MAX_SHADOW_PAGES, MAX_SHADOW_REGIONS } from './recordPack.ts';
 
 /**
- * THE MEMORY OF A FRAME'S SHADOW BATCHES, SIZED ONCE FROM THE LARGEST POOL. A frame draws every page
+ * THE MEMORY OF A FRAME'S SHADOW BATCHES, SIZED ONCE FROM A POOL LAYER. A frame draws every page
  * it marks, in as many batches as that takes (`../../webgpu/pages/render/encodeShadowBatches.ts`);
  * what each batch adds — its staged writes, its flag word, its CPU cut's faces, its sampled counts —
  * is sized here from one rule, never grown at run time, and counted in the memory budget
  * (`residency/memoryBudget.ts`).
  *
- * The rule: a frame lists at most the largest pool's pages (`admit.ts`), and a batch holds
- * `MAX_SHADOW_PAGES` of them, so a frame needs at most `MAX_SHADOW_BATCHES` full batches, each in
- * at most `DAG_MAX_VIEWS` light views. A batch is cut short of full only by a view limit a light cut
- * bisected after dropping work (`../dag/lightCutRedraws.ts`): a frame that then needs more batches
- * draws `MAX_SHADOW_BATCHES` and leaves the rest pending, drawn the next frame.
+ * The rule: a frame draws at most one layer's pages, and a batch holds `MAX_SHADOW_PAGES` of them,
+ * so a frame needs at most `MAX_SHADOW_BATCHES` full batches, each in at most `DAG_MAX_VIEWS` light
+ * views. A frame that lists more — a pool of several layers, or a view limit a light cut bisected
+ * after dropping work (`../dag/lightCutRedraws.ts`) — draws `MAX_SHADOW_BATCHES` and leaves the
+ * rest pending, drawn the next frame.
  */
 
-/** Pages a side of the largest pool, on any screen: what the memory budget sizes the shadows by. */
-export const MAX_SHADOW_POOL_SIDE = shadowPoolSide(Infinity, Infinity);
-/** Pages of the largest pool: what one frame lists at most. */
-const MAX_POOL_PAGES = MAX_SHADOW_POOL_SIDE ** 2;
-/** Batches one frame draws at most: the largest pool's pages, in full batches. */
-export const MAX_SHADOW_BATCHES = Math.ceil(MAX_POOL_PAGES / MAX_SHADOW_PAGES);
+/** Batches one frame draws at most: one layer's pages (`LAYER_PAGES`), in full batches. */
+export const MAX_SHADOW_BATCHES = Math.ceil(LAYER_PAGES / MAX_SHADOW_PAGES);
 /** Light views, one per face a batch draws, of one frame's batches together. */
 export const MAX_SHADOW_RUNS = MAX_SHADOW_BATCHES * DAG_MAX_VIEWS;
 /** Frames whose light-cut flag words may be in flight at once (`../dag/lightCutRedraws.ts`). */

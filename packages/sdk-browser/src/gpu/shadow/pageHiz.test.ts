@@ -30,13 +30,13 @@ test('a page pyramid is 128² then every half down to one texel, one per page', 
   assert.equal(PAGE_HIZ_WORDS, 21845);
   const { device, writes } = fakeDevice();
   const { encoder, dispatches } = recordingEncoder();
-  const hiz = await createShadowPageHiz(device, {} as GPUTextureView);
+  const hiz = await createShadowPageHiz(device, [{} as GPUTextureView]);
   const slots = new Uint32Array(writes[0].data.buffer),
     slot = (l: number) => Array.from(slots.subarray(l * 64, l * 64 + 7));
   assert.deepEqual(slot(0), [128, 128, 0, 0, 0, 0, PAGE_HIZ_WORDS], 'copy: 128², stride');
   assert.deepEqual(slot(1), [0, 128, 128, 16384, 64, 64, PAGE_HIZ_WORDS]);
   assert.deepEqual(slot(7), [PAGE_HIZ_OFFSETS[6], 2, 2, PAGE_HIZ_OFFSETS[7], 1, 1, PAGE_HIZ_WORDS]);
-  hiz.encode(encoder, 3, (page, out, at) => {
+  hiz.encode(encoder, [3], (page, out, at) => {
     out[at] = page * 128;
     out[at + 1] = 256;
   });

@@ -1,3 +1,4 @@
+import { SHADOW_ARRAY, arrayView } from '../../gpu/shadow/layers.ts';
 import {
   MAX_SHADOW_SLICES,
   PROBE_FLOATS,
@@ -44,7 +45,7 @@ export function deferredLayoutEntries(
       { binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'read-only-storage' } },
       { binding: 7, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'read-only-storage' } },
       { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'read-only-storage' } },
-      { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth' } },
+      { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: SHADOW_ARRAY },
       { binding: 10, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'comparison' } },
       // Resident proxy of the sun's distant shadow: a single binding, which carries both
       // the columns a ray traverses, that ray's settings and the two counters of the
@@ -54,12 +55,12 @@ export function deferredLayoutEntries(
       {
         binding: CONTRACT_SHADOW_BINDINGS.transmittance,
         visibility: GPUShaderStage.FRAGMENT,
-        texture: { sampleType: 'unfilterable-float' },
+        texture: { sampleType: 'unfilterable-float', viewDimension: '2d-array' },
       },
       {
         binding: CONTRACT_SHADOW_BINDINGS.translucentDepth,
         visibility: GPUShaderStage.FRAGMENT,
-        texture: { sampleType: 'depth' },
+        texture: SHADOW_ARRAY,
       },
     );
   // The shadow pages the resolve reads, recorded for the scheduler: only the opaque resolve asks.
@@ -178,8 +179,8 @@ export function createDeferredPlaceholders(device: GPUDevice) {
     tiles,
     slices,
     requests,
-    atlasView: atlas.createView(),
-    transmittanceView: transmittance.createView(),
+    atlasView: arrayView(atlas),
+    transmittanceView: arrayView(transmittance),
     sampler,
     bounceGrid,
     probes,

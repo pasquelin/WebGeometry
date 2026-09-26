@@ -70,6 +70,8 @@ export function createExplorerMetrics(
     shadowPagesRequested: null,
     shadowPagesCached: null,
     shadowPoolPages: null,
+    shadowPoolBytes: null,
+    shadowPoolLayers: null,
     shadowPagesRefetched: null,
     shadowCastersKept: null,
     shadowCastersHidden: null,

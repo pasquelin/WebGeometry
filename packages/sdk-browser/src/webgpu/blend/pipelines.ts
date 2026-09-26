@@ -1,3 +1,4 @@
+import { SHADOW_ARRAY } from '../../gpu/shadow/layers.ts';
 import { BLEND_SHADER } from './shader.ts';
 import { FEEDBACK_FORMAT } from '../../scene/surfaceBuffer.ts';
 import { BLEND_VIEW_SIZE } from './uniforms.ts';
@@ -56,7 +57,7 @@ export async function createWebgpuBlendPipelines(
       {
         binding: b.shadowAtlas,
         visibility: GPUShaderStage.FRAGMENT,
-        texture: { sampleType: 'depth' },
+        texture: SHADOW_ARRAY,
       },
       {
         binding: b.shadowSampler,
@@ -66,12 +67,12 @@ export async function createWebgpuBlendPipelines(
       {
         binding: b.shadowTransmittance,
         visibility: GPUShaderStage.FRAGMENT,
-        texture: { sampleType: 'unfilterable-float' },
+        texture: { sampleType: 'unfilterable-float', viewDimension: '2d-array' },
       },
       {
         binding: b.shadowTranslucentDepth,
         visibility: GPUShaderStage.FRAGMENT,
-        texture: { sampleType: 'depth' },
+        texture: SHADOW_ARRAY,
       },
       { binding: b.bounceGrid, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
       { binding: b.probes, visibility: GPUShaderStage.FRAGMENT, buffer: readOnly },

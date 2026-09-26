@@ -3130,6 +3130,8 @@
       "shadowPagesRequested": "图像读取的虚拟阴影页，即其最新请求报告所列：相机接收面标记的内容。",
       "shadowPagesCached": "其中直接从池中读取的页：最新，无需绘制。",
       "shadowPoolPages": "固定池中保存虚拟页的物理页。",
+      "shadowPoolBytes": "阴影池的 GPU 字节数：其深度页、创建后的静态层和透射层，以及旁边的缓冲区。在第一帧确定池大小之前为 null。",
+      "shadowPoolLayers": "池的层数，每层最多 4 096 页，由第一帧的屏幕和投射阴影的光源一次确定。在此之前为 null。",
       "shadowPagesRefetched": "自 explorer 打开以来，被池为腾出空间而逐出后重新映射的虚拟页：池相对于帧读取量过小所付出的重绘。",
       "shadowCastersKept": "逐页剔除保留的投射体（所有绘制页合计），取设备最后采样的帧 — 每十五帧一次；样本返回前为 `null`。",
       "shadowCastersHidden": "遮挡测试发现隐藏在其页静态层后的移动投射体，取最后采样的帧；样本返回前为 `null`。"
@@ -4205,6 +4207,8 @@
       "shadowPagesRequested": "图像读取的虚拟阴影页，即其最新请求报告所列：相机接收面标记的内容。",
       "shadowPagesCached": "其中直接从池中读取的页：最新，无需绘制。",
       "shadowPoolPages": "固定池中保存虚拟页的物理页。",
+      "shadowPoolBytes": "阴影池的 GPU 字节数：其深度页、创建后的静态层和透射层，以及旁边的缓冲区。在第一帧确定池大小之前为 null。",
+      "shadowPoolLayers": "池的层数，每层最多 4 096 页，由第一帧的屏幕和投射阴影的光源一次确定。在此之前为 null。",
       "shadowPagesRefetched": "自 explorer 打开以来，被池为腾出空间而逐出后重新映射的虚拟页：池相对于帧读取量过小所付出的重绘。",
       "shadowCastersKept": "逐页剔除保留的投射体（所有绘制页合计），取设备最后采样的帧 — 每十五帧一次；样本返回前为 `null`。",
       "shadowCastersHidden": "遮挡测试发现隐藏在其页静态层后的移动投射体，取最后采样的帧；样本返回前为 `null`。"

@@ -57,7 +57,7 @@ ${FULLSCREEN_VERTEX}
 export const CONTRACT_BINDINGS_WGSL = `
 @group(0) @binding(6) var<storage,read> directLights:DirectLights;
 @group(0) @binding(7) var<storage,read> tileLights:array<u32>;
-@group(0) @binding(9) var shadowAtlas:texture_depth_2d;
+@group(0) @binding(9) var shadowAtlas:texture_depth_2d_array;
 @group(0) @binding(10) var shadowSampler:sampler_comparison;`;
 /** Shared body of the two contract programs: only the bounce lines separate them. */
 const contractSurface = (bounce: string, diagnostic = '') => `

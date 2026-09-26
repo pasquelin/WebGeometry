@@ -3,12 +3,14 @@ import type { ShadowTable } from '../../../../sdk-core/src/scene/light-shadow/ta
 import {
   SHADOW_PAGE,
   SHADOW_TABLE_ENTRIES,
+  shadowRequestCap,
 } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { SHADOW_DEPTH_SHADER } from './shader.ts';
 import { MAX_SHADOW_REGIONS, createShadowRecordPack } from './recordPack.ts';
 import { createCheckedShaderModule } from '../core/shaderModule.ts';
 import { DEPTH_COMPARE } from '../../camera/depthConvention.ts';
-import { SHADOW_REQUEST_WORDS } from '../../lighting/direct/shadowWgsl.ts';
+import { SHADOW_REQUEST_BITS } from '../../lighting/direct/shadowWgsl.ts';
+import { arrayView, layerViews } from './layers.ts';
 import { createShadowTransmittance, type ShadowTransmittance } from './transmittance.ts';
 import { shadowBatchWrites } from './batchWrites.ts';
 import { SHADOW_FACE_STRIDE as FACE_STRIDE } from './batchBudget.ts';
@@ -21,14 +23,16 @@ export const SHADOW_PASS = 'Trillion3D shadow atlas v1';
 const FACE_BYTES = 96;
 /** Bytes of the records, before the page table in the same buffer. */
 const RECORD_BYTES = MAX_SHADOW_SLICES * SHADOW_RECORD_FLOATS * 4;
-/** Bytes of the records then the page table, one buffer; of the request buffer. */
+/** Bytes of the records then the page table, one buffer; of the requests of a pool of `pages`. */
 const DATA_BYTES = RECORD_BYTES + SHADOW_TABLE_ENTRIES * 4,
-  REQUEST_BYTES = SHADOW_REQUEST_WORDS * 4;
-/** Bytes of the buffers beside the pool — the faces, the records and page table, the requests:
- *  fixed by the light contract, the same on every screen, so the memory budget counts them. */
-export const SHADOW_BUFFER_BYTES = MAX_SHADOW_REGIONS * FACE_STRIDE + DATA_BYTES + REQUEST_BYTES;
-/** Bytes of a pool of `poolSide` pages a side: one 32-bit depth texel each. */
-export const shadowAtlasBytes = (poolSide: number) => (poolSide * SHADOW_PAGE) ** 2 * 4;
+  requestBytes = (pages: number) => (1 + shadowRequestCap(pages) + SHADOW_REQUEST_BITS) * 4;
+/** Bytes of the buffers beside a pool of `pages` — the faces, the records and page table, the
+ *  requests: fixed by the light contract and the pool, so the memory budget counts them. */
+export const shadowBufferBytes = (pages: number) =>
+  MAX_SHADOW_REGIONS * FACE_STRIDE + DATA_BYTES + requestBytes(pages);
+/** Bytes of a pool of `layers` of `poolSide` pages a side: one 32-bit depth texel each. */
+export const shadowAtlasBytes = (poolSide: number, layers = 1) =>
+  (poolSide * SHADOW_PAGE) ** 2 * 4 * layers;
 
 export type GpuShadowAtlas = Awaited<ReturnType<typeof createGpuShadowAtlas>>;
 
@@ -55,11 +59,13 @@ export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBin
     size: DATA_BYTES,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
   });
-  const requestBuffer = device.createBuffer({
-    label: 'Trillion3D shadow requests v1',
-    size: REQUEST_BYTES,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-  });
+  const makeRequests = (pages: number) =>
+    device.createBuffer({
+      label: 'Trillion3D shadow requests v1',
+      size: requestBytes(pages),
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+    });
+  let requestBuffer = makeRequests(0);
   const pack = createShadowRecordPack(FACE_STRIDE, 1),
     { records, facePacked } = pack;
   const release = () => {
@@ -109,14 +115,14 @@ export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBin
       entries: [{ binding: 0, resource: { buffer: faceUniform, size: FACE_BYTES } }],
     });
     /**
-     * The pool's texture, `poolSide²` pages, made but not taken: what the grant allocates under
+     * The pool's texture, `layers × poolSide²` pages, made not taken: what the grant allots under
      * its out-of-memory check (`poolGrants.ts`). `COPY_SRC` is there only for the proof: the host
      * can reread the pool and compare its fingerprint between two runs. No frame pass copies it.
      */
-    const makePool = (poolSide: number) =>
+    const makePool = (poolSide: number, layers: number) =>
       device.createTexture({
         label: 'Trillion3D shadow depth atlas v1',
-        size: [poolSide * SHADOW_PAGE, poolSide * SHADOW_PAGE, 1],
+        size: [poolSide * SHADOW_PAGE, poolSide * SHADOW_PAGE, layers],
         format: 'depth32float',
         usage:
           GPUTextureUsage.RENDER_ATTACHMENT |
@@ -133,9 +139,13 @@ export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBin
       get transmittance() {
         return transmittance;
       },
+      /** Every layer, as the shading samples them; each layer, as its pages are drawn. */
       view: undefined as GPUTextureView | undefined,
+      targets: [] as GPUTextureView[],
       dataBuffer,
-      requestBuffer,
+      get requestBuffer() {
+        return requestBuffer;
+      },
       /** Host mirror of the records: what the shading rereads. */
       records: records as Readonly<Float32Array>,
       depth,
@@ -143,16 +153,20 @@ export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBin
       faceGroup,
       faceUniform,
       faceStride: FACE_STRIDE,
-      allocationBytes: SHADOW_BUFFER_BYTES,
+      allocationBytes: shadowBufferBytes(0),
       makePool,
       /** Takes the pool's texture — the one the device granted, or one made now: once, before the
-       *  first page is drawn. */
-      sizePool(poolSide: number, granted: GPUTexture = makePool(poolSide)) {
+       *  first page is drawn —, and a request list as long as the pool. */
+      sizePool(poolSide: number, layers = 1, granted = makePool(poolSide, layers)) {
         if (texture) throw new Error('the shadow pool is sized once');
+        const pages = poolSide * poolSide * layers;
         atlas.size = poolSide * SHADOW_PAGE;
         texture = granted;
-        atlas.view = granted.createView();
-        atlas.allocationBytes += shadowAtlasBytes(poolSide);
+        atlas.view = arrayView(granted);
+        atlas.targets = layerViews(granted);
+        requestBuffer.destroy();
+        requestBuffer = makeRequests(pages);
+        atlas.allocationBytes = shadowBufferBytes(pages) + shadowAtlasBytes(poolSide, layers);
         pack.setPoolSide(poolSide);
       },
       /** Creates the transmittance layer, cleared by `encoder`, once the pool is sized: the
@@ -164,7 +178,7 @@ export async function createGpuShadowAtlas(device: GPUDevice, pageLayout: GPUBin
           device,
           module,
           [pageLayout, faceLayout],
-          atlas.view!,
+          atlas.targets,
           side,
           encoder,
         );

@@ -1,5 +1,8 @@
 import { BOUNCE_SETTINGS } from '../../../../sdk-core/src/index.ts';
-import { shadowPoolSide } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import {
+  shadowPoolSize,
+  shadowPoolShape,
+} from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { MOTION_CAPABILITY, TAA_CAPABILITY } from '../../taa/capability.ts';
 import { BOUNCE_CAPABILITY } from './prepare/bounce.ts';
 import type { BackendCapabilities, BackendContext, RenderBackend } from '../../backend/types.ts';
@@ -79,7 +82,8 @@ export function createWebgpuPagesRuntime(context: BackendContext): WebgpuPagesRu
   const blendState = createWebgpuBlendState();
   // The shadow pool's side, from the screen the world opens on: the first frame on the canvas
   // confirms or replaces it, before any page exists (`../shadow/poolSize.ts`).
-  const lights = createWebgpuLightState(shadowPoolSide(...setup.viewport), context.sceneLights);
+  const { side } = shadowPoolShape(shadowPoolSize(...setup.viewport));
+  const lights = createWebgpuLightState(side, context.sceneLights);
   const capabilities: BackendCapabilities = {
     renderer: 'WebGPU page raster',
     materials: UNTEXTURED_MATERIALS,

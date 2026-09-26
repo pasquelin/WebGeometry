@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shadowPoolSide } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import {
+  shadowPoolSize as pages,
+  shadowPoolShape,
+} from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { createWebgpuLightState } from '../pages/state/lights.ts';
 import { shadowPoolFor, sizeShadowPool } from './poolSize.ts';
 import { shadowAtlasBytes } from '../../gpu/shadow/atlas.ts';
@@ -11,7 +14,7 @@ import type { WebgpuPagesRuntime } from '../pages/runtime.ts';
 /** A session whose device refuses, as out of memory, every texture past `limit` bytes; its atlas
  *  records the side it was sized at, and what the frame was told. */
 function session(viewport: [number, number], limit = Infinity) {
-  const lights = createWebgpuLightState(shadowPoolSide(300, 150));
+  const lights = createWebgpuLightState(shadowPoolShape(pages(300, 150)).side);
   lights.plan.setPageInvalidation(false);
   const sized: number[] = [],
     said: Array<[string, Record<string, unknown>]> = [];
@@ -29,13 +32,13 @@ function session(viewport: [number, number], limit = Infinity) {
     get texture() {
       return texture;
     },
-    makePool: (side: number) =>
+    makePool: (side: number, layers: number) =>
       gpu.device.createTexture({
-        size: [side * 128, side * 128, 1],
+        size: [side * 128, side * 128, layers],
         format: 'depth32float',
         usage: 0,
       }),
-    sizePool(side: number, made: object) {
+    sizePool(side: number, _: number, made: object) {
       texture = made;
       sized.push(side);
     },
@@ -99,7 +102,7 @@ test('the shadow pool is sized by the first frame on the canvas, not by the canv
 });
 
 test('a shadow pool the device refuses is drawn smaller, said, and never taken for a lost device', async () => {
-  const wanted = shadowPoolSide(1280, 720);
+  const wanted = shadowPoolShape(pages(1280, 720)).side;
   // Room for a quarter of the pool's bytes: 51² pages refused, then half, then half again.
   const s = session([1280, 720], shadowAtlasBytes(wanted) / 4);
   s.lights.store.add({ ...SUN, id: 'shadow sun' });
@@ -136,16 +139,26 @@ test('a shadow pool refused even at its floor leaves the frame whole and says sh
 });
 
 test('the shadow pool rule never draws above the screen nor below the smallest one', () => {
-  const draw = shadowPoolFor(51);
+  const draw = shadowPoolFor(2601);
   assert.deepEqual(draw(shadowAtlasBytes(51)), {
     budgetBytes: shadowAtlasBytes(51),
     side: 51,
+    layers: 1,
     allocatedBytes: shadowAtlasBytes(51),
     clamp: null,
   });
   assert.equal(draw(shadowAtlasBytes(64)).side, 51);
   assert.equal(draw(shadowAtlasBytes(20)).clamp, 'device-limit');
   const floor = draw(1);
-  assert.equal(floor.side, shadowPoolSide(1, 1));
+  assert.equal(floor.side, shadowPoolShape(pages(1, 1)).side);
   assert.equal(floor.clamp, 'minimum');
+});
+
+test('at 3 456 × 2 234, one sun sizes two layers of 51 pages a side: 5 202 pages', async () => {
+  const s = session([3456, 2234]);
+  s.lights.store.add({ ...SUN, id: 'shadow sun' });
+  await s.size();
+  assert.deepEqual([s.lights.plan.pool.side, s.lights.plan.pool.layers], [51, 2]);
+  const [, context] = s.said.find(([phase]) => phase === 'shadow-pool')!;
+  assert.deepEqual([context.layers, context.pages], [2, 5202]);
 });

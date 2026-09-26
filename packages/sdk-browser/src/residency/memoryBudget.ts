@@ -1,12 +1,12 @@
 import { DEFAULT_GEOMETRY_POOL_BUDGET } from './pools.ts';
 import { DEFAULT_TEXTURE_POOL_BUDGET } from '../webgpu/residency/memoryBudgets.ts';
-import { SHADOW_BUFFER_BYTES, shadowAtlasBytes } from '../gpu/shadow/atlas.ts';
+import { shadowAtlasBytes, shadowBufferBytes } from '../gpu/shadow/atlas.ts';
 import { shadowTransmittanceBytes } from '../gpu/shadow/transmittance.ts';
+import { SHADOW_BATCH_GPU_BYTES, SHADOW_BATCH_HOST_BYTES } from '../gpu/shadow/batchBudget.ts';
 import {
-  MAX_SHADOW_POOL_SIDE,
-  SHADOW_BATCH_GPU_BYTES,
-  SHADOW_BATCH_HOST_BYTES,
-} from '../gpu/shadow/batchBudget.ts';
+  shadowPoolSize,
+  shadowPoolShape,
+} from '../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { shadowTableHostBytes } from '../../../sdk-core/src/scene/light-shadow/table.ts';
 import { shadowPoolHostBytes } from '../../../sdk-core/src/scene/light-shadow/pool.ts';
 import { shadowAdmissionHostBytes } from '../../../sdk-core/src/scene/light-shadow/admit.ts';
@@ -16,21 +16,24 @@ import { BOUNCE_SETTINGS } from '../../../sdk-core/src/bounce/contracts.ts';
 import { bounceProbeBytes } from '../bounce/limits.ts';
 import { effectChainBytesAt } from '../effects/targets.ts';
 
-/** The shadows at their largest — the pool on the largest screen, its static layer, its
- *  transmittance layer, the fixed buffers beside it, the page table first, and what the most
- *  batches a frame draws add (`batchBudget.ts`): they never hold more, whatever the screen. */
+/** The pool the shadows are counted at, 3840 × 2160 under one sun (`shadowPoolSize`): the most
+ *  a pool takes (`webgpu/shadow/poolSize.ts`). */
+const { side, layers } = shadowPoolShape(shadowPoolSize(3840, 2160));
+export const SHADOW_POOL_PAGES = side * side * layers;
+/** The shadows at that pool — the atlas, its static and transmittance layers, the buffers beside
+ *  it, the page table first, and what the most batches a frame draws add (`batchBudget.ts`). */
 export const SHADOW_POOL_BYTES =
-  2 * shadowAtlasBytes(MAX_SHADOW_POOL_SIDE) +
-  shadowTransmittanceBytes(MAX_SHADOW_POOL_SIDE) +
-  SHADOW_BUFFER_BYTES +
+  2 * shadowAtlasBytes(side, layers) +
+  shadowTransmittanceBytes(side, layers) +
+  shadowBufferBytes(SHADOW_POOL_PAGES) +
   SHADOW_BATCH_GPU_BYTES;
-/** The shadows' host memory at its largest, whatever the screen: the table's words and change
- *  flags, the pool's page records and eviction bits, the frame's list, as the three allocate
- *  them, and the batches' flag pages and CPU cut faces. */
+/** The shadows' host memory at that pool: the table's words and change flags, the pool's page
+ *  records and eviction bits, the frame's list, as the three allocate them, and the batches' flag
+ *  pages and CPU cut faces. */
 export const SHADOW_HOST_BYTES =
-  shadowTableHostBytes(MAX_SHADOW_POOL_SIDE ** 2) +
-  shadowPoolHostBytes(MAX_SHADOW_POOL_SIDE) +
-  shadowAdmissionHostBytes(MAX_SHADOW_POOL_SIDE ** 2) +
+  shadowTableHostBytes(SHADOW_POOL_PAGES) +
+  shadowPoolHostBytes(SHADOW_POOL_PAGES) +
+  shadowAdmissionHostBytes(SHADOW_POOL_PAGES) +
   SHADOW_BATCH_HOST_BYTES;
 /**
  * GPU bytes of the bounce probe cascades at their largest — every level of `cascadeSize³` probes,
@@ -82,8 +85,8 @@ const checkTotal = (bytes: number, name: string) => {
 
 /**
  * One memory budget, split by a fixed rule — never by what the machine says it has:
- * - GPU: the shadow pool first, at its largest (`SHADOW_POOL_BYTES`), what the atlas, its
- *   static layer and its transmittance layer take on the largest screen, with the page table and
+ * - GPU: the shadow pool first (`SHADOW_POOL_BYTES`), what the atlas, its static layer and its
+ *   transmittance layer take at 3840 × 2160 under one sun, with the page table and
  *   the other fixed shadow buffers; then the bounce probe cascades at their largest
  *   (`BOUNCE_PROBE_BYTES`), then the effect chain's targets on the declared `canvas`
  *   (`effectTargetReserve`, 3840 × 2160 by default); the rest in two halves, the geometry pool

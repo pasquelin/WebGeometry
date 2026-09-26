@@ -931,8 +931,10 @@ light is a `SceneLight` (version 2) of one of three kinds. `point` and `spot` ca
 `range` in metres, `spot` also `direction` and a `coneAngle` half-angle; `directional` (sun,
 overcast sky) carries only `direction` — the propagation direction — and is refused if given a
 `position`, a `range` or a `coneAngle`. All three carry linear `color`, a positive radiometric
-`intensity` and `castsShadow`. Bounds: 64 lights, 32 per 16×16 screen tile, a 4096-square shadow
-atlas, and at most 24 shadow regions redrawn per frame.
+`intensity` and `castsShadow`. Bounds: 64 lights, 32 per 16×16 screen tile, and at most 24 shadow
+regions redrawn per frame. The shadow pool is sized once, at the first frame that casts a shadow,
+from its screen and its shadowed lights: layers of up to 64 × 64 pages of 128², within the budget's
+shadow share; `metric.frame(world)` publishes its `shadowPoolBytes` and `shadowPoolLayers`.
 
 `capability.lighting(world)` reports what the **active** renderer applies — `{ sceneLights,
 lightingView, shadows, transforms, reason? }` — not what the contract accepts: a call the light
@@ -1028,16 +1030,16 @@ the next cut once they arrived (`geometryAllocationBytes` shows it; no pool is r
 `world.budget.cpu` what the world keeps in CPU memory. A fixed rule splits them, published
 as `world.budget.split`:
 
-- GPU: the shadow pool first, at its largest (the largest screen's side, its static layer and its
-  transmittance layer), then the bounce probes at their largest, then the effect chain's targets
+- GPU: the shadow pool first, as 3840 × 2160 under one sun takes it (two layers of 53² pages, its
+  static layer and its transmittance layer), then the bounce probes at their largest, then the effect chain's targets
   on the largest canvas the budget declares (`split.effectTargets`: 250.5 MiB on the default
   3840 × 2160 canvas); the rest in two halves, geometry and textures, each capped at its ceiling.
-  The default total is 1 937 MiB, and at the defaults the split gives each pool its own default
+  The default total is 2 179 MiB, and at the defaults the split gives each pool its own default
   (512 MiB each), so a page that sets nothing sees no change. The three fixed shares never shrink:
   a total under them is refused (`GPU_BUDGET_UNDER_SHADOW_POOL`), so no total below 913 MiB is
   taken on the default canvas. The pool a screen takes, its static layer and its fixed buffers always fit that
   share, whatever the screen.
-- CPU: the shadow page table's host mirror first (20.8 MiB, fixed whatever the screen), then the
+- CPU: the shadow page table's host mirror first (21.2 MiB, fixed whatever the screen), then the
   decoded-page cache takes the whole rest (`split.pageCache`); within it the session in place
   reserves its manifest tables (a fixed reckoning per catalogue entry, not a measured heap size)
   and its transfer queue, and the engine's cut tables (group closure, residency readiness, the

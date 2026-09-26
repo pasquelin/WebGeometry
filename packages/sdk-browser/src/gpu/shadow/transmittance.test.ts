@@ -94,12 +94,13 @@ function spread(read: (x: number, y: number) => number) {
 
 test('the shadow read multiplies the PCF by the half-resolution layer once per footprint', () => {
   const wgsl = directShadowWgsl(8, null, 18);
-  assert.match(wgsl, /@binding\(18\) var shadowTransmittance:texture_2d<f32>/);
-  assert.match(wgsl, /@binding\(19\) var shadowTranslucentDepth:texture_depth_2d/);
+  assert.match(wgsl, /@binding\(18\) var shadowTransmittance:texture_2d_array<f32>/);
+  assert.match(wgsl, /@binding\(19\) var shadowTranslucentDepth:texture_depth_2d_array/);
   assert.match(wgsl, /clamp\(0\.5\*a,o\+0\.5,o\+\(0\.5\*SHADOW_PAGE-0\.5\)\)/, 'kept in its page');
   assert.match(wgsl, /let behind=vec4f\(reference\)<d;/);
   assert.equal(
-    wgsl.match(/return shadowThroughLit\(offset\+t,reference,lit\/f32\(PCF_TAPS\)\);/g)?.length,
+    wgsl.match(/return shadowThroughLit\(offset\+vec3f\(t,0.0\),reference,lit\/f32\(PCF_TAPS\)\);/g)
+      ?.length,
     2,
     'away from a seam and along one',
   );

@@ -11,6 +11,7 @@ import {
 } from '../../../../sdk-core/src/scene/light-shadow/pool.ts';
 import { CASTERS_ALL, CASTERS_MOVING, CASTERS_STATIC } from '../../gpu/shadow/cullShader.ts';
 import { createShadowRegionList, REGION_CLEAR, REGION_RESTORE, REGION_STATIC } from './regions.ts';
+import { directShadowWgsl } from '../../lighting/direct/shadowWgsl.ts';
 
 test('regions follow the draw mode: whole, layer then moving casters, or moving casters alone', () => {
   const list = createShadowRegionList(32);
@@ -28,4 +29,25 @@ test('regions follow the draw mode: whole, layer then moving casters, or moving 
   assert.equal(volumes[2 * SHADOW_CULL_FLOATS], 7, "the page's second region shares its volume");
   assert.deepEqual([list.pageOf(2), list.x(2), list.y(2)], [34, 2 * 128, 128]);
   assert.equal(list.layered, 1);
+});
+
+test('page 4 096 of a pool 64 pages a side opens its layer 1, where the shading reads it', () => {
+  const list = createShadowRegionList(64);
+  const volumes = new Float32Array(4 * SHADOW_CULL_FLOATS),
+    words = new Uint32Array(volumes.buffer);
+  for (const page of [4095, 4096, 4096 + 65]) list.push(page, DRAW_ALL, volumes, words);
+  const place = (r: number) => [list.layer(r), list.x(r) / 128, list.y(r) / 128];
+  assert.deepEqual([0, 1, 2].map(place), [
+    [0, 63, 63],
+    [1, 0, 0],
+    [1, 1, 1],
+  ]);
+  // The shading's `shadowOffset`, the same place: the page within its layer, then the layer.
+  const wgsl = directShadowWgsl(8, null, 18);
+  assert.ok(wgsl.includes('let local=phys%(side*side);'));
+  assert.ok(
+    wgsl.includes(
+      '(vec2f(f32(local%side),f32(local/side))-vec2f(p))*SHADOW_PAGE,f32(phys/(side*side))',
+    ),
+  );
 });

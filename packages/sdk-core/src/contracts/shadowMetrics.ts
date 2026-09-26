@@ -35,6 +35,12 @@ export interface ShadowFrameMetrics {
   shadowPagesCached?: number | null;
   /** Physical pages of the fixed pool that hold a virtual page. */
   shadowPoolPages?: number | null;
+  /** GPU bytes of the shadow pool: its depth pages, their static and transmittance layers once
+   *  made, and the buffers beside them. Null until the first frame sizes the pool. */
+  shadowPoolBytes?: number | null;
+  /** Layers of the pool, 4 096 pages each at most, sized once from the first frame's screen and
+   *  shadowed lights. Null until then. */
+  shadowPoolLayers?: number | null;
   /** Virtual pages mapped again after the pool evicted them to make room, since the explorer
    *  opened: the redraws a pool too small for what the frames read costs. */
   shadowPagesRefetched?: number | null;

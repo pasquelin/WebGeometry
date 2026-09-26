@@ -3,7 +3,10 @@
 // presented image lacks the shadow pass while a light casts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shadowPoolSide } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import {
+  shadowPoolSize as pages,
+  shadowPoolShape,
+} from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { SUN } from '../../../../sdk-core/src/scene/light-shadow/lightShadow.fixture.ts';
 import { asWebgpuDevice } from '../../../../../tests/kit/gpu/webgpuDevice.ts';
 import { createWebgpuLightState } from '../pages/state/lights.ts';
@@ -18,7 +21,7 @@ import type { HostCamera } from '../../camera/world.ts';
  *  `shown` records, per presented image, whether the shadow pass could draw in it. */
 function frames(limit = Infinity) {
   const rt = settledRt();
-  const lights = createWebgpuLightState(shadowPoolSide(300, 150));
+  const lights = createWebgpuLightState(shadowPoolShape(pages(300, 150)).side);
   let texture: object | undefined;
   const gpu = asWebgpuDevice({
     createTexture: ({ size }: { size: number[] }) => {
@@ -31,13 +34,13 @@ function frames(limit = Infinity) {
     get texture() {
       return texture;
     },
-    makePool: (side: number) =>
+    makePool: (side: number, layers: number) =>
       gpu.device.createTexture({
-        size: [side * 128, side * 128, 1],
+        size: [side * 128, side * 128, layers],
         format: 'depth32float',
         usage: 0,
       }),
-    sizePool: (_: number, made: object) => void (texture = made),
+    sizePool: (_: number, __: number, made: object) => void (texture = made),
   } as unknown as NonNullable<typeof lights.shadows>;
   lights.store.add({ ...SUN, id: 'shadow sun' });
   const shown: boolean[] = [],
@@ -84,7 +87,7 @@ test('no presented frame lacks the shadow pass while a light casts', async () =>
 });
 
 test('a refused pool is held for, then drawn smaller with its shadows', async () => {
-  const s = frames((shadowPoolSide(1280, 720) * 128) ** 2);
+  const s = frames((shadowPoolShape(pages(1280, 720)).side * 128) ** 2);
   for (let i = 0; i < 2; i++) await s.frame();
   assert.deepEqual(s.said, ['gpu-out-of-memory', 'shadow-pool']);
   assert.deepEqual(s.shown, [true], 'the smaller pool still draws the shadow pass');

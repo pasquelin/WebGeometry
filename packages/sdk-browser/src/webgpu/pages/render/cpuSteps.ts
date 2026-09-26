@@ -7,6 +7,7 @@ import {
   logFrameCostAudit,
 } from '../../../frame/costAudit.ts';
 import type { HostCpuStep } from '../../../host/cpuProfile.ts';
+import { shadowPoolHeld } from '../../shadow/poolSize.ts';
 import type { WebgpuPagesRuntime } from '../runtime.ts';
 
 /** Deposits the image's CPU bounds into the public per-stage profile, when it is mounted. */
@@ -47,6 +48,8 @@ function recordStages(rt: WebgpuPagesRuntime) {
     pagesDemandees: lights.plan.requests.counts.requested,
     pagesEnCache: counts.cachedPages,
     pagesDuPool: counts.poolPages,
+    octetsDuPool: shadowPoolHeld(lights),
+    couchesDuPool: lights.plan.pool.layers,
     pagesInvalidees: counts.invalidatedPages,
     pagesVisitees: counts.visitedPages,
     pagesRedessinees: lights.shadowPages,

@@ -37,9 +37,10 @@ export const PCF_REACH = Math.max(
   ...POISSON_16.map(([x, y]) => Math.hypot(Math.abs(x) + 1, Math.abs(y) + 1)),
 );
 
-/** Words of the request buffer: the count, the entries the shading asked for, then one bit per
- *  table entry — a page is listed once however many pixels read it. */
-export const SHADOW_REQUEST_WORDS = 1 + LIGHT_SETTINGS.shadowRequestCap + SHADOW_TABLE_ENTRIES / 32;
+/** Words of the request buffer past its list: the count first, then the entries the shading asked
+ *  for — as many as the pool's `shadowRequestCap` —, then one bit per table entry: a page is listed
+ *  once however many pixels read it. The list's length is the buffer's, read at run time. */
+export const SHADOW_REQUEST_BITS = SHADOW_TABLE_ENTRIES / 32;
 
 /**
  * The shadow buffer as the GPU reads it: every slice's record (`SHADOW_RECORD_FLOATS`) — lamp
@@ -61,11 +62,12 @@ const requestWgsl = (binding: number | null) =>
     ? 'fn requestShadowPage(e:u32){}'
     : `@group(0) @binding(${binding}) var<storage,read_write> shadowRequests:array<atomic<u32>>;
 fn requestShadowPage(e:u32){
- let word=${1 + LIGHT_SETTINGS.shadowRequestCap}u+(e>>5u);let bit=1u<<(e&31u);
+ let cap=arrayLength(&shadowRequests)-${1 + SHADOW_REQUEST_BITS}u;
+ let word=1u+cap+(e>>5u);let bit=1u<<(e&31u);
  if((atomicLoad(&shadowRequests[word])&bit)!=0u){return;}
  if((atomicOr(&shadowRequests[word],bit)&bit)!=0u){return;}
  let at=atomicAdd(&shadowRequests[0],1u);
- if(at<${LIGHT_SETTINGS.shadowRequestCap}u){atomicStore(&shadowRequests[1u+at],e);}
+ if(at<cap){atomicStore(&shadowRequests[1u+at],e);}
 }`;
 
 /**
@@ -131,23 +133,24 @@ fn shadowPageWord(m:ShadowMap,p:vec2i)->u32{
  let word=shadows.table[u32(e)];
  return select(0u,word,(word&PAGE_VALID)!=0u);
 }
-/** Atlas texel offset of page \`p\`, held by physical page \`word\`: added to a texel coordinate
- *  of the map, it gives that texel's place in the atlas. */
-fn shadowOffset(word:u32,p:vec2i)->vec2f{
+/** Place of page \`p\`, held by physical page \`word\`: \`xy\` added to a texel coordinate of the
+ *  map gives that texel's place in its layer, \`z\` is the layer (\`shadowPoolShape\`). */
+fn shadowOffset(word:u32,p:vec2i)->vec3f{
  let phys=word&PAGE_INDEX_MASK;let side=textureDimensions(shadowAtlas).x/u32(SHADOW_PAGE);
- return (vec2f(f32(phys%side),f32(phys/side))-vec2f(p))*SHADOW_PAGE;
+ let local=phys%(side*side);
+ return vec3f((vec2f(f32(local%side),f32(local/side))-vec2f(p))*SHADOW_PAGE,f32(phys/(side*side)));
 }
-/** Texels a side of the pool: its size is the world's, derived from the screen (\`shadowPoolSide\`). */
+/** Texels a side of a layer of the pool, derived from the screen (\`shadowPoolSize\`). */
 fn shadowAtlasTexels()->f32{return f32(textureDimensions(shadowAtlas).x);}
 ${shadowThroughWgsl(transmittanceBinding)}
-fn shadowCompare(offset:vec2f,t:vec2f,reference:f32)->f32{
- return textureSampleCompareLevel(shadowAtlas,shadowSampler,(offset+t)/shadowAtlasTexels(),reference);
+fn shadowCompare(offset:vec3f,t:vec2f,reference:f32)->f32{
+ return textureSampleCompareLevel(shadowAtlas,shadowSampler,(offset.xy+t)/shadowAtlasTexels(),i32(offset.z),reference);
 }
 /** Offset of the neighbour page \`p\` and 1 when it is readable; else the home page's and 0. */
-fn shadowNeighbour(m:ShadowMap,p:vec2i,home:vec2f)->vec3f{
+fn shadowNeighbour(m:ShadowMap,p:vec2i,home:vec3f)->vec4f{
  let word=shadowPageWord(m,p);
- if(word==0u){return vec3f(home,0.0);}
- return vec3f(shadowOffset(word,p),1.0);
+ if(word==0u){return vec4f(home,0.0);}
+ return vec4f(shadowOffset(word,p),1.0);
 }
 /**
  * Sixteen taps a texel apart around \`t\`; a lamp face clamps them at its edge (\`side\` > 0).
@@ -168,17 +171,17 @@ fn shadowPcf(m:ShadowMap,t:vec2f,reference:f32,home:vec2i,homeWord:u32,side:f32)
  let offset=shadowOffset(homeWord,home);
  var lit=0.0;
  if(!any(edge)){
-  let texels=shadowAtlasTexels();let uv=(offset+t)/texels;
+  let texels=shadowAtlasTexels();let uv=(offset.xy+t)/texels;let layer=i32(offset.z);
   for(var tap=0u;tap<PCF_TAPS;tap++){
-   lit+=textureSampleCompareLevel(shadowAtlas,shadowSampler,uv+POISSON[tap]/texels,reference);
+   lit+=textureSampleCompareLevel(shadowAtlas,shadowSampler,uv+POISSON[tap]/texels,layer,reference);
   }
-  return shadowThroughLit(offset+t,reference,lit/f32(PCF_TAPS));
+  return shadowThroughLit(offset+vec3f(t,0.0),reference,lit/f32(PCF_TAPS));
  }
  let up=t-first>=vec2f(0.5*SHADOW_PAGE);
  let step=select(vec2i(-1),vec2i(1),up);
  let toward=select(vec2f(-1.0),vec2f(1.0),up);
  let seam=first+select(vec2f(0.0),vec2f(SHADOW_PAGE),up);
- var nx=vec3f(offset,0.0);var ny=nx;var nd=nx;
+ var nx=vec4f(offset,0.0);var ny=nx;var nd=nx;
  if(edge.x){nx=shadowNeighbour(m,home+vec2i(step.x,0),offset);}
  if(edge.y){ny=shadowNeighbour(m,home+vec2i(0,step.y),offset);}
  if(all(edge)){nd=shadowNeighbour(m,home+step,offset);}
@@ -189,11 +192,11 @@ fn shadowPcf(m:ShadowMap,t:vec2f,reference:f32,home:vec2i,homeWord:u32,side:f32)
   let n=select(min(at,seam-0.5),max(at,seam+0.5),up);
   let w=saturate(0.5+(seam-at)*toward);
   var sum=w.x*w.y*shadowCompare(offset,h,reference);
-  if(edge.x){sum+=(1.0-w.x)*w.y*shadowCompare(nx.xy,vec2f(select(h.x,n.x,nx.z>0.0),h.y),reference);}
-  if(edge.y){sum+=w.x*(1.0-w.y)*shadowCompare(ny.xy,vec2f(h.x,select(h.y,n.y,ny.z>0.0)),reference);}
-  if(all(edge)){sum+=(1.0-w.x)*(1.0-w.y)*shadowCompare(nd.xy,select(h,n,nd.z>0.0),reference);}
+  if(edge.x){sum+=(1.0-w.x)*w.y*shadowCompare(nx.xyz,vec2f(select(h.x,n.x,nx.w>0.0),h.y),reference);}
+  if(edge.y){sum+=w.x*(1.0-w.y)*shadowCompare(ny.xyz,vec2f(h.x,select(h.y,n.y,ny.w>0.0)),reference);}
+  if(all(edge)){sum+=(1.0-w.x)*(1.0-w.y)*shadowCompare(nd.xyz,select(h,n,nd.w>0.0),reference);}
   lit+=sum;
  }
- return shadowThroughLit(offset+t,reference,lit/f32(PCF_TAPS));
+ return shadowThroughLit(offset+vec3f(t,0.0),reference,lit/f32(PCF_TAPS));
 }
 ${SHADOW_FACTOR_WGSL}`;

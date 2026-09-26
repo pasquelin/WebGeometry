@@ -3130,6 +3130,8 @@
       "shadowPagesRequested": "Páginas de sombra virtuais que a imagem leu, como o seu último relatório de pedidos as nomeou: o que os receptores da câmera marcam.",
       "shadowPagesCached": "Destas, páginas lidas diretamente do pool: atuais, sem desenho.",
       "shadowPoolPages": "Páginas físicas do pool fixo que guardam uma página virtual.",
+      "shadowPoolBytes": "Bytes de GPU do pool de sombras: as suas páginas de profundidade, as camadas estática e de transmitância quando criadas, e os buffers ao lado. Null até o primeiro quadro dimensionar o pool.",
+      "shadowPoolLayers": "Camadas do pool, de no máximo 4 096 páginas cada, dimensionadas uma vez a partir da tela e das luzes com sombra do primeiro quadro. Null até lá.",
       "shadowPagesRefetched": "Páginas virtuais mapeadas de novo depois de o pool as ter despejado para abrir espaço, desde que o explorador abriu: os redesenhos que custa um pool pequeno demais para o que os quadros leem.",
       "shadowCastersKept": "Projetores que o descarte por página manteve, todas as páginas desenhadas juntas, no quadro que o dispositivo amostrou por último — um em quinze; `null` até voltar uma amostra.",
       "shadowCastersHidden": "Projetores em movimento que o teste de oclusão achou escondidos atrás da camada estática da sua página, no quadro amostrado por último; `null` até voltar uma amostra."
@@ -4205,6 +4207,8 @@
       "shadowPagesRequested": "Páginas de sombra virtuais que a imagem leu, como o seu último relatório de pedidos as nomeou: o que os receptores da câmera marcam.",
       "shadowPagesCached": "Destas, páginas lidas diretamente do pool: atuais, sem desenho.",
       "shadowPoolPages": "Páginas físicas do pool fixo que guardam uma página virtual.",
+      "shadowPoolBytes": "Bytes de GPU do pool de sombras: as suas páginas de profundidade, as camadas estática e de transmitância quando criadas, e os buffers ao lado. Null até o primeiro quadro dimensionar o pool.",
+      "shadowPoolLayers": "Camadas do pool, de no máximo 4 096 páginas cada, dimensionadas uma vez a partir da tela e das luzes com sombra do primeiro quadro. Null até lá.",
       "shadowPagesRefetched": "Páginas virtuais mapeadas de novo depois de o pool as ter despejado para abrir espaço, desde que o explorador abriu: os redesenhos que custa um pool pequeno demais para o que os quadros leem.",
       "shadowCastersKept": "Projetores que o descarte por página manteve, todas as páginas desenhadas juntas, no quadro que o dispositivo amostrou por último — um em quinze; `null` até voltar uma amostra.",
       "shadowCastersHidden": "Projetores em movimento que o teste de oclusão achou escondidos atrás da camada estática da sua página, no quadro amostrado por último; `null` até voltar uma amostra."

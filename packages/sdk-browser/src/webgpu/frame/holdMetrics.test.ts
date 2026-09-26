@@ -172,7 +172,12 @@ test('the shadow counters of a frame are published under their public names', ()
   lights.shadowPages = 6;
   lights.lightRuns = 2;
   lights.cull = { counts: { counts: () => ({ frame: 40, regions: 6, kept: 77 }) } };
+  assert.deepEqual([metricsOf(rt).shadowPoolBytes, metricsOf(rt).shadowPoolLayers], [null, null]);
+  (lights.plan as unknown as { pool: object }).pool = { refetched: 0, layers: 2 };
+  lights.shadows = { texture: {}, allocationBytes: 700 };
+  lights.staticLayer = { bytes: 300 };
   const metrics = metricsOf(rt);
+  assert.deepEqual([metrics.shadowPoolBytes, metrics.shadowPoolLayers], [1000, 2], 'once sized');
   assert.deepEqual(
     [
       metrics.shadowPagesRequested,

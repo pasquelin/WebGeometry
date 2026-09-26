@@ -3,7 +3,7 @@
 // counted in the memory budget from that one rule. Checked here against what the modules allocate.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shadowPoolSide } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import { LAYER_PAGES } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { fakeDevice } from '../../../../../tests/kit/gpu/fakeDevice.ts';
 import { createLightCutRedraws } from '../dag/lightCutRedraws.ts';
 import { DAG_MAX_VIEWS } from '../dag/shader/viewsWgsl.ts';
@@ -24,10 +24,9 @@ import {
 
 const MiB = 1024 * 1024;
 
-test('a frame draws at most the largest pool in full batches, each in one cut of views', () => {
-  const poolPages = shadowPoolSide(Infinity, Infinity) ** 2;
-  assert.equal(poolPages, 4096);
-  assert.equal(MAX_SHADOW_BATCHES, Math.ceil(poolPages / MAX_SHADOW_PAGES));
+test('a frame draws at most one pool layer in full batches, each in one cut of views', () => {
+  assert.equal(LAYER_PAGES, 4096);
+  assert.equal(MAX_SHADOW_BATCHES, Math.ceil(LAYER_PAGES / MAX_SHADOW_PAGES));
   assert.equal(MAX_SHADOW_BATCHES, 171);
   assert.equal(MAX_SHADOW_RUNS, MAX_SHADOW_BATCHES * DAG_MAX_VIEWS);
 });

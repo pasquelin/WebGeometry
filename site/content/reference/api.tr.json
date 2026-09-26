@@ -3130,6 +3130,8 @@
       "shadowPagesRequested": "Görüntünün okuduğu sanal gölge sayfaları, son istek raporunun adlandırdığı biçimde: kameranın alıcılarının işaretledikleri.",
       "shadowPagesCached": "Bunlardan doğrudan havuzdan okunan sayfalar: güncel, çizim yok.",
       "shadowPoolPages": "Sabit havuzun sanal bir sayfa tutan fiziksel sayfaları.",
+      "shadowPoolBytes": "Gölge havuzunun GPU baytları: derinlik sayfaları, oluşturulduklarında statik ve geçirgenlik katmanları ve yanındaki arabellekler. İlk kare havuzu boyutlandırana kadar null.",
+      "shadowPoolLayers": "Havuzun katmanları, her biri en fazla 4 096 sayfa; ilk karenin ekranından ve gölgeli ışıklarından bir kez boyutlandırılır. O zamana kadar null.",
       "shadowPagesRefetched": "Havuzun yer açmak için çıkardıktan sonra yeniden eşlenen sanal sayfalar, explorer açıldığından beri: karelerin okuduğuna göre fazla küçük bir havuzun maliyeti olan yeniden çizimler.",
       "shadowCastersKept": "Sayfa başına ayıklamanın tuttuğu gölge düşürücüler, tüm çizilen sayfalar birlikte, aygıtın en son örneklediği karede — on beşte bir; bir örnek dönene dek `null`.",
       "shadowCastersHidden": "Örtme testinin, sayfalarının durağan katmanının arkasında gizli bulduğu hareketli gölge düşürücüler, en son örneklenen karede; bir örnek dönene dek `null`."
@@ -4205,6 +4207,8 @@
       "shadowPagesRequested": "Görüntünün okuduğu sanal gölge sayfaları, son istek raporunun adlandırdığı biçimde: kameranın alıcılarının işaretledikleri.",
       "shadowPagesCached": "Bunlardan doğrudan havuzdan okunan sayfalar: güncel, çizim yok.",
       "shadowPoolPages": "Sabit havuzun sanal bir sayfa tutan fiziksel sayfaları.",
+      "shadowPoolBytes": "Gölge havuzunun GPU baytları: derinlik sayfaları, oluşturulduklarında statik ve geçirgenlik katmanları ve yanındaki arabellekler. İlk kare havuzu boyutlandırana kadar null.",
+      "shadowPoolLayers": "Havuzun katmanları, her biri en fazla 4 096 sayfa; ilk karenin ekranından ve gölgeli ışıklarından bir kez boyutlandırılır. O zamana kadar null.",
       "shadowPagesRefetched": "Havuzun yer açmak için çıkardıktan sonra yeniden eşlenen sanal sayfalar, explorer açıldığından beri: karelerin okuduğuna göre fazla küçük bir havuzun maliyeti olan yeniden çizimler.",
       "shadowCastersKept": "Sayfa başına ayıklamanın tuttuğu gölge düşürücüler, tüm çizilen sayfalar birlikte, aygıtın en son örneklediği karede — on beşte bir; bir örnek dönene dek `null`.",
       "shadowCastersHidden": "Örtme testinin, sayfalarının durağan katmanının arkasında gizli bulduğu hareketli gölge düşürücüler, en son örneklenen karede; bir örnek dönene dek `null`."

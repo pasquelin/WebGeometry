@@ -9,10 +9,7 @@ import {
   shadowTransmittanceBytes,
 } from './transmittance.ts';
 import { DRAW_INDIRECT_STRIDE } from '../draw/draw.ts';
-import {
-  SHADOW_PAGE,
-  shadowPoolSide,
-} from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import { SHADOW_PAGE } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { encodeTransmittance } from '../../webgpu/pages/render/encodeShadowPass.ts';
 import { REGION_CLEAR, REGION_RESTORE, REGION_STATIC } from '../../webgpu/shadow/regions.ts';
 import type { WebgpuPagesRuntime } from '../../webgpu/pages/runtime.ts';
@@ -38,12 +35,15 @@ function created(poolSide: number) {
   ) => (encoder.calls.push(['beginRenderPass', [d]]), { end() {} });
   (device.target as unknown as { createTexture: unknown }).createTexture = (
     d: GPUTextureDescriptor,
-  ) => (device.calls.push(['createTexture', [d]]), { createView: () => d, destroy() {} });
+  ) => (
+    device.calls.push(['createTexture', [d]]),
+    { createView: () => d, destroy() {}, depthOrArrayLayers: 1 }
+  );
   const layer = createShadowTransmittance(
     device.target,
     {} as never,
     [{}, {}] as never,
-    {} as never,
+    [{}] as never,
     poolSide,
     encoder.target,
   );
@@ -51,11 +51,11 @@ function created(poolSide: number) {
   return { layer, of, passes: encoder.calls.map(([, [d]]) => d as GPURenderPassDescriptor) };
 }
 
-test('the layer holds 8 bytes per 4 page texels: 128 MiB at the largest pool', () => {
+test('the layer holds 8 bytes per 4 page texels: 128 MiB a layer of the pool', () => {
   const texels = (side: number) => (side * SHADOW_PAGE) ** 2;
   for (const side of [1, 2, 51, 64])
     assert.equal(shadowTransmittanceBytes(side), (texels(side) / 4) * 8);
-  assert.equal(shadowTransmittanceBytes(shadowPoolSide(Infinity, Infinity)), 128 * 2 ** 20);
+  assert.equal(shadowTransmittanceBytes(64, 2), 2 * 128 * 2 ** 20);
   const { layer, of } = created(2);
   assert.equal(layer.bytes, shadowTransmittanceBytes(2));
   const textures = of('createTexture') as GPUTextureDescriptor[];
@@ -133,10 +133,16 @@ function encoded(casters: boolean) {
       shadowGroupsKey: key,
       shadowGroups: ['g0', 'g1', 'g2'],
       shadows: { faceGroup: 'faces', faceStride: 256 },
-      regions: { startOf: (i: number) => starts[i], x: (i: number) => 256 * i, y: () => 128 },
+      regions: {
+        startOf: (i: number) => starts[i],
+        x: (i: number) => 256 * i,
+        y: () => 128,
+        layer: () => 0,
+      },
     },
   } as unknown as WebgpuPagesRuntime;
-  const layer = { clear: 'clear', depth: 'depth', blend: 'blend', opaqueGroup: 'opaque' };
+  const pool = { targets: [{}], depthTargets: [{}], opaqueGroups: ['opaque'] },
+    layer = { clear: 'clear', depth: 'depth', blend: 'blend', ...pool };
   encodeTransmittance(rt, {} as GPUDevice, encoder as never, 3, layer as never, false);
   const [begin, ...calls] = r.calls;
   assert.equal((begin[1][0] as GPURenderPassDescriptor).label, SHADOW_TRANSMITTANCE_PASS);

@@ -14,8 +14,8 @@ const OFFSET = 0x811c9dc5,
   PRIME = 0x01000193;
 
 /**
- * Reads the depth shadow atlas — `texture`, `size` texels a side — and returns its fingerprint,
- * bit for bit.
+ * Reads the depth shadow atlas — `texture`, `size` texels a side, every layer — and returns its
+ * fingerprint, bit for bit.
  *
  * This is the proof tool of the page draw: two runs of the same scene, one redrawing whole faces
  * and the other only the invalidated pages, must return **the same fingerprint**. The read only
@@ -29,10 +29,11 @@ export async function readShadowAtlasDigest(
   texture: GPUTexture,
   size: number,
 ): Promise<ShadowAtlasDigest> {
-  const bytesPerRow = size * 4;
+  const bytesPerRow = size * 4,
+    layers = texture.depthOrArrayLayers;
   const buffer = device.createBuffer({
     label: 'Trillion3D shadow atlas digest',
-    size: bytesPerRow * size,
+    size: bytesPerRow * size * layers,
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
   });
   try {
@@ -40,7 +41,7 @@ export async function readShadowAtlasDigest(
     encoder.copyTextureToBuffer(
       { texture, aspect: 'depth-only' },
       { buffer, bytesPerRow, rowsPerImage: size },
-      [size, size, 1],
+      [size, size, layers],
     );
     device.queue.submit([encoder.finish()]);
     await buffer.mapAsync(GPUMapMode.READ);

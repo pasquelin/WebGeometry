@@ -45,7 +45,7 @@ export function createShadowRecordPack(faceStride: number, poolSide: number) {
   return {
     records,
     facePacked,
-    /** The pool the pages land in has `poolSide` pages a side from now on. */
+    /** The pool the pages land in has `poolSide` pages a layer side from now on. */
     setPoolSide(poolSide: number) {
       side = poolSide;
       size = side * SHADOW_PAGE;
@@ -65,8 +65,9 @@ export function createShadowRecordPack(faceStride: number, poolSide: number) {
     ) {
       const uniform = (index * faceStride) / 4;
       for (let i = 0; i < 16; i++) facePacked[uniform + i] = matrices[matrixBase + i];
-      facePacked[uniform + 16] = ((phys % side) * SHADOW_PAGE) / size;
-      facePacked[uniform + 17] = (Math.floor(phys / side) * SHADOW_PAGE) / size;
+      const local = phys % (side * side);
+      facePacked[uniform + 16] = ((local % side) * SHADOW_PAGE) / size;
+      facePacked[uniform + 17] = (Math.floor(local / side) * SHADOW_PAGE) / size;
       facePacked[uniform + 18] = SHADOW_PAGE / size;
       facePacked[uniform + 19] = SHADOW_PAGE;
       facePacked[uniform + 20] = center ? center[0] : 0;

@@ -12,7 +12,7 @@ import { LIGHT_KIND, LIGHT_SETTINGS, MAX_SHADOW_SLICES, POINT_FACES } from '../l
  * - A **lamp** face — six for a point, one for a spot — is a map of `LAMP_SIDE²` pages at its
  *   finest mip, with every coarser mip down to one page.
  *
- * The physical pool is the one size here that depends on the world: `shadowPoolPages`.
+ * The physical pool is the one size here that depends on the world: `shadowPoolSize`.
  */
 /** Side of a shadow page, in texels: the unit of the pool, of the virtual maps and of invalidation. */
 export const SHADOW_PAGE: number = LIGHT_SETTINGS.shadowPage;
@@ -22,19 +22,6 @@ export const SUN_LEVELS: number = LIGHT_SETTINGS.sunLevels;
 export const SUN_WINDOW: number = LIGHT_SETTINGS.sunLevelPages;
 /** Mips of a lamp face, from `LAMP_SIDE` pages per side down to one. */
 export const LAMP_MIPS = Math.log2(LAMP_SIDE) + 1;
-/** A table word: the physical page in the low bits, `PAGE_MAPPED` while it holds one, and
- *  `PAGE_VALID` while its depth may be read — set once its draw has landed, cleared while what it
- *  holds is wrong and waits to be drawn again (`pool.withdraw`). A page not valid hands the point
- *  to the next coarser level. */
-export const PAGE_VALID = 1 << 16;
-export const PAGE_MAPPED = 1 << 17;
-export const PAGE_INDEX_MASK = 0xffff;
-/** Pages a side of one layer of the pool: an 8 192-texel square, the largest 2D texture side
- *  WebGPU guarantees on every device (the default `maxTextureDimension2D`). */
-export const LAYER_SIDE = Math.floor(8192 / SHADOW_PAGE);
-export const LAYER_PAGES = LAYER_SIDE * LAYER_SIDE;
-/** Layers the page index addresses (`PAGE_INDEX_MASK`): 16 of 4 096 pages. */
-export const MAX_LAYERS = (PAGE_INDEX_MASK + 1) / LAYER_PAGES;
 /** Pages a side of a sun's `2W × 2H` texel rectangle: one per `P / 2` screen pixels. */
 const tiles = (pixels: number) => Math.ceil((2 * Math.max(1, pixels)) / SHADOW_PAGE);
 /** Pages one light reads in a frame over a smooth `w × h` screen, `c` the share of its pixels
@@ -47,18 +34,6 @@ export function priorPoolPages(w: number, h: number, coverage: ArrayLike<number>
   let sum = 0;
   for (let i = 0; i < coverage.length; i++) sum += lightPages(w, h, coverage[i]);
   return 2 * sum;
-}
-/** Where the pool's pages lie: `layers` layers of `side × side` pages. */
-export interface ShadowPoolShape {
-  readonly side: number;
-  readonly layers: number;
-}
-/** The fewest whole layers that hold `pages`, each the smallest square that shares them out. Page
- *  `p` lies in layer `⌊p / side²⌋`: one layer is the one square the pool always was. */
-export function shadowPoolShape(pages: number): ShadowPoolShape {
-  const wanted = Math.min(Math.max(1, Math.ceil(pages)), MAX_LAYERS * LAYER_PAGES);
-  const layers = Math.ceil(wanted / LAYER_PAGES);
-  return { side: Math.ceil(Math.sqrt(wanted / layers)), layers };
 }
 /**
  * Physical pages of the shadow pool, for a `width × height` screen and the screen share each
@@ -77,10 +52,10 @@ export function shadowPoolShape(pages: number): ShadowPoolShape {
  *
  * That bound is exact for a tile on one surface at one level, and loose everywhere else by the
  * same count: two tiles side by side on one floor share their pages, so a smooth screen reads a
- * quarter of it (a `2W × 2H` texel rectangle, `lightPages`). What a tile loses at an edge — a level
- * switch, a silhouette whose two sides read two places of the map — its smooth neighbours leave
- * free. Named approximation: a screen where most tiles straddle an edge (dense foliage) can read
- * more; the pages past the pool wait a frame, read at the coarser level meanwhile.
+ * quarter of it (a `2W × 2H` texel rectangle). What a tile loses at an edge — a level switch, a
+ * silhouette whose two sides read two places of the map — its smooth neighbours leave free.
+ * Named approximation: a screen where most tiles straddle an edge (dense foliage) can read more;
+ * the pages past the pool wait a frame, read at the coarser level meanwhile.
  *
  * The request that asks for a frame's pages comes back a frame later, and the pages the latest
  * report named are never taken (`pool.ts`): the pool holds that report's pages and the next
@@ -93,7 +68,7 @@ export function shadowPoolShape(pages: number): ShadowPoolShape {
  * 2 520 pages a frame, 5 040 held — two layers of 51 × 51 pages. The only limits are the device's
  * and the memory grant (`webgpu/shadow/poolSize.ts`).
  */
-export function shadowPoolPages(width: number, height: number, coverage: ArrayLike<number> = [1]) {
+export function shadowPoolSize(width: number, height: number, coverage: ArrayLike<number> = [1]) {
   const worst = 2 * Math.ceil((4 * 4 * tiles(width) * tiles(height)) / 3);
   return Math.max(Math.min(worst, LAYER_PAGES), priorPoolPages(width, height, coverage));
 }
@@ -113,6 +88,27 @@ export const LAMP_FACE_ENTRIES = (() => {
 export const SHADOW_TABLE_STRIDE = Math.max(SUN_ENTRIES, POINT_FACES * LAMP_FACE_ENTRIES);
 /** Words of the whole page table: one span per shadow slice, one slice per light. */
 export const SHADOW_TABLE_ENTRIES = MAX_SHADOW_SLICES * SHADOW_TABLE_STRIDE;
+/** A table word: the physical page in the low bits, `PAGE_MAPPED` while it holds one, and
+ *  `PAGE_VALID` while its depth may be read — set once its draw has landed, cleared while what it
+ *  holds is wrong and waits to be drawn again (`pool.withdraw`). A page not valid hands the point
+ *  to the next coarser level. */
+export const PAGE_VALID = 1 << 16;
+export const PAGE_MAPPED = 1 << 17;
+export const PAGE_INDEX_MASK = 0xffff;
+/** Pages a side of one layer of the pool: an 8 192-texel square, the largest 2D texture side
+ *  WebGPU guarantees on every device (the default `maxTextureDimension2D`). */
+export const LAYER_SIDE = Math.floor(8192 / SHADOW_PAGE);
+export const LAYER_PAGES = LAYER_SIDE * LAYER_SIDE;
+/** Layers the page index addresses (`PAGE_INDEX_MASK`): 16 of 4 096 pages. */
+export const MAX_LAYERS = (PAGE_INDEX_MASK + 1) / LAYER_PAGES;
+/** The fewest whole layers that hold `pages`, each the smallest square that shares them out. Page
+ *  `p` lies in layer `⌊p / side²⌋`: one layer is the one square the pool always was. */
+export function shadowPoolShape(pages: number) {
+  const wanted = Math.min(Math.max(1, Math.ceil(pages)), MAX_LAYERS * LAYER_PAGES);
+  const layers = Math.ceil(wanted / LAYER_PAGES);
+  return { side: Math.ceil(Math.sqrt(wanted / layers)), layers };
+}
+
 /** Non-negative remainder. */
 export const ringOf = (value: number, size: number) => ((value % size) + size) % size;
 
