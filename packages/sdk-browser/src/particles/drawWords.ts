@@ -1,8 +1,8 @@
-import { invertMatrix4, transformHomogeneousPoint } from '../../../sdk-core/src/math/index.ts';
+import { invertMatrix4, matrixAtRenderOrigin } from '../../../sdk-core/src/math/index.ts';
 import type { ParticlePool } from '../../../sdk-core/src/fluids/particles.ts';
 import { usedSlots } from './poolStates.ts';
 
-/** The words both particle draws (#755) give a pool: clip matrix from its origin and inverse, made
+/** The words the particle draw (#755) gives a pool: clip matrix from its origin and inverse, made
  *  in double precision, eye from the origin, radius, colour at birth, softness; words 41–43 pad
  *  to the WGSL struct's size. */
 export const DRAW_FLOATS = 44;
@@ -17,8 +17,7 @@ const [clip, unclip] = [new Float64Array(16), new Float64Array(16)];
 /** Writes `pool`'s draw words into `out` from the image's world `viewProj` and `eye`. */
 export function writeDrawWords(out: Float32Array, pool: ParticlePool, viewProj: Vec, eye: Vec) {
   const o = pool.origin;
-  clip.set(viewProj);
-  transformHomogeneousPoint(clip, viewProj, o[0], o[1], o[2], 12);
+  matrixAtRenderOrigin(clip, viewProj, o);
   invertMatrix4(unclip, clip);
   out.set(clip, 0);
   out.set(unclip, 16);

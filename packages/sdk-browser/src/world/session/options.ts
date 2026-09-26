@@ -132,7 +132,7 @@ export interface MeasuredWorldOptions {
   guides?: import('../../guides/guideSet.ts').GuideSet;
   /** Particle pools, held by the world (`attachParticles`). */
   particles?: readonly import('../../../../sdk-core/src/fluids/particles.ts').ParticlePool[];
-  /** Hears, once per refusal, why WebGL2 refused the `particles`; the session goes on. */
+  /** Hears, once per refusal, why the renderer refused the `particles`; the session goes on. */
   particlesRefused?: (reason: string) => void;
   /** Bounced light. Off by default; `true` turns it on for the whole session. */
   bounce?: boolean;

@@ -121,11 +121,8 @@ test('an engine that draws nothing on the host surface is refused by name', () =
 });
 
 test('WebGL2 refuses the pools by name from the first frame, heard once, and draws on', () => {
-  const cases = [
-    [{}, 'draws no particle yet'],
-    [null, 'render 32-bit floats'],
-  ] as const;
-  for (const [granted, why] of cases) {
+  // With 32-bit float targets or without, the same refusal: the draw is #844.
+  for (const granted of [{}, null]) {
     const { gl, names } = createTestContext({ answers: { getExtension: () => granted } });
     const [pool, heard] = [new ParticlePool({ capacity: 8 }), [] as string[]];
     const particlesRefused = (reason: string) => void heard.push(reason);
@@ -138,7 +135,7 @@ test('WebGL2 refuses the pools by name from the first frame, heard once, and dra
       [2, true, false],
     );
     assert.equal(heard.length, 1, 'heard once');
-    assert.match(heard[0], new RegExp(`^PARTICLES_UNSUPPORTED: .*${why}`));
+    assert.match(heard[0], /^PARTICLES_UNSUPPORTED: WebGL2 draws no particle yet/);
     assert.ok(!names().includes('drawArraysInstanced'), 'never drawn as anything else');
   }
 });

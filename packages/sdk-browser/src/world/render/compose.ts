@@ -20,7 +20,6 @@ import { createWebglEffects, type WebglEffectOutput } from '../../effects/webglE
 import type { Blending } from '../../../../sdk-core/src/world/constants/index.ts';
 import type { ParticlePool } from '../../../../sdk-core/src/fluids/particles.ts';
 import { refuseAll } from '../../particles/poolStates.ts';
-import { floatTargets } from '../../webgl/core/renderTarget.ts';
 
 const NONE: readonly EffectPass[] = [];
 
@@ -33,12 +32,8 @@ export type ComposedChain = {
   refused?: (blending: Blending) => void;
 };
 
-/** Why WebGL2 refuses particle pools: no draw yet, or no 32-bit float target to step them in. */
-const particleRefusal = (gl: WebGL2RenderingContext) =>
-  floatTargets(gl)
-    ? 'PARTICLES_UNSUPPORTED: WebGL2 draws no particle yet'
-    : 'PARTICLES_UNSUPPORTED: WebGL2 particles render 32-bit floats, and this context does not ' +
-      'grant EXT_color_buffer_float';
+/** Why WebGL2 refuses particle pools, whatever the context grants: it draws none yet (#844). */
+const PARTICLE_REFUSAL = 'PARTICLES_UNSUPPORTED: WebGL2 draws no particle yet';
 
 /**
  * Composes one engine's frame on the host surface or on a render target — the one place that
@@ -132,7 +127,7 @@ export function createFrameComposer(
     const { width, height } = bindWebglTarget(gl, target);
     if (present(backend)) return;
     // A refusal never fails the session: the pools are refused, heard once, the frame drawn.
-    if (refuseAll(particles)) layers.particlesRefused?.(particleRefusal(gl));
+    if (refuseAll(particles)) layers.particlesRefused?.(PARTICLE_REFUSAL);
     const revision = composed?.chain.revision ?? 0;
     const guidesHeld = !layers.guides || layers.guides.revision === guidesDrawn;
     if (

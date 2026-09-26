@@ -105,7 +105,7 @@ export function createWebgpuParticles(device: GPUDevice, fail: (error: unknown) 
         pool.refused = !pipeline || drawn.refused();
         const step = pool.flush(),
           { count } = step;
-        if (!pipeline || (!count && !step.dt)) continue;
+        if (!pipeline || pool.refused || (!count && !step.dt)) continue;
         const kept = made.of(pool);
         words.write(pool, step);
         device.queue.writeBuffer(kept.step, 0, words.buffer);
@@ -144,8 +144,11 @@ export function encodeParticles(
   // Once made, the step runs with no pool left too: it gives a released pool's buffers back.
   if (!pools || (!pools.length && !rt.gpu.particles)) return;
   if (!rt.vis.visEnabled) {
-    const error = new Error('PARTICLES_UNSUPPORTED: particles draw on the visibility buffer');
-    if (refuseAll(pools)) rt.diag.diagnosticFailure('particles-unavailable', error);
+    // A capability refusal, told once like WebGL2's (`particlesRefused`); the session goes on.
+    if (refuseAll(pools))
+      rt.context.particlesRefused?.(
+        'PARTICLES_UNSUPPORTED: particles draw on the visibility buffer',
+      );
     return;
   }
   rt.gpu.particles ??= createWebgpuParticles(device, (error) =>

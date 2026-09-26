@@ -1,7 +1,8 @@
 import { PARTICLE_BLENDS, type ParticlePool } from '../../../sdk-core/src/fluids/particles.ts';
 import { createCheckedShaderModule } from '../gpu/core/shaderModule.ts';
+import { buildRenderPipeline } from '../lighting/deferred/fullscreen.ts';
 import { DISC_CORNERS, DRAW_FLOATS, drawOrder, writeDrawWords } from './drawWords.ts';
-import { refuseAll, usedSlots } from './poolStates.ts';
+import { usedSlots } from './poolStates.ts';
 
 /** The pass label the GPU timings name the particle draw by (`passesGpu`). */
 export const PARTICLE_DRAW_PASS = 'Trillion3D particle draw';
@@ -39,10 +40,26 @@ struct Out { @builtin(position) at: vec4f, @location(0) corner: vec2f, @location
 }`;
 
 /** What the draw keeps in a pool's step state: its words, its group and the depth it was made on. */
-export type DrawState = { state: GPUBuffer; draw: GPUBuffer; drawn?: GPUBindGroup; depth?: object };
+export type DrawState = {
+  state: GPUBuffer;
+  draw: GPUBuffer;
+  drawn?: GPUBindGroup;
+  depth?: GPUTextureView;
+};
+
+// Smoke covers colour and coverage alike; fire adds light and leaves the coverage.
+const OVER = { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } as const;
+const BLENDS: Record<ParticlePool['blend'], GPUBlendState> = {
+  additive: {
+    color: { srcFactor: 'one', dstFactor: 'one' },
+    alpha: { srcFactor: 'zero', dstFactor: 'one' },
+  },
+  premultiplied: { color: OVER, alpha: OVER },
+};
 
 /** The WebGPU particle draw: one pass over the lit image, one instanced draw per live pool, the
- *  opaque depth read for the soft edge. `fail` hears a pipeline not made; pools are then refused. */
+ *  opaque depth read for the soft edge. `fail` hears a pipeline not made; the step then refuses
+ *  the pools (`refused`). */
 export function createWebgpuParticleDraw(
   device: GPUDevice,
   stateOf: (pool: ParticlePool) => DrawState | undefined,
@@ -64,13 +81,8 @@ export function createWebgpuParticleDraw(
       const pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [layout] });
       return Promise.all(
         PARTICLE_BLENDS.map(async (blend) => {
-          // Smoke covers colour and coverage alike; fire adds light and leaves the coverage.
-          const smoke = blend === 'premultiplied',
-            over = { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } as const,
-            color = smoke ? over : ({ srcFactor: 'one', dstFactor: 'one' } as const),
-            alpha = smoke ? over : ({ srcFactor: 'zero', dstFactor: 'one' } as const),
-            targets: GPUColorTargetState[] = [{ format: 'rgba16float', blend: { color, alpha } }];
-          pipelines[blend] = await device.createRenderPipelineAsync({
+          const targets: GPUColorTargetState[] = [{ format: 'rgba16float', blend: BLENDS[blend] }];
+          pipelines[blend] = await buildRenderPipeline(device, {
             label: `${PARTICLE_DRAW_PASS} ${blend}`,
             layout: pipelineLayout,
             vertex: { module, entryPoint: 'vs' },
@@ -103,7 +115,7 @@ export function createWebgpuParticleDraw(
       viewProj: ArrayLike<number>,
       eye: ArrayLike<number>,
     ) {
-      if (failed) return (refuseAll(pools), 0);
+      if (failed) return 0;
       let pass: GPURenderPassEncoder | undefined,
         draws = 0;
       for (const pool of drawOrder(pools, eye, order)) {

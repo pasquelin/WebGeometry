@@ -786,7 +786,8 @@ writes a pose buffer and an event buffer. No emscripten glue is kept; the engine
   near by origin, soft within `softness` of the opaque depth.
   WebGL2 draws no particle yet (#844; its 32-bit float step, `particles/webglParticles.ts`,
   waits for it): the frame composer refuses the pools by name (`PARTICLES_UNSUPPORTED`), heard
-  once as the world notice `particles-refused`, and the session draws on without them.
+  once as the world notice `particles-refused`, and the session draws on without them. WebGPU
+  without the visibility buffer refuses them on the same notice.
 - **Threads.** On a cross-origin isolated page the page loads `joltPhysicsThreads.wasm` (atomics,
   bulk memory, shared memory) and Jolt's own thread pool steps it: each pool thread starts in C
   through `pthread_create`, which the loader (`physics/joltThreads.ts`) answers with a worker that

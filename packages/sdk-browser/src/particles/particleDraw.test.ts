@@ -85,10 +85,10 @@ test('WebGPU: a draw that cannot compile is heard, and the next step keeps its p
 
 test('WebGPU without the visibility buffer refuses the pools by name, heard once', () => {
   const [heard, [smoke]] = [[] as string[], scene()],
-    diag = { diagnosticFailure: (code: string, e: Error) => heard.push(`${code} ${e.message}`) },
-    rt = { context: { particles: [smoke] }, vis: { visEnabled: false }, gpu: {}, diag };
+    particlesRefused = (reason: string) => void heard.push(reason),
+    rt = { context: { particles: [smoke], particlesRefused }, vis: { visEnabled: false }, gpu: {} };
   const encode = () => encodeParticles(rt as never, fakeDevice().device, {} as GPUCommandEncoder);
   [0, 1].forEach(encode);
   assert.deepEqual([smoke.refused, heard.length], [true, 1]);
-  assert.match(heard[0], /^particles-unavailable PARTICLES_UNSUPPORTED/);
+  assert.match(heard[0], /^PARTICLES_UNSUPPORTED: particles draw on the visibility buffer/);
 });
