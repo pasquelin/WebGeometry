@@ -29,7 +29,7 @@ Every served object carries the `.bin` extension and every object name is the SH
 
 ## `clusters.json`
 
-`clusters.json` is the root of the manifest, of one size whatever the world (1 717 bytes at `full` scope for the grids of 48² and 192² and the open-world cell laid 8 × 8; `compiler_manifest_pages.rs`): the fields that name the product — `status`, `formatVersion`, `schema`, `scope`, `key`, `compilerVersion` —, `head`, the slot of the head page, and `pages`, eight slots of mesh pages, empty ones last, in the layout and through the pager of the [paged cell index](#world-partition). A page is `manifest-page-<sha256>.json`: the head, `{ version: 10, …, binary }`, holds every other field below and the descriptor of the texture previews' column file; a mesh page, `{ version: 10, primitives, binary }`, slim primitives and the descriptor of their columns; an index page, `{ version: 10, pages }`, at most eight slots. One mesh page lists every primitive today. A reader checks the root (`assertCacheRoot`) before it reads the pages side by side, each against its slot and each column file against its descriptor, and merges them (`readPagedManifest`). A compile that rewrites its key folder removes, once its new root is written, every manifest page and column file that root no longer names.
+`clusters.json` is the root of the manifest, of one size whatever the world (1 717 bytes at `full` scope for the grids of 48² and 192² and the open-world cell laid 8 × 8; `compiler_manifest_pages.rs`): the fields that name the product — `status`, `formatVersion`, `schema`, `scope`, `key`, `compilerVersion` —, `head`, the slot of the head page, and `pages`, eight slots of mesh pages, empty ones last, in the layout and through the pager of the [paged cell index](#world-partition). A page is `manifest-page-<sha256>.json`: the head, `{ version: 10, …, binary }`, holds every other field below and the descriptor of the texture previews' column file; a mesh page, `{ version: 10, primitives, binary }`, slim primitives and the descriptor of their columns; an index page, `{ version: 10, pages }`, at most eight slots. The mesh pages are cut through the same pager from the primitives in order, halved in two: a region page is one primitive or the primitives whose page fits 128 KiB (`PAGE_BYTES`), each with its own column file, and they are written before the scene tables, whose region pages name them (#792). A reader checks the root (`assertCacheRoot`) before it reads the pages side by side, each against its slot and each column file against its descriptor, and merges them (`readPagedManifest`). A compile that rewrites its key folder removes, once its new root is written, every manifest page and column file that root no longer names.
 
 Required fields of the merged manifest, consumed by the browser adapter:
 
@@ -205,22 +205,24 @@ tables (`scene-cell-<n>.json`), fingerprint and size (the reader verifies them a
 page), `parents`, `[[rank, box], …]`: for each core node its placements hang under (`null`, the
 scene), the box around them **in that node's frame**, and `meshes`, `[[rank, count], …]` in rank
 order: how many placements of each mesh it holds, which the runtime sizes its rows by before
-reading any cell. A cell file is `{ version: 2, nodes }`, each node `{ parent, mesh, matrix, translation,
+reading any cell. A cell file is `{ version: 3, nodes }`, each node `{ parent, mesh, matrix, translation,
 rotation, scale }`: `parent` the rank in `nodes[]` of the core node it hangs under (`null`, the
 scene), its mesh, and its local pose exactly as declared, each part `null` when silent. A
 placement's name is not kept: it is a row, not a host node.
 
 **The paged cell index** (`partition/pages.rs`, #750). The records lie in pages cut from the
-halving tree, each node a contiguous range of cells: a region page `{ version: 2, cells }` holds the
-records of the highest node under 128 KiB (`PAGE_BYTES`; one cell whatever its size), an index page
-`{ version: 2, pages }` lists at most 8 pages (`FAN_OUT`), its node opened largest first, and
-`partition` is the root `{ version: 2, pages }`: the whole tree opened into exactly eight slots,
+halving tree, each node a contiguous range of cells: a region page `{ version: 3, cells, meshPages }` holds the
+records of the highest node under 128 KiB (`PAGE_BYTES`; one cell whatever its size) and, sorted and
+each once, the slots of the manifest's mesh pages that hold a primitive of a mesh its cells place —
+what a region needs fetched (#792) —, an index page
+`{ version: 3, pages }` lists at most 8 pages (`FAN_OUT`), its node opened largest first, and
+`partition` is the root `{ version: 3, pages }`: the whole tree opened into exactly eight slots,
 empty ones last — 1 391 bytes for grids of 48² and 192² and the open-world cell laid 8 × 8. A slot
 is 168 hexadecimal digits: the page's SHA-256, its size (8) and its box at the declared poses as six
 big-endian `f64` bit patterns (16 each), naming `scene-page-<sha256>.json`; zeros name no page.
 `readTablePartition` reads every page through its caller's `read`, which verifies it against its
-slot (`fetchVerified`), into the records in cell order, `bounds` the union of the root's boxes and
-`meshes` the ranks placed. Pages and cells are outside
+slot (`fetchVerified`), into the records in cell order, `bounds` the union of the root's boxes,
+`meshes` the ranks placed and `regions` each region page's cell count and mesh pages. Pages and cells are outside
 the manifest's `files`: a reused folder proves them through the root.
 
 **Reading the cells.** Each mesh the cells place is drawn by one host mesh per primitive whose
