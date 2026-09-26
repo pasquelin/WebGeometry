@@ -4,16 +4,12 @@
 import { DAG_SELECTION_SHADER } from '../../../packages/sdk-browser/src/gpu/dag/shader/shader.ts';
 import { DAG_LEVEL_WGSL } from '../../../packages/sdk-browser/src/gpu/dag/shader/levelWgsl.ts';
 
-const DAG_LEVEL_WGSL_AVANT = `fn queueBase(q:u32)->u32{return select(0u,uni.nodeCount+uni.clusterCount*4u,q==1u);}
-fn candBase()->u32{return uni.nodeCount+uni.clusterCount*3u;}
-fn queueCounter(q:u32)->u32{return liveCounter()+2u+q*2u;}
+const DAG_LEVEL_WGSL_AVANT = `fn queueCounter(q:u32)->u32{return liveCounter()+2u+q*2u;}
 fn queueGroups(q:u32)->u32{return queueCounter(q)+1u;}
 fn candCounter()->u32{return liveCounter()+6u;}
 fn candGroups()->u32{return candCounter()+1u;}
 fn drawnCounter()->u32{return liveCounter()+8u;}
 fn drawnGroups()->u32{return drawnCounter()+1u;}
-/** Index of the primitive's root node, deposited once and for all behind its stretch. */
-fn rootOf(w:u32)->u32{return bitcast<u32>(frames[w*FRAME+6u].y);}
 /** A range append: the group count follows the opening of each sixty-four slice,
  *  so it is exactly \`ceil(total/64)\` without a single-thread kernel pulling it afterwards. */
 fn spanAppend(counter:u32,groups:u32,base:u32,first:u32,count:u32){
@@ -68,21 +64,25 @@ function shippedFn(name: string) {
   return found[0];
 }
 
-/** Names the shipped shader's other stages call since (`dagPrepare`, `aheadWgsl.ts`), which the
- *  frozen `levelStep` never reaches: `markOf` and `tooCoarse` taken from the shipped descent,
- *  `descend` rewritten, since the shipped one appends to queues this layout does not have. */
-const AVANT_SHIMS = `${shippedFn('markOf')}
-${shippedFn('tooCoarse')}
+/** What the frozen `levelStep` shares with the shipped cut, taken from the shipped descent rather
+ *  than copied: the flags layout — `queueBase` and `candBase`, whose queues 0 and 1 are the frozen
+ *  ones for a camera (`queueCap` is `nodeCount`) and whose further queues the shipped stages address
+ *  (`lastUseAt` is `queueBase(3)`, #477) — `rootOf`, and the names the shipped shader's other
+ *  stages call since (`markOf`, `tooCoarse`). `descend` is rewritten: the shipped one appends to
+ *  queues this layout does not have. */
+const AVANT_SHIMS = `${['queueBase', 'candBase', 'rootOf', 'markOf', 'tooCoarse'].map(shippedFn).join('\n')}
 fn descend(src:u32,node:CullNode){
  if(node.childCount>0u){spanAppend(queueCounter(1u-src),queueGroups(1u-src),queueBase(1u-src),node.firstChild,node.childCount);return;}
  spanAppend(candCounter(),candGroups(),candBase(),node.firstPage,node.pageCount);
 }
 `;
 
-/** The shipped cut shader with this descent in place of its own: the module the oracle compiles.
- *  The frozen descent reads the camera's block under its old name; the shipped shader binds one
- *  block per view, and a camera is view 0 (`viewsWgsl.ts`). */
+/** The frozen descent's own text, read on the camera's block: the shipped shader binds one block
+ *  per view, and a camera is view 0 (`viewsWgsl.ts`). */
+export const DESCENT_AVANT = DAG_LEVEL_WGSL_AVANT.replaceAll('uni.', 'views[0u].');
+
+/** The shipped cut shader with this descent in place of its own: the module the oracle compiles. */
 export const DAG_SELECTION_SHADER_AVANT = DAG_SELECTION_SHADER.replace(
   DAG_LEVEL_WGSL,
-  DAG_LEVEL_WGSL_AVANT.replaceAll('uni.', 'views[0u].') + AVANT_SHIMS,
+  DESCENT_AVANT + AVANT_SHIMS,
 );
