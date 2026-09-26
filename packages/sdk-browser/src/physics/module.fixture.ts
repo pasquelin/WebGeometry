@@ -8,9 +8,11 @@ import {
   MISS,
   type PhysicsBudget,
 } from '../../../sdk-core/src/physics/index.ts';
+import { HUMAN_BODY } from '../../../sdk-core/src/collision/characterSettings.ts';
 import type { Ray } from '../../../sdk-core/src/world/math/volumes.ts';
 import type { Object3D } from '../../../sdk-core/src/world/object/object3d.ts';
 import type { createPhysicsBodies } from './bodies.ts';
+import { createCharacterDriver } from './characterDriver.ts';
 import { openJolt, startJolt } from './joltModule.ts';
 import { physicsRaycast, type PhysicsRaycastOptions } from './raycast.ts';
 import type { PhysicsSession } from './session.ts';
@@ -102,4 +104,17 @@ export function moduleRaycast(jolt: Module, bodies: ReturnType<typeof createPhys
   };
   return (ray: Ray, options: PhysicsRaycastOptions) =>
     physicsRaycast(session as unknown as PhysicsSession, ray, options, 1000);
+}
+
+/** The human character made standing at `feet` in `jolt`, in the one step that adds the bodies
+ *  `words` writes: its driver, read once. */
+export function standCharacter(jolt: Module, words: Uint32Array, feet: number[]) {
+  const driver = createCharacterDriver();
+  const made = driver.configure({ ...HUMAN_BODY }, feet)!;
+  const all = new Uint32Array(words.length + made.length);
+  all.set(words);
+  all.set(made, words.length);
+  jolt.step(all, 0);
+  driver.read(jolt.character(), 0);
+  return driver;
 }
