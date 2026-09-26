@@ -54,7 +54,6 @@ export function prepareWebgpuBlend(
       ? undefined
       : ensureBlendNormalBuffer(device, copy.geometry.attributes, gpu);
     const hasNormal = paged ? !!copy.geometry.attributes.normal : !!normal;
-    const opacity = mat.opacity;
     let flags = 0;
     if (mat.lit) flags |= FLAG_LIT;
     if (mat.doubleSided) flags |= FLAG_DOUBLE;
@@ -89,13 +88,6 @@ export function prepareWebgpuBlend(
       sourceGeometry: copy.geometry,
       worldBox,
       bounds: undefined as Float64Array | undefined,
-      rgba: [mat.baseColor[0], mat.baseColor[1], mat.baseColor[2], opacity] as [
-        number,
-        number,
-        number,
-        number,
-      ],
-      map: mat.map,
       flags,
       paged,
       // Reset by `refreshEyeKeys` before each sort; here only so they exist.

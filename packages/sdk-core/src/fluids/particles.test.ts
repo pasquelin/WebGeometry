@@ -72,3 +72,15 @@ test('an idle pool stops moving: its step takes no time once its last particle i
   pool.advance(0.05);
   assert.equal(pool.flush().dt, 0);
 });
+
+test('a pool blends, sizes and softens as told, and refuses by name what no renderer draws', () => {
+  const fire = new ParticlePool({ capacity: 8 });
+  assert.deepEqual([fire.blend, fire.size, fire.softness], ['additive', 0.1, 0.1]);
+  const smoke = new ParticlePool({ capacity: 8, blend: 'premultiplied', size: 2 });
+  assert.deepEqual([smoke.blend, smoke.softness], ['premultiplied', 2], 'soft over its size');
+  const blend = 'alpha' as ParticlePool['blend'];
+  assert.throws(() => new ParticlePool({ capacity: 8, blend }), /^Error: PARTICLE_BLEND/);
+  assert.throws(() => new ParticlePool({ capacity: 8, softness: 0 }), /^Error: PARTICLE_SIZE/);
+  const color = [1, 1, 1] as unknown as [number, number, number, number];
+  assert.throws(() => new ParticlePool({ capacity: 8, color }), /^Error: PARTICLE_COLOR/);
+});
