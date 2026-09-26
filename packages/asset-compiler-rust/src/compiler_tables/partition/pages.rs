@@ -4,15 +4,19 @@
 //! grow with the world. Each kind of record is paged so, under its own files and version (`Kind`).
 use super::*;
 use split::Region;
-use std::{fmt::Write as _, ops::Range};
+use std::{cell::RefCell, fmt::Write as _, ops::Range};
 
+mod cells;
 mod read;
+pub(crate) use cells::*;
 pub(crate) use read::*;
 
 /// The most bytes a region page of more than one record holds: one stream unit.
 pub(crate) const PAGE_BYTES: usize = crate::STREAM_BUNDLE_BYTES;
 /// How many pages the root and an index page list at most.
 pub(crate) const FAN_OUT: usize = 8;
+/// The slots of the mesh pages each mesh's primitives lie in, by mesh rank (#792).
+pub(crate) type MeshSlots = BTreeMap<u64, Vec<String>>;
 /// A slot: the page's SHA-256 in 64 hexadecimal digits, its size in 8, then its box — the union
 /// of its records' at the declared poses — as the bits of six `f64` in 16 each. Zeros: no page.
 pub(crate) const SLOT_WIDTH: usize = 64 + 8 + 6 * 16;
@@ -62,11 +66,15 @@ pub(crate) struct Pager<'a> {
     empty: usize,
     /// Where each record starts in a region page's list, and where the last ends.
     starts: Vec<usize>,
-    /// The box of each record.
+    /// The box of each record; none, and every page is unboxed.
     bounds: &'a [Box6],
     directory: &'a Path,
     /// The region page over a range of records, its version aside.
     leaf: &'a dyn Fn(Range<usize>) -> Result<Value>,
+    /// Each range measured, and its region page when it is one.
+    measured: RefCell<BTreeMap<(usize, usize), Option<Value>>>,
+    /// The region pages written, in record order: their records and slot.
+    leaves: RefCell<Vec<(Range<usize>, String)>>,
 }
 
 impl<'a> Pager<'a> {
@@ -86,6 +94,8 @@ impl<'a> Pager<'a> {
             bounds,
             directory,
             leaf,
+            measured: RefCell::default(),
+            leaves: RefCell::default(),
         };
         pager.empty = serde_json::to_vec(&pager.region(0..0)?)?.len();
         Ok(pager)
@@ -98,11 +108,23 @@ impl<'a> Pager<'a> {
         Ok(body)
     }
 
-    /// Whether `region` is a region page: one record, or records that fit `PAGE_BYTES`.
-    fn fits(&self, region: &Region) -> bool {
-        let (starts, cells) = (&self.starts, &region.cells);
-        region.halves.is_none()
-            || self.empty + starts[cells.end] - starts[cells.start] <= PAGE_BYTES
+    /// Whether `region` is a region page: one record, or records whose page fits `PAGE_BYTES`. Its
+    /// page is laid out once, and only when its records and their commas alone would fit.
+    fn fits(&self, region: &Region) -> Result<bool> {
+        let (cells, one) = (&region.cells, region.halves.is_none());
+        let key = (cells.start, cells.end);
+        if let Some(page) = self.measured.borrow().get(&key) {
+            return Ok(page.is_some());
+        }
+        let least = self.empty + self.starts[cells.end] - self.starts[cells.start];
+        let mut page = None;
+        if one || least <= PAGE_BYTES + 1 {
+            let body = self.region(cells.clone())?;
+            page = (one || serde_json::to_vec(&body)?.len() <= PAGE_BYTES).then_some(body);
+        }
+        let fits = page.is_some();
+        self.measured.borrow_mut().insert(key, page);
+        Ok(fits)
     }
 
     /// The slots of the pages listing `region`'s records in order, each written: its halving
@@ -110,8 +132,13 @@ impl<'a> Pager<'a> {
     fn slots(&self, region: &Region) -> Result<Vec<String>> {
         let mut pages = vec![region];
         while pages.len() < FAN_OUT {
-            let open = (0..pages.len()).filter(|at| !self.fits(pages[*at]));
-            let Some(at) = open.max_by_key(|at| pages[*at].cells.len()) else {
+            let mut open = Vec::new();
+            for (at, page) in pages.iter().enumerate() {
+                if !self.fits(page)? {
+                    open.push(at);
+                }
+            }
+            let Some(at) = open.into_iter().max_by_key(|at| pages[*at].cells.len()) else {
                 break;
             };
             let halves = pages[at]
@@ -125,13 +152,20 @@ impl<'a> Pager<'a> {
 
     /// Writes `region` as a region page, or as an index page over its slots; its slot.
     fn write(&self, region: &Region) -> Result<String> {
-        let body = if self.fits(region) {
-            self.region(region.cells.clone())?
+        let cells = region.cells.clone();
+        let leaf = self.fits(region)?;
+        let body = if leaf {
+            let measured = self.measured.borrow_mut().remove(&(cells.start, cells.end));
+            measured.flatten().expect("a region page, measured")
         } else {
             json!({"version": self.kind.version, "pages": self.slots(region)?})
         };
-        let boxes = &self.bounds[region.cells.clone()];
-        write_page(self.kind, self.directory, &body, boxes)
+        let boxes = self.bounds.get(cells.clone()).unwrap_or(&[]);
+        let slot = write_page(self.kind, self.directory, &body, boxes)?;
+        if leaf {
+            self.leaves.borrow_mut().push((cells, slot.clone()));
+        }
+        Ok(slot)
     }
 
     /// The root's slots over `tree`, the empty ones last.
@@ -140,22 +174,9 @@ impl<'a> Pager<'a> {
         slots.resize(FAN_OUT, "0".repeat(SLOT_WIDTH));
         Ok(slots)
     }
-}
 
-/// Writes the pages of the cells `tree` halved, whose records and world boxes are `records` and
-/// `bounds`; returns the root.
-pub(crate) fn write_pages(
-    tree: &Region,
-    records: &[Value],
-    bounds: &[Box6],
-    directory: &Path,
-) -> Result<Value> {
-    let mut starts = vec![0];
-    for record in records {
-        starts.push(starts[starts.len() - 1] + serde_json::to_vec(record)?.len() + 1);
+    /// The region pages written, in record order: the records each lists, and its slot.
+    pub(crate) fn leaves(self) -> Vec<(Range<usize>, String)> {
+        self.leaves.into_inner()
     }
-    let kind = &CELL_PAGES;
-    let leaf = |cells: Range<usize>| Ok(json!({kind.records: &records[cells]}));
-    let pager = Pager::new(kind, starts, bounds, directory, &leaf)?;
-    Ok(json!({"version": kind.version, "pages": pager.root(tree)?}))
 }

@@ -17,14 +17,14 @@ mod boxes;
 pub(crate) mod pages;
 pub(crate) mod split;
 use boxes::{grow, mesh_boxes, world_box, EMPTY};
-use pages::write_pages;
+use pages::{write_pages, MeshSlots};
 use split::{split_cells, Placed, Region};
 
 /// A box, `[minX, minY, minZ, maxX, maxY, maxZ]`.
 type Box6 = [f64; 6];
 
 /// Version of a cell file, of a page and of the root the core carries.
-const PARTITION_VERSION: u32 = 2;
+const PARTITION_VERSION: u32 = 3;
 
 /// The core the runtime reads first, the root of the cells it reads by distance, and their count.
 pub(super) struct Partitioned {
@@ -36,23 +36,10 @@ pub(super) struct Partitioned {
 
 /// The nodes an animation moves: their pose is not the one the table declares.
 fn animated(g: &Value) -> BTreeSet<usize> {
-    let animations = g
-        .get("animations")
-        .and_then(Value::as_array)
-        .map_or(&[][..], Vec::as_slice);
-    animations
-        .iter()
-        .flat_map(|a| {
-            a.get("channels")
-                .and_then(Value::as_array)
-                .map_or(&[][..], Vec::as_slice)
-        })
-        .filter_map(|c| {
-            c.pointer("/target/node")
-                .and_then(Value::as_u64)
-                .map(|n| n as usize)
-        })
-        .collect()
+    let animations = g["animations"].as_array().into_iter().flatten();
+    let channels = animations.flat_map(|a| a["channels"].as_array().into_iter().flatten());
+    let node = |c: &Value| Some(c.pointer("/target/node")?.as_u64()? as usize);
+    channels.filter_map(node).collect()
 }
 
 /// Each node's parent, and whether the scene reaches it from `roots`.
@@ -85,6 +72,7 @@ pub(super) fn partition(
     g: &Value,
     table: &[Value],
     roots: &[usize],
+    mesh_pages: &MeshSlots,
     directory: &Path,
 ) -> Result<Option<Partitioned>> {
     let gltf_nodes = values(g, "nodes")?;
@@ -164,15 +152,21 @@ pub(super) fn partition(
         nodes,
         roots,
         cells: cells.len(),
-        partition: write_cells(cells, &tree, directory)?,
+        partition: write_cells(cells, &tree, mesh_pages, directory)?,
     }))
 }
 
 /// Writes one file per cell and the pages of their records, and returns the root the core
-/// carries. A record is the cell's address, fingerprint, size, its box in the frame of each core
-/// parent it hangs nodes under, and how many nodes of each mesh it places — what the runtime sizes
-/// its rows by before its first frame.
-fn write_cells(cells: Vec<Vec<Placed>>, tree: &Region, directory: &Path) -> Result<Value> {
+/// carries, its region pages naming the `mesh_pages` their cells use. A record is the cell's
+/// address, fingerprint, size, its box in the frame of each core parent it hangs nodes under, and
+/// how many nodes of each mesh it places — what the runtime sizes its rows by before its first
+/// frame.
+fn write_cells(
+    cells: Vec<Vec<Placed>>,
+    tree: &Region,
+    mesh_pages: &MeshSlots,
+    directory: &Path,
+) -> Result<Value> {
     let mut records = Vec::with_capacity(cells.len());
     let mut bounds = Vec::with_capacity(cells.len());
     for (at, cell) in cells.iter().enumerate() {
@@ -196,5 +190,5 @@ fn write_cells(cells: Vec<Vec<Placed>>, tree: &Region, directory: &Path) -> Resu
         records.push(json!({"url": written.name, "sha256": written.sha256, "bytes": written.bytes, "parents": parents, "meshes": counts.into_iter().collect::<Vec<_>>()}));
         bounds.push(union);
     }
-    write_pages(tree, &records, &bounds, directory)
+    write_pages(tree, &records, &bounds, mesh_pages, directory)
 }
