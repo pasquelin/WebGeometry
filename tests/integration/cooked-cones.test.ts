@@ -8,19 +8,13 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readCacheManifest } from '../../bench/runner/cacheManifest.ts';
-import { triangleCone } from '../kit/cone.ts';
+import { coneHolds, triangleCone } from '../kit/cone.ts';
 import { preparedGeometries } from '../../packages/sdk-browser/src/host/prepared/geometry.ts';
 import { sceneDocument } from '../../packages/sdk-browser/src/scene/tables.ts';
 import type { PreparedSceneTables } from '../../packages/sdk-core/src/scene/core/tableContracts.ts';
 import { sceneCacheFiles } from '../kit/scenes/caches.ts';
 
 const root = new URL('../../', import.meta.url);
-
-/** The float64 words of `values`: bit for bit, and ulps apart for two numbers of one sign. */
-const words = (values: number[]) =>
-  Array.from(new BigUint64Array(Float64Array.from(values).buffer));
-/** Ulps an angle may stand above the runtime's: twice `ANGLE_MARGIN_ULPS` (4, `normal_cone.rs`). */
-const WIDEST = 2n * 4n;
 
 /** The bytes of `file`, alone in their `ArrayBuffer`. */
 const bytesOf = (file: string) => new Uint8Array(readFileSync(file)).buffer;
@@ -64,12 +58,7 @@ async function checkScene(pointer: string) {
         ? new Uint32Array(bundle(held.url), page.streamOffset, page.count)
         : new Uint32Array(bundle(page.url), 0, page.count);
       // A version-9 sidecar gives every page its cone.
-      const built = triangleCone(xyz, indices),
-        cone = page.cone!;
-      const cooked = words([...cone.axis, cone.angle]),
-        expected = words([...built.axis, built.angle]);
-      const wider = cooked[3] - expected[3];
-      if (cooked.slice(0, 3).join() !== expected.slice(0, 3).join() || wider < 0n || wider > WIDEST)
+      if (!coneHolds(page.cone!, triangleCone(xyz, indices)))
         disagreements.push(`${pointer} page ${page.id}: cooked ${JSON.stringify(page.cone)}`);
     }
   }

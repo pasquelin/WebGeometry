@@ -1,7 +1,10 @@
+import type { Page } from '../contracts/geometry.ts';
+
 /**
- * Off-main-thread page-decode contract, version 5: the decoded geometry travels as one block
+ * Off-main-thread page-decode contract, version 6: the decoded geometry travels as one block
  * with its quantization error, and the arena slot records that error in word 8; `cut` turns
- * drawn triangles into pages, which come back as bytes with their descriptors.
+ * drawn triangles into pages, which come back as bytes with their descriptors and, since
+ * version 6, their normal cone, the packed triangles carrying whether their pages keep one.
  *
  * The calling thread sends a `PageDecodeRequest`, the executor returns a `PageDecodeAnswer` carrying
  * the same `id`. Nothing here touches the platform: no `Worker`, no fetch, no clock — the browser
@@ -14,10 +17,11 @@
  * returns exactly the same values: the contract does not say how the work travels, only what it
  * returns.
  */
-export const PAGE_DECODE_PROTOCOL = 5;
+export const PAGE_DECODE_PROTOCOL = 6;
 
 /** `verify`: a page's SHA-256 digest. `decode`: its indices and per-vertex attributes. `cut`:
- *  drawn triangles, packed as five lengths then five four-byte arrays, cut into pages. */
+ *  drawn triangles, packed as five lengths, whether their pages keep a cone, then five four-byte
+ *  arrays (`packDrawn`), cut into pages. */
 export type PageDecodeOp = 'verify' | 'decode' | 'cut';
 
 /** One page a `cut` wrote: its index and geometry bytes, their digests, and its descriptor. */
@@ -35,6 +39,8 @@ export interface PageCutPage {
   /** Indices in the page. */ indexCount: number;
   /** Which attributes it carries. */ flags: number;
   /** Its size once unpacked. */ uncompressedBytes: number;
+  /** The cone of its triangles' normals, when one was built. */
+  cone?: Page['cone'];
 }
 /** What a `cut` returns: its pages, and the grids they were quantized on. */
 export interface PageCutPayload {

@@ -1181,8 +1181,8 @@
     "summary": "La règle évalue des preuves ; elle n’invente jamais une référence et ne lit jamais une horloge elle-même."
   },
   "createSceneLightStore": {
-    "summary": "Lumières de la scène, en nombre fixe.",
-    "description": "Le tampon est alloué une fois pour `maxLights` lumières et n’est jamais réalloué ; ajouter, régler ou retirer une lumière n’écrit que ses seize flottants et augmente sa révision. La `revision` par lumière indique à un lecteur qu’une lumière a changé : aucune structure n’est reconstruite par image. Le planificateur d’ombres lit lui-même la forme de la lumière, si bien qu’un changement d’intensité ou de couleur ne périme aucune page d’ombre."
+    "summary": "Lumières de la scène, autant que la scène en déclare : `capacity` places, doublées quand elles sont pleines et jamais réduites.",
+    "description": "Ajouter, régler ou retirer une lumière écrit ses flottants et augmente sa `revision`, qui indique à un lecteur qu’elle a changé : rien n’est reconstruit par image. Le planificateur d’ombres lit lui-même la forme de la lumière, si bien qu’un changement d’intensité ou de couleur ne périme aucune page d’ombre."
   },
   "createSceneRoot": {
     "summary": "Crée une hiérarchie de scène vide et versionnée.",
@@ -1575,11 +1575,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "Le chemin WebGL2 propre au moteur ne sait pas dessiner ce modèle.",
       "PAGE_BUDGET": "Les pages dont la vue a besoin ne tiennent pas dans le budget de mémoire, ou ce chemin n’a pas de budget.",
       "UNSUPPORTED_MEMORY_BUDGETS": "Les pages dont la vue a besoin ne tiennent pas dans le budget de mémoire, ou ce chemin n’a pas de budget.",
-      "INVALID_SCENE_LIGHT": "Une lumière est mal formée, en double, inconnue, de trop, ou n’a nulle part où aller.",
-      "DUPLICATE_SCENE_LIGHT": "Une lumière est mal formée, en double, inconnue, de trop, ou n’a nulle part où aller.",
-      "UNKNOWN_SCENE_LIGHT": "Une lumière est mal formée, en double, inconnue, de trop, ou n’a nulle part où aller.",
-      "SCENE_LIGHT_BUDGET": "Une lumière est mal formée, en double, inconnue, de trop, ou n’a nulle part où aller.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Une lumière est mal formée, en double, inconnue, de trop, ou n’a nulle part où aller.",
+      "INVALID_SCENE_LIGHT": "Une lumière est mal formée, en double, inconnue, ou n’a nulle part où aller.",
+      "DUPLICATE_SCENE_LIGHT": "Une lumière est mal formée, en double, inconnue, ou n’a nulle part où aller.",
+      "UNKNOWN_SCENE_LIGHT": "Une lumière est mal formée, en double, inconnue, ou n’a nulle part où aller.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Une lumière est mal formée, en double, inconnue, ou n’a nulle part où aller.",
       "INVALID_SCENE_ENVIRONMENT": "L’exposition ou l’environnement de la scène ne sont pas des nombres valides.",
       "INVALID_MATERIAL": "Un changement de matériau est inconnu, hors limites, le ferait changer de classe de dessin, ou répéterait une texture qu’il partage.",
       "UNKNOWN_MATERIAL": "Un changement de matériau est inconnu, hors limites, le ferait changer de classe de dessin, ou répéterait une texture qu’il partage.",
@@ -2876,7 +2875,7 @@
     "summary": "Réglages publiés de l’éclairage direct.",
     "description": "Ce sont des choix produit nommés, pas des constantes enterrées : chaque limite à l’exécution les relit, et le diagnostic les publie tels quels.",
     "members": {
-      "maxLights": "Lumières que le contrat accepte au total ; au-delà, `addLight` refuse. Une tuile d’écran garde chacune de celles qui la touchent ; sa liste et la boucle par pixel sont bornées par ce nombre (X2).",
+      "tileLights": "Lumières que tient la liste d’une tuile d’écran, dans chacune de ses deux tranches de profondeur : sa mémoire est celle-ci, par tuile, quoi que tienne la scène. Une tuile qu’atteignent plus de lumières ne garde aucune liste et parcourt toutes les lumières de la scène — celles qui la manquent ajoutent un zéro exact —, si bien qu’aucune lumière n’est jamais perdue (X2).",
       "tileSize": "Côté en pixels d’une tuile d’écran de la liste de lumières.",
       "samplesPerPixel": "Lumières éclairées en entier — lecture de l’ombre comprise — par pixel d’une image EN MOUVEMENT (X2) : les autres sont pesées sans leur ombre, et celles qu’on éclaire sont tirées au sort en proportion, donc l’estimation est sans biais et l’anticrénelage temporel en fait la moyenne. Une image immobile éclaire chaque lumière de sa tuile et converge vers la somme exacte ; là, ce nombre ne joue aucun rôle.",
       "shadowPage": "Côté d’une page de l’atlas d’ombres, en texels : la case d’invalidation d’une face. Un objet qui bouge ne rend périmées que les pages que couvre sa boîte projetée, jamais toute la face.",
@@ -4026,7 +4025,7 @@
     "summary": "Les couches vivent sur quatre bits du cache, donc la pile la plus profonde que le compilateur peut décrire vaut 15."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Lumières qu’une tranche d’ombre peut désigner dans l’atlas : une par lumière à ombre déclarée."
+    "summary": "Tranches d’ombre que l’atlas désigne, selon les règles propres de la table des pages (#818) — jamais une limite sur les lumières : une lumière à ombre au-delà éclaire sans ombre, et l’image la compte (`shadowCastersUnsliced`)."
   },
   "maxStretch": {
     "summary": "Le plus grand facteur par lequel une application linéaire 3×3 peut étirer une distance : sa plus grande valeur singulière, obtenue directement à partir de la matrice symétrique A^T A.",
@@ -4457,7 +4456,7 @@
     "description": "Les six premiers sont les refus du décodage de page, repris mot pour mot de `geometryPage.ts` : un appelant les distingue comme avant. `PAGE_DECODE_FAILED` porte tout autre refus de la bibliothèque de décompression. `PAGE_DECODE_CANCELLED` répond à une annulation, `PAGE_DECODE_WORKER` à un exécutant disparu — seul ce dernier permet le repli."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Contrat de décodage des pages hors du fil principal, version 5 : la géométrie décodée voyage en un seul bloc avec son erreur de quantification, et l’emplacement de l’arène enregistre cette erreur dans le mot 8 ; `cut` change des triangles dessinés en pages, qui reviennent en octets avec leurs descripteurs.",
+    "summary": "Contrat de décodage des pages hors du fil principal, version 6 : la géométrie décodée voyage en un seul bloc avec son erreur de quantification, et l’emplacement de l’arène enregistre cette erreur dans le mot 8 ; `cut` change des triangles dessinés en pages, qui reviennent en octets avec leurs descripteurs, et, depuis la version 6, avec leur cône de normales, les triangles rangés disant si leurs pages en gardent un.",
     "description": "Le fil appelant envoie une `PageDecodeRequest`, l’exécutant renvoie une `PageDecodeAnswer` qui porte le même `id`. Rien ici ne touche la plateforme : pas de `Worker`, pas de récupération, pas d’horloge — l’adaptateur du navigateur porte tout cela, ce fichier ne porte que la forme du message, la liste fermée des échecs et la limite du réservoir. Propriété des tampons : `source` est **transférée** avec la demande, donc l’expéditeur ne la possède plus. Une réponse `verify` la rend, transférée à son tour ; une réponse `decode` rend à la place les tampons décodés, transférés aussi. Un exécutant qui ne transfère rien (le repli synchrone) renvoie exactement les mêmes valeurs : le contrat ne dit pas comment voyage le travail, seulement ce qu’il renvoie."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -4492,7 +4491,8 @@
       "vertexCount": "Sommets de la page.",
       "indexCount": "Indices de la page.",
       "flags": "Quels attributs il porte.",
-      "uncompressedBytes": "Sa taille une fois décompressée."
+      "uncompressedBytes": "Sa taille une fois décompressée.",
+      "cone": "Le cône des normales de ses triangles, quand il a été construit."
     }
   },
   "PageCutPayload": {
@@ -4559,7 +4559,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify` : l’empreinte SHA-256 d’une page.",
-    "description": "`decode` : ses indices et ses attributs par sommet. `cut` : les triangles dessinés, rangés en cinq longueurs puis cinq tableaux de quatre octets, coupés en pages."
+    "description": "`decode` : ses indices et ses attributs par sommet. `cut` : les triangles dessinés, rangés en cinq longueurs, si leurs pages gardent un cône, puis cinq tableaux de quatre octets, coupés en pages."
   },
   "PageDecodeRequest": {
     "summary": "Un message qui demande à un travailleur de vérifier, décompresser ou découper une page.",
@@ -5196,14 +5196,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "Flottants de l’environnement dans le tampon GPU."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Flottants de tout le tampon GPU des lumières : l’en-tête, puis chaque lumière."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "Flottants d’une lumière dans le tampon GPU : cinq `vec4f`, jamais réalloués."
+    "summary": "Flottants d’une lumière dans le tampon GPU : cinq `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "En-tête du tampon de lumières : nombre, tuiles en X, tuiles en Y, réservé."
+    "summary": "En-tête du tampon de lumières : nombre, puis trois mots réservés."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "La version du contrat de lumière que lit ce moteur."
@@ -5277,9 +5274,9 @@
     "summary": "Les lumières d’une scène telles que le GPU les lit, rangées et tenues à jour.",
     "members": {
       "settings": "Réglages publiés de l’éclairage direct. Ce sont des choix produit nommés, pas des constantes enterrées : chaque limite à l’exécution les relit, et le diagnostic les publie tels quels.",
-      "packed": "Chaque lumière, rangée pour le GPU.",
+      "packed": "Chaque lumière, rangée pour le GPU : un nouveau tableau quand la table grandit.",
       "environmentPacked": "L’irradiance de l’environnement telle que la lit le GPU, derrière les lumières (`../core/environment.ts`).",
-      "revision": "Augmenté à chaque changement.",
+      "revision": "Augmenté à chaque changement, par place.",
       "sliceOf": "La tranche d’atlas d’une lumière vit dans le tampon lui-même : elle n’est pas gardée deux fois.",
       "ids": "Le nom de la lumière de chaque place.",
       "count": "Combien de lumières.",
@@ -5296,7 +5293,7 @@
       "remove": "Retire une lumière.",
       "setEnvironment": "Règle l’environnement.",
       "assignSlice": "Enregistre la tranche d’atlas qu’occupe une lumière, sans toucher au reste de ses champs. La révision du stockage ne monte que si la tranche a vraiment changé : sinon rien n’est envoyé au GPU.",
-      "view": "Flottants vraiment occupés : l’écriture GPU n’envoie jamais d’emplacements vides."
+      "capacity": "Places que tient la table : le tampon GPU des lumières a cette longueur."
     }
   },
   "SceneLink": {

@@ -52,3 +52,30 @@ fn no_face_or_cancelling_faces_leave_the_cone_open() {
     assert_eq!(triangle_cone(&pos, &[0, 0, 1, 2, 2, 2]), OPEN_CONE);
     assert_eq!(triangle_cone(&pos, &[0, 1, 2, 0, 2, 1]), OPEN_CONE);
 }
+
+#[test]
+fn each_cluster_gets_the_cone_of_its_own_triangles() {
+    let pos = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    let indices = [0, 1, 2, 0, 3, 1, 0, 2, 3];
+    let mut out = [0.0; 8];
+    assert_eq!(
+        cluster_cones(&pos, &indices, &[0, 3, 3, 9], &mut out),
+        Some(())
+    );
+    assert_eq!(out[..4], triangle_cone(&pos, &indices[..3]));
+    assert_eq!(out[4..], triangle_cone(&pos, &indices[3..]));
+}
+
+#[test]
+fn a_range_or_an_index_outside_the_input_writes_nothing() {
+    let pos = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+    let mut out = [7.0; 4];
+    assert_eq!(cluster_cones(&pos, &[0, 1, 3], &[0, 3], &mut out), None);
+    assert_eq!(cluster_cones(&pos, &[0, 1, 2], &[0, 6], &mut out), None);
+    assert_eq!(cluster_cones(&pos, &[0, 1, 2], &[3, 0], &mut out), None);
+    assert_eq!(
+        cluster_cones(&pos, &[0, 1, 2], &[0, 3, 0, 3], &mut out),
+        None
+    );
+    assert_eq!(out, [7.0; 4]);
+}

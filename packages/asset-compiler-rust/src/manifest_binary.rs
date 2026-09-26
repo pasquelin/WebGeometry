@@ -39,7 +39,7 @@ use tests::split;
 /// history sits beside the reader (`sdk-core/src/manifest/binaryFormat.ts`). Version 8 adds the
 /// page dependencies of the streaming bundles, a count per bundle then the flat closed lists: a
 /// reader of version 7 would install a bundle before the bundles holding its parents. Version 9
-/// adds each page's normal cone (`src/normal_cone.rs`), a column a reader of version 8 lacks.
+/// adds each page's normal cone (`trillion3d_page_codec::normal_cone`), a column a reader of version 8 lacks.
 /// Version 10 holds one manifest page's columns (`compiler_manifest_pages.rs`), the head's the
 /// previews alone.
 pub const MANIFEST_BINARY_VERSION: u32 = 10;

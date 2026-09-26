@@ -28,7 +28,6 @@ export const ENGINE_ERROR_CODES: readonly (readonly string[])[] = [
     'INVALID_SCENE_LIGHT',
     'DUPLICATE_SCENE_LIGHT',
     'UNKNOWN_SCENE_LIGHT',
-    'SCENE_LIGHT_BUDGET',
     'SCENE_LIGHTS_UNAVAILABLE',
   ],
   ['INVALID_SCENE_ENVIRONMENT'],

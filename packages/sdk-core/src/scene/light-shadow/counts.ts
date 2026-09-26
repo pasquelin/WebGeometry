@@ -6,7 +6,7 @@ import type { ShadowRecords } from './records.ts';
  * What the shadow scheduler did in a frame, in pages: pages staled, drawn, left pending — 0 unless
  * the frame could not encode its pages (`plan.reissue`) —, pages the image reads straight from the
  * cache, pages the pool holds; and its one wait, in ms and frames, of the oldest stale page the
- * image reads. Everything is allocated once.
+ * image reads; and the shadow casters it found no slice for. Everything is allocated once.
  */
 export function createShadowCounts() {
   /** Frame (plus one) of the last page drawn for each slice's light. */
@@ -24,8 +24,11 @@ export function createShadowCounts() {
     poolPages: 0,
     waitedMs: 0,
     waitedFrames: 0,
+    /** Shadow-casting lights past the `MAX_SHADOW_SLICES` slices: lit, never shadowed. */
+    unslicedCasters: 0,
     beginFrame() {
       counts.lights = 0;
+      counts.unslicedCasters = 0;
       counts.sunLights = 0;
       counts.invalidatedPages = counts.visitedPages = 0;
     },

@@ -938,11 +938,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "Đường xử lý WebGL2 riêng của bộ máy không thể vẽ mô hình này.",
       "PAGE_BUDGET": "Các trang mà góc nhìn cần không vừa với ngân sách bộ nhớ, hoặc đường xử lý này không có ngân sách nào.",
       "UNSUPPORTED_MEMORY_BUDGETS": "Các trang mà góc nhìn cần không vừa với ngân sách bộ nhớ, hoặc đường xử lý này không có ngân sách nào.",
-      "INVALID_SCENE_LIGHT": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, thừa một cái, hoặc không có nơi để đi.",
-      "DUPLICATE_SCENE_LIGHT": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, thừa một cái, hoặc không có nơi để đi.",
-      "UNKNOWN_SCENE_LIGHT": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, thừa một cái, hoặc không có nơi để đi.",
-      "SCENE_LIGHT_BUDGET": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, thừa một cái, hoặc không có nơi để đi.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, thừa một cái, hoặc không có nơi để đi.",
+      "INVALID_SCENE_LIGHT": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, hoặc không có nơi để đi.",
+      "DUPLICATE_SCENE_LIGHT": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, hoặc không có nơi để đi.",
+      "UNKNOWN_SCENE_LIGHT": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, hoặc không có nơi để đi.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, hoặc không có nơi để đi.",
       "INVALID_SCENE_ENVIRONMENT": "Độ phơi sáng hoặc môi trường xung quanh của cảnh không phải là các con số hợp lệ.",
       "INVALID_MATERIAL": "Một thay đổi vật liệu không xác định, ngoài phạm vi, sẽ chuyển nó sang lớp vẽ khác, hoặc sẽ lặp lại một bản đồ mà nó dùng chung.",
       "UNKNOWN_MATERIAL": "Một thay đổi vật liệu không xác định, ngoài phạm vi, sẽ chuyển nó sang lớp vẽ khác, hoặc sẽ lặp lại một bản đồ mà nó dùng chung.",
@@ -1622,7 +1621,7 @@
     "summary": "Các cài đặt đã công bố của ánh sáng trực tiếp.",
     "description": "Đây là các lựa chọn sản phẩm có tên, không phải các hằng số bị chôn giấu: mọi giới hạn khi chạy đều đọc lại chúng, và bảng chẩn đoán công bố chúng nguyên trạng.",
     "members": {
-      "maxLights": "Số nguồn sáng mà hợp đồng chấp nhận tổng cộng; vượt quá đó, `addLight` từ chối. Một ô màn hình giữ mọi nguồn sáng chạm vào nó; danh sách của nó và vòng lặp điểm ảnh bị giới hạn bởi con số này (X2).",
+      "tileLights": "Số nguồn sáng mà danh sách của một ô màn hình giữ, trong mỗi lát độ sâu của nó: bộ nhớ của nó là bấy nhiêu, mỗi ô, bất kể cảnh chứa gì. Một ô được nhiều nguồn sáng hơn chạm tới sẽ không giữ danh sách và duyệt mọi nguồn sáng của cảnh — những nguồn không chạm tới nó cộng thêm một số không chính xác —, nên không nguồn sáng nào bị bỏ (X2).",
       "tileSize": "Cạnh tính bằng điểm ảnh của một ô màn hình trong danh sách nguồn sáng.",
       "samplesPerPixel": "Số nguồn sáng được tô bóng đầy đủ — kể cả đọc bóng đổ — cho mỗi điểm ảnh của một hình ảnh ĐANG CHUYỂN ĐỘNG (X2): những nguồn còn lại được cân nhắc mà không có bóng đổ của chúng, và những nguồn được tô bóng thì được vẽ theo tỉ lệ, nên ước lượng không thiên lệch và khử răng cưa theo thời gian sẽ lấy trung bình nó. Một hình ảnh đứng yên tô bóng mọi nguồn sáng trong ô của nó và hội tụ về tổng chính xác; ở đó, con số này không có vai trò gì.",
       "shadowPage": "Cạnh của một trang bóng, tính bằng texel: đơn vị của bể vật lý, của các bản đồ ảo và của việc vô hiệu hóa. Một vật chuyển động chỉ làm cũ các trang mà hộp chiếu của nó phủ.",
@@ -1788,7 +1787,7 @@
     "summary": "Các lớp sống trong bốn bit của bộ nhớ đệm, nên ngăn xếp sâu nhất mà trình biên dịch có thể mô tả là 15."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Số nguồn sáng mà một lát bóng đổ có thể định địa chỉ trong atlas: một cho mỗi nguồn sáng có bóng đổ đã khai báo."
+    "summary": "Các lát bóng đổ mà atlas định địa chỉ, theo quy tắc riêng của bảng trang (#818) — không bao giờ là giới hạn cho các nguồn sáng: một nguồn sáng đổ bóng vượt quá chúng vẫn chiếu sáng nhưng không có bóng, và khung hình đếm nó (`shadowCastersUnsliced`)."
   },
   "ManifestBinaryDescriptor": {
     "summary": "Nơi tệp nhị phân nằm và cách một cụm, một trang đã đóng gói và một gói nêu tên đối tượng của chúng.",
@@ -2249,7 +2248,7 @@
     "description": "Sáu cái đầu tiên là các lượt từ chối giải mã trang, lấy nguyên văn từ `geometryPage.ts`: bên gọi phân biệt chúng như trước. `PAGE_DECODE_FAILED` mang bất kỳ lượt từ chối nào khác từ thư viện giải nén. `PAGE_DECODE_CANCELLED` trả lời một lần hủy, `PAGE_DECODE_WORKER` một bộ thực thi đã biến mất — chỉ cái đó cho phép phương án dự phòng."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Hợp đồng giải mã trang ngoài luồng chính, phiên bản 5: hình học đã giải mã di chuyển như một khối duy nhất cùng sai số lượng tử hóa của nó, và khe của vùng nhớ ghi lại sai số đó ở từ thứ 8; `cut` biến các tam giác đã vẽ thành các trang, trở lại dưới dạng byte cùng bộ mô tả của chúng.",
+    "summary": "Hợp đồng giải mã trang ngoài luồng chính, phiên bản 6: hình học đã giải mã di chuyển như một khối duy nhất cùng sai số lượng tử hóa của nó, và khe của vùng nhớ ghi lại sai số đó ở từ thứ 8; `cut` biến các tam giác đã vẽ thành các trang, trở lại dưới dạng byte cùng bộ mô tả của chúng, và từ phiên bản 6 kèm hình nón pháp tuyến của chúng, các tam giác đã đóng gói cho biết trang của chúng có giữ hình nón hay không.",
     "description": "Luồng gọi gửi một `PageDecodeRequest`, bộ thực thi trả về một `PageDecodeAnswer` mang cùng `id`. Không có gì ở đây chạm vào nền tảng: không `Worker`, không fetch, không đồng hồ — bộ điều hợp trình duyệt mang tất cả những thứ đó, tệp này chỉ mang hình dạng thông điệp, danh sách đóng các lỗi và giới hạn của pool. Quyền sở hữu bộ đệm: `source` được **chuyển giao** cùng yêu cầu, nên bên gửi không còn sở hữu nó nữa. Một phản hồi `verify` trả nó lại, được chuyển giao ngược lại; một phản hồi `decode` trả về các bộ đệm đã giải mã thay vào đó, cũng được chuyển giao. Một bộ thực thi không chuyển giao gì cả (phương án dự phòng đồng bộ) trả về chính xác các giá trị giống nhau: hợp đồng không nói công việc di chuyển như thế nào, chỉ nói nó trả về gì."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2379,7 +2378,8 @@
       "vertexCount": "Số đỉnh trong trang.",
       "indexCount": "Số chỉ số trong trang.",
       "flags": "Những thuộc tính nào nó mang theo.",
-      "uncompressedBytes": "Kích thước của nó sau khi giải nén."
+      "uncompressedBytes": "Kích thước của nó sau khi giải nén.",
+      "cone": "Hình nón bao pháp tuyến các tam giác của nó, nếu đã được dựng."
     }
   },
   "PageCutPayload": {
@@ -2443,7 +2443,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: khối tóm tắt SHA-256 của một trang.",
-    "description": "`decode`: các chỉ số và thuộc tính theo từng đỉnh của nó. `cut`: các tam giác đã vẽ, đóng gói thành năm độ dài rồi năm mảng bốn-byte, cắt thành các trang."
+    "description": "`decode`: các chỉ số và thuộc tính theo từng đỉnh của nó. `cut`: các tam giác đã vẽ, đóng gói thành năm độ dài, trang có giữ hình nón hay không, rồi năm mảng bốn-byte, cắt thành các trang."
   },
   "PageDecodeRequest": {
     "summary": "Một thông điệp yêu cầu một worker kiểm tra, giải nén hoặc cắt một trang.",
@@ -2832,14 +2832,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "Các số thực của môi trường trong bộ đệm GPU."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Các số thực của toàn bộ bộ đệm nguồn sáng GPU: tiêu đề, rồi tới từng nguồn sáng."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "Các số thực của một nguồn sáng trong bộ đệm GPU: năm `vec4f`, không bao giờ được cấp phát lại."
+    "summary": "Các số thực của một nguồn sáng trong bộ đệm GPU: năm `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "Tiêu đề bộ đệm nguồn sáng: số đếm, số ô theo X, số ô theo Y, dự trữ."
+    "summary": "Phần đầu bộ đệm nguồn sáng: số lượng, rồi ba từ dự trữ."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "Phiên bản của hợp đồng nguồn sáng mà bộ máy này đọc."
@@ -3043,9 +3040,9 @@
     "summary": "Các nguồn sáng của một cảnh đúng như GPU đọc chúng, được đóng gói và luôn cập nhật.",
     "members": {
       "settings": "Các cài đặt đã công bố của ánh sáng trực tiếp. Đây là các lựa chọn sản phẩm có tên, không phải các hằng số bị chôn giấu: mọi giới hạn khi chạy đều đọc lại chúng, và bảng chẩn đoán công bố chúng nguyên trạng.",
-      "packed": "Mỗi nguồn sáng, được đóng gói cho GPU.",
+      "packed": "Mọi nguồn sáng, được đóng gói cho GPU: một mảng mới khi bảng lớn lên.",
       "environmentPacked": "Độ rọi của môi trường đúng như GPU đọc nó, đứng sau các nguồn sáng (`../core/environment.ts`).",
-      "revision": "Tăng lên ở mỗi thay đổi.",
+      "revision": "Được tăng mỗi khi thay đổi, theo từng ô.",
       "sliceOf": "Lát atlas của một nguồn sáng sống ngay trong bộ đệm đó: nó không được giữ hai lần.",
       "ids": "Tên nguồn sáng của mỗi khe.",
       "count": "Có bao nhiêu nguồn sáng.",
@@ -3062,7 +3059,7 @@
       "remove": "Gỡ bỏ một nguồn sáng.",
       "setEnvironment": "Đặt môi trường đó.",
       "assignSlice": "Ghi lại lát atlas mà một nguồn sáng chiếm, mà không chạm vào các trường còn lại của nó. Số phiên bản của kho lưu trữ chỉ tăng nếu lát đó thực sự thay đổi: nếu không, không có gì được đẩy tới GPU.",
-      "view": "Các số thực thực sự được chiếm dụng: việc ghi của GPU không bao giờ đẩy các khe trống."
+      "capacity": "Số ô bảng giữ: bộ đệm nguồn sáng GPU dài bằng này."
     }
   },
   "SceneLightingView": {
@@ -4791,8 +4788,8 @@
     "summary": "Chính sách đánh giá bằng chứng; nó không bao giờ bịa ra một tham chiếu hay tự lấy mẫu đồng hồ."
   },
   "createSceneLightStore": {
-    "summary": "Các nguồn sáng của cảnh, ở dung lượng cố định.",
-    "description": "Bộ đệm được cấp phát một lần cho `maxLights` nguồn sáng và không bao giờ được cấp phát lại; việc thêm, đặt hoặc xóa một nguồn sáng chỉ ghi mười sáu số thực của nó và tăng phiên bản của nó. `revision` theo từng nguồn sáng cho người đọc biết rằng một nguồn sáng đã thay đổi: không có cấu trúc nào được xây dựng lại theo từng khung hình. Bộ lập lịch bóng đổ tự đọc hình dạng của nguồn sáng, nên một thay đổi về cường độ hay màu sắc không làm cũ trang bóng đổ nào."
+    "summary": "Các nguồn sáng của cảnh, nhiều như cảnh khai báo: `capacity` ô, được nhân đôi khi đầy và không bao giờ thu nhỏ.",
+    "description": "Việc thêm, đặt hoặc xóa một nguồn sáng ghi các số thực của nó và tăng `revision` của nó, cho người đọc biết nó đã thay đổi: không có gì được xây dựng lại theo từng khung hình. Bộ lập lịch bóng đổ tự đọc hình dạng của nguồn sáng, nên một thay đổi về cường độ hay màu sắc không làm cũ trang bóng đổ nào."
   },
   "createSceneRoot": {
     "summary": "Tạo một hệ thống phân cấp cảnh trống, có phiên bản.",

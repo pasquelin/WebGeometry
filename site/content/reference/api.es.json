@@ -1181,8 +1181,8 @@
     "summary": "La regla evalúa pruebas; nunca inventa una referencia ni lee un reloj por sí misma."
   },
   "createSceneLightStore": {
-    "summary": "Luces de la escena, en número fijo.",
-    "description": "El búfer se asigna una vez para `maxLights` luces y nunca se reasigna; añadir, ajustar o quitar una luz solo escribe sus dieciséis flotantes y aumenta su revisión. La `revision` por luz indica a un lector que una luz ha cambiado: ninguna estructura se reconstruye por fotograma. El planificador de sombras lee la forma de la luz por sí mismo, así que un cambio de intensidad o de color no deja obsoleta ninguna página de sombra."
+    "summary": "Luces de la escena, tantas como la escena declara: `capacity` plazas, duplicadas cuando se llenan y nunca reducidas.",
+    "description": "Añadir, ajustar o quitar una luz escribe sus flotantes y aumenta su `revision`, que indica a un lector que ha cambiado: nada se reconstruye por fotograma. El planificador de sombras lee por sí mismo la forma de la luz, así que un cambio de intensidad o de color no deja obsoleta ninguna página de sombra."
   },
   "createSceneRoot": {
     "summary": "Crea una jerarquía de escena vacía y versionada.",
@@ -1575,11 +1575,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "El camino WebGL2 propio del motor no sabe dibujar este modelo.",
       "PAGE_BUDGET": "Las páginas que necesita la vista no caben en el presupuesto de memoria, o este camino no tiene presupuesto.",
       "UNSUPPORTED_MEMORY_BUDGETS": "Las páginas que necesita la vista no caben en el presupuesto de memoria, o este camino no tiene presupuesto.",
-      "INVALID_SCENE_LIGHT": "Una luz está mal formada, duplicada, desconocida, sobrante, o no tiene dónde ir.",
-      "DUPLICATE_SCENE_LIGHT": "Una luz está mal formada, duplicada, desconocida, sobrante, o no tiene dónde ir.",
-      "UNKNOWN_SCENE_LIGHT": "Una luz está mal formada, duplicada, desconocida, sobrante, o no tiene dónde ir.",
-      "SCENE_LIGHT_BUDGET": "Una luz está mal formada, duplicada, desconocida, sobrante, o no tiene dónde ir.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Una luz está mal formada, duplicada, desconocida, sobrante, o no tiene dónde ir.",
+      "INVALID_SCENE_LIGHT": "Una luz está mal formada, duplicada, desconocida, o no tiene dónde ir.",
+      "DUPLICATE_SCENE_LIGHT": "Una luz está mal formada, duplicada, desconocida, o no tiene dónde ir.",
+      "UNKNOWN_SCENE_LIGHT": "Una luz está mal formada, duplicada, desconocida, o no tiene dónde ir.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Una luz está mal formada, duplicada, desconocida, o no tiene dónde ir.",
       "INVALID_SCENE_ENVIRONMENT": "La exposición o el entorno de la escena no son números válidos.",
       "INVALID_MATERIAL": "Un cambio de material es desconocido, está fuera de rango, lo movería a otra clase de dibujo o repetiría un mapa que comparte.",
       "UNKNOWN_MATERIAL": "Un cambio de material es desconocido, está fuera de rango, lo movería a otra clase de dibujo o repetiría un mapa que comparte.",
@@ -2868,7 +2867,7 @@
     "summary": "Ajustes publicados de la iluminación directa.",
     "description": "Son decisiones de producto nombradas, no constantes enterradas: cada límite en tiempo de ejecución las vuelve a leer, y el diagnóstico las publica tal cual.",
     "members": {
-      "maxLights": "Luces que el contrato acepta en total; más allá, `addLight` rechaza. Una tesela de pantalla conserva cada una que la toca; su lista y el bucle por píxel están acotados por este número (X2).",
+      "tileLights": "Luces que guarda la lista de una tesela de pantalla, en cada una de sus dos porciones de profundidad: su memoria es esta, por tesela, tenga lo que tenga la escena. Una tesela a la que llegan más luces no guarda lista y recorre todas las luces de la escena — las que no la alcanzan suman un cero exacto —, así que nunca se pierde una luz (X2).",
       "tileSize": "Lado en píxeles de una tesela de pantalla de la lista de luces.",
       "samplesPerPixel": "Luces iluminadas por completo — lectura de sombra incluida — por píxel de una imagen EN MOVIMIENTO (X2): las demás se ponderan sin su sombra, y las que se iluminan se sortean en proporción, así que la estimación no tiene sesgo y el antialiasing temporal las promedia. Una imagen inmóvil ilumina cada luz de su tesela y converge hacia la suma exacta; ahí, este número no juega ningún papel.",
       "shadowPage": "Lado de una página de sombra, en téxeles: la unidad del pool físico, de los mapas virtuales y de la invalidación. Un objeto en movimiento solo invalida las páginas que cubre su caja proyectada.",
@@ -4018,7 +4017,7 @@
     "summary": "Las capas viven en cuatro bits de la caché, así que la pila más profunda que el compilador puede describir vale 15."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Luces que una porción de sombra puede designar en el atlas: una por luz con sombra declarada."
+    "summary": "Porciones de sombra que el atlas direcciona, según las reglas propias de la tabla de páginas (#818) — nunca un límite para las luces: una luz con sombra más allá de ellas ilumina sin sombra, y el fotograma la cuenta (`shadowCastersUnsliced`)."
   },
   "maxStretch": {
     "summary": "El mayor factor por el cual una aplicación lineal 3×3 puede estirar una distancia: su mayor valor singular, obtenido directamente a partir de la matriz simétrica A^T A.",
@@ -4449,7 +4448,7 @@
     "description": "Los seis primeros son los rechazos de la decodificación de página, tomados palabra por palabra de `geometryPage.ts`: un llamador los distingue como antes. `PAGE_DECODE_FAILED` lleva cualquier otro rechazo de la biblioteca de descompresión. `PAGE_DECODE_CANCELLED` responde a una cancelación, `PAGE_DECODE_WORKER` a un ejecutor desaparecido — solo este último permite el repliegue."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Contrato de decodificación de páginas fuera del hilo principal, versión 5: la geometría decodificada viaja en un único bloque con su error de cuantización, y el emplazamiento de la arena registra ese error en la palabra 8; `cut` convierte triángulos dibujados en páginas, que vuelven en bytes con sus descriptores.",
+    "summary": "Contrato de decodificación de páginas fuera del hilo principal, versión 6: la geometría decodificada viaja en un único bloque con su error de cuantización, y el emplazamiento de la arena registra ese error en la palabra 8; `cut` convierte triángulos dibujados en páginas, que vuelven en bytes con sus descriptores, y, desde la versión 6, con su cono de normales, los triángulos empaquetados indican si sus páginas conservan uno.",
     "description": "El hilo llamador envía una `PageDecodeRequest`, el ejecutor devuelve una `PageDecodeAnswer` que lleva el mismo `id`. Nada aquí toca la plataforma: sin `Worker`, sin recuperación, sin reloj — el adaptador del navegador lleva todo eso, este archivo solo lleva la forma del mensaje, la lista cerrada de fallos y el límite de la reserva. Propiedad de los búferes: `source` se **transfiere** con la solicitud, así que el remitente ya no la posee. Una respuesta `verify` la devuelve, transferida a su vez; una respuesta `decode` devuelve en su lugar los búferes decodificados, también transferidos. Un ejecutor que no transfiere nada (el repliegue síncrono) devuelve exactamente los mismos valores: el contrato no dice cómo viaja el trabajo, solo lo que devuelve."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -4484,7 +4483,8 @@
       "vertexCount": "Vértices de la página.",
       "indexCount": "Índices de la página.",
       "flags": "Qué atributos lleva.",
-      "uncompressedBytes": "Su tamaño una vez descomprimida."
+      "uncompressedBytes": "Su tamaño una vez descomprimida.",
+      "cone": "El cono de las normales de sus triángulos, si se construyó uno."
     }
   },
   "PageCutPayload": {
@@ -4551,7 +4551,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: la huella SHA-256 de una página.",
-    "description": "`decode`: sus índices y sus atributos por vértice. `cut`: los triángulos dibujados, dispuestos en cinco longitudes y luego cinco arrays de cuatro bytes, cortados en páginas."
+    "description": "`decode`: sus índices y sus atributos por vértice. `cut`: los triángulos dibujados, dispuestos en cinco longitudes, si sus páginas conservan un cono, y luego cinco arrays de cuatro bytes, cortados en páginas."
   },
   "PageDecodeRequest": {
     "summary": "Un mensaje que pide a un worker verificar, descomprimir o cortar una página.",
@@ -5188,14 +5188,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "Flotantes del entorno en el búfer de GPU."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Flotantes de todo el búfer de GPU de las luces: el encabezado, luego cada luz."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "Flotantes de una luz en el búfer de GPU: cinco `vec4f`, nunca reasignados."
+    "summary": "Flotantes de una luz en el búfer GPU: cinco `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "Encabezado del búfer de luces: número, teselas en X, teselas en Y, reservado."
+    "summary": "Cabecera del búfer de luces: número, luego tres palabras reservadas."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "La versión del contrato de luz que lee este motor."
@@ -5269,9 +5266,9 @@
     "summary": "Las luces de una escena tal como las lee la GPU, ordenadas y mantenidas al día.",
     "members": {
       "settings": "Ajustes publicados de la iluminación directa. Son decisiones de producto nombradas, no constantes enterradas: cada límite en tiempo de ejecución las vuelve a leer, y el diagnóstico las publica tal cual.",
-      "packed": "Cada luz, dispuesta para la GPU.",
+      "packed": "Cada luz, empaquetada para la GPU: un nuevo array cuando la tabla crece.",
       "environmentPacked": "La irradiancia del entorno tal como la lee la GPU, detrás de las luces (`../core/environment.ts`).",
-      "revision": "Aumentada en cada cambio.",
+      "revision": "Aumentado en cada cambio, por plaza.",
       "sliceOf": "La porción de atlas de una luz vive en el propio búfer: no se guarda dos veces.",
       "ids": "El nombre de la luz de cada plaza.",
       "count": "Cuántas luces.",
@@ -5288,7 +5285,7 @@
       "remove": "Retira una luz.",
       "setEnvironment": "Fija el entorno.",
       "assignSlice": "Registra la porción de atlas que ocupa una luz, sin tocar el resto de sus campos. La revisión del almacenamiento solo sube si la porción ha cambiado de verdad: si no, nada se envía a la GPU.",
-      "view": "Flotantes realmente ocupados: la escritura de GPU nunca envía emplazamientos vacíos."
+      "capacity": "Plazas que tiene la tabla: el búfer GPU de luces tiene esta longitud."
     }
   },
   "SceneLink": {

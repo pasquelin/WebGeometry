@@ -1,10 +1,8 @@
 import { LIGHT_SETTINGS } from '../../../../sdk-core/src/index.ts';
 import { LIGHT_TILES_SHADER } from './shader.ts';
 import { createCheckedShaderModule } from '../../gpu/core/shaderModule.ts';
-
-/** Words per tile: the counts of the opaque and blend lists, then the two lists, each with room
- *  for every light the contract accepts — they cover two depth slices of the same tile. */
-const TILE_STRIDE_WORDS = LIGHT_SETTINGS.maxLights * 2 + 2;
+import { createWebgpuBindIdentity } from '../../webgpu/core/bindIdentity.ts';
+import { TILE_STRIDE_WORDS } from '../direct/lightWgsl.ts';
 /** Label of the measured pass; `gpuLightListsMs` is read under this name, not by its rank. */
 export const LIGHT_TILES_PASS = 'Trillion3D light tiles v1';
 /** Tiles on one axis: the list always covers the whole target, never one tile short. */
@@ -13,9 +11,10 @@ export type GpuLightTiles = Awaited<ReturnType<typeof createGpuLightTiles>>;
 
 /**
  * Per-tile light-list pass. The tile buffer is allocated for the current target and reallocated
- * only when it changes size; encoding allocates nothing.
+ * only when it changes size; the group follows the light buffer, which grows with the scene;
+ * encoding allocates nothing.
  */
-export async function createGpuLightTiles(device: GPUDevice, lights: GPUBuffer) {
+export async function createGpuLightTiles(device: GPUDevice) {
   const module = await createCheckedShaderModule(device, LIGHT_TILES_SHADER, 'LIGHT_TILES_SHADER');
   const layout = device.createBindGroupLayout({
     entries: [
@@ -43,9 +42,9 @@ export async function createGpuLightTiles(device: GPUDevice, lights: GPUBuffer) 
   }
   let tiles: GPUBuffer | undefined,
     group: GPUBindGroup | undefined,
-    boundDepth: GPUTextureView | undefined,
     tilesX = 0,
     tilesY = 0;
+  const bound = createWebgpuBindIdentity();
   return {
     /** Buffer the deferred resolve rereads; never undefined after an `ensure()`. */
     get buffer() {
@@ -58,7 +57,7 @@ export async function createGpuLightTiles(device: GPUDevice, lights: GPUBuffer) 
       return tilesY;
     },
     /** Ensures the target buffer and the bind group; returns `true` if the pass is ready. */
-    ensure(width: number, height: number, depth: GPUTextureView) {
+    ensure(width: number, height: number, depth: GPUTextureView, lights: GPUBuffer) {
       const wantedX = tilesOn(width),
         wantedY = tilesOn(height);
       if (!tiles || wantedX !== tilesX || wantedY !== tilesY) {
@@ -72,8 +71,9 @@ export async function createGpuLightTiles(device: GPUDevice, lights: GPUBuffer) 
         });
         group = undefined;
       }
-      if (!group || boundDepth !== depth) {
-        boundDepth = depth;
+      bound.next[0] = depth;
+      bound.next[1] = lights;
+      if (bound.moved() || !group) {
         group = device.createBindGroup({
           layout,
           entries: [

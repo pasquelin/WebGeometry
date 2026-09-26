@@ -931,8 +931,11 @@ light is a `SceneLight` (version 2) of one of three kinds. `point` and `spot` ca
 `range` in metres, `spot` also `direction` and a `coneAngle` half-angle; `directional` (sun,
 overcast sky) carries only `direction` — the propagation direction — and is refused if given a
 `position`, a `range` or a `coneAngle`. All three carry linear `color`, a positive radiometric
-`intensity` and `castsShadow`. Bounds: 64 lights, 32 per 16×16 screen tile, a 4096-square shadow
-atlas, and at most 24 shadow regions redrawn per frame.
+`intensity` and `castsShadow`. Bounds: none on the count — the light table grows with the scene;
+a 16×16 screen tile lists up to 64 lights reaching it and walks every light of the scene past
+that, a walk #849 bounds by the view —; 64 shadow slices,
+past which a caster lights without a shadow (`shadowCastersUnsliced`), a 4096-square shadow atlas,
+and at most 24 shadow regions redrawn per frame. WebGL2 draws 64 lights and refuses more (#835).
 
 `capability.lighting(world)` reports what the **active** renderer applies — `{ sceneLights,
 lightingView, shadows, transforms, reason? }` — not what the contract accepts: a call the light
@@ -998,8 +1001,8 @@ directional. A `point` or `spot` with no `range` gets `sqrt(I / 0.01 W·m⁻²)`
 A light that does not hold the contract is counted in the file's `rejected` map and left out.
 
 A light casts a shadow when the file says so (FBX carries the flag; glTF has none, so imported glTF
-lights cast one). Beyond 64 lights, the ones that carry furthest are kept — directionals first, then
-by peak channel intensity — and the rest are counted in the `imported-lights` diagnostic. A world
+lights cast one). Every light of the file is declared, however many: the `imported-lights`
+diagnostic counts them. A world
 reads them as `(await scene.load(url)).lights`, in cache order; each lamp is a child of the model,
 changed with `light.visible = false`, `model.remove(light)` or `light.intensity = …`. A cache
 without `lights.json` has none; one the server refuses otherwise fails the load

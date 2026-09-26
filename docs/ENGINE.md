@@ -244,6 +244,19 @@ pass: measured on the frame envelope, not by its own timestamp.
 
 ## Direct lighting
 
+**Any number of lights.** The light table grows with the scene —
+doubled when full, the GPU light buffer with it, and every pass that binds it binds the new one —:
+`addLight` never refuses a light for its rank. The tile pass tests the lights 256 at a time, one
+per thread of a 16 × 16 tile, and keeps in each of its two lists those whose range reaches the
+tile's depth slice, in increasing rank, up to `tileLights` (64): the lists' memory follows the view
+alone, 4.2 MB at 1920 × 1080 and 15.7 MB at 3456 × 2234, whatever the scene holds. A tile reached
+by more than `tileLights` (64) lights keeps its true count, reads no list, and walks every light of the
+scene: those that miss it add an exact zero, so nothing is dropped and the sum is the same, only
+dearer on that tile. A pixel costs what the lamps reaching its tile cost while they are 64 or fewer,
+and what every lamp of the scene costs past that; a per-tile pool bounding that walk by the view is
+#849. A shadow caster past the 64 shadow slices lights without a shadow and is counted
+(`shadowCastersUnsliced`, #818). WebGL2 keeps its 64 slots until #835 and refuses more out loud.
+
 **A moving image shades a drawn subset of each pixel's lights.** A moving image weighs every light
 of its tile without its shadow (the cheap part) and shades in full, shadow included, four of them. A
 light worth a sample's share of the pixel's weight is shaded exactly and leaves the pool; the
@@ -272,9 +285,9 @@ WebGPU device offers (4 096 pages, 256 MiB, and 128 MiB of transmittance), reach
 the pool is the only limit on the pages a frame holds: what it cannot hold is refused at allocation
 and published as memory (`shadowPagesOverflow`, #542), read at the coarser level meanwhile, and
 pages are evicted least recently read first. A lamp face's finest mip is 32 × 32 pages (`lampFaceSize`).
-The table gives each of the 64 shadow slices (`maxLights`) a fixed window of the largest range a
+The table gives each of the 64 shadow slices (`MAX_SHADOW_SLICES`) a fixed window of the largest range a
 light needs, a whole sun's 16 × 64 × 64 words (`SHADOW_TABLE_STRIDE`): 2^22 words, 16 MiB
-(`SHADOW_TABLE_ENTRIES`), so every shadow-casting light the contract accepts holds its range.
+(`SHADOW_TABLE_ENTRIES`), so every shadow-casting light that holds a slice holds its range.
 The GPU total's shadow share counts it with the pool (`SHADOW_POOL_BYTES`). Its host mirror — the
 words, a change flag per word, the pool's page records and eviction bitset, and the frame's page
 list (`admit.ts`) at the largest pool, with the shadow batches' host lists

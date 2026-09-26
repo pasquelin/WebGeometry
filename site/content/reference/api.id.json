@@ -938,11 +938,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "Jalur WebGL2 milik mesin sendiri tidak bisa menggambar model ini.",
       "PAGE_BUDGET": "Halaman yang dibutuhkan tampilan tidak muat dalam anggaran memori, atau jalur ini tidak punya anggaran.",
       "UNSUPPORTED_MEMORY_BUDGETS": "Halaman yang dibutuhkan tampilan tidak muat dalam anggaran memori, atau jalur ini tidak punya anggaran.",
-      "INVALID_SCENE_LIGHT": "Sebuah cahaya cacat, ganda, tidak dikenal, terlalu banyak satu, atau tidak punya tempat tujuan.",
-      "DUPLICATE_SCENE_LIGHT": "Sebuah cahaya cacat, ganda, tidak dikenal, terlalu banyak satu, atau tidak punya tempat tujuan.",
-      "UNKNOWN_SCENE_LIGHT": "Sebuah cahaya cacat, ganda, tidak dikenal, terlalu banyak satu, atau tidak punya tempat tujuan.",
-      "SCENE_LIGHT_BUDGET": "Sebuah cahaya cacat, ganda, tidak dikenal, terlalu banyak satu, atau tidak punya tempat tujuan.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Sebuah cahaya cacat, ganda, tidak dikenal, terlalu banyak satu, atau tidak punya tempat tujuan.",
+      "INVALID_SCENE_LIGHT": "Sebuah cahaya cacat, ganda, tidak dikenal, atau tidak punya tempat tujuan.",
+      "DUPLICATE_SCENE_LIGHT": "Sebuah cahaya cacat, ganda, tidak dikenal, atau tidak punya tempat tujuan.",
+      "UNKNOWN_SCENE_LIGHT": "Sebuah cahaya cacat, ganda, tidak dikenal, atau tidak punya tempat tujuan.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Sebuah cahaya cacat, ganda, tidak dikenal, atau tidak punya tempat tujuan.",
       "INVALID_SCENE_ENVIRONMENT": "Eksposur atau lingkungan scene bukan angka yang valid.",
       "INVALID_MATERIAL": "Perubahan material tidak dikenal, di luar rentang, akan memindahkannya ke kelas gambar lain, atau akan mengulang peta yang dibagikannya.",
       "UNKNOWN_MATERIAL": "Perubahan material tidak dikenal, di luar rentang, akan memindahkannya ke kelas gambar lain, atau akan mengulang peta yang dibagikannya.",
@@ -1622,7 +1621,7 @@
     "summary": "Pengaturan pencahayaan langsung yang dipublikasikan.",
     "description": "Ini adalah pilihan produk bernama, bukan konstanta terkubur: setiap batas saat berjalan membacanya ulang, dan diagnostik mempublikasikannya apa adanya.",
     "members": {
-      "maxLights": "Cahaya yang diterima kontrak secara total; melebihi itu, `addLight` menolak. Sebuah tile layar menyimpan setiap cahaya yang menyentuhnya; daftarnya dan loop piksel dibatasi angka ini (X2).",
+      "tileLights": "Lampu yang disimpan daftar sebuah tile layar, di tiap dua irisan kedalamannya: memorinya sebesar ini, per tile, apa pun isi adegan. Tile yang dicapai lebih banyak lampu tidak menyimpan daftar dan menelusuri setiap lampu adegan — yang meleset menambah nol yang tepat —, sehingga tidak ada lampu yang hilang (X2).",
       "tileSize": "Sisi dalam piksel sebuah tile layar daftar cahaya.",
       "samplesPerPixel": "Cahaya yang dishading penuh — termasuk pembacaan bayangan — per piksel sebuah gambar BERGERAK (X2): yang lain ditimbang tanpa bayangannya, dan yang dishading digambar sebanding, jadi perkiraannya tidak bias dan antialiasing temporal merata-ratakannya. Sebuah gambar diam men-shading setiap cahaya tile-nya dan berkonvergensi ke jumlah pasti; di situ, angka ini tidak berperan.",
       "shadowPage": "Sisi halaman bayangan, dalam texel: satuan pool fisik, peta virtual, dan invalidasi. Objek bergerak hanya membuat usang halaman yang tertutup kotak proyeksinya.",
@@ -1788,7 +1787,7 @@
     "summary": "Lapisan hidup di empat bit cache, jadi tumpukan terdalam yang bisa dijelaskan kompiler adalah 15."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Cahaya yang bisa dialamatkan sebuah irisan bayangan di atlas: satu per cahaya berbayangan yang dideklarasikan."
+    "summary": "Irisan bayangan yang dialamatkan atlas, menurut aturan tabel halaman sendiri (#818) — tidak pernah batas bagi lampu: lampu yang memberi bayangan di luar irisan itu menerangi tanpa bayangan, dan bingkai menghitungnya (`shadowCastersUnsliced`)."
   },
   "ManifestBinaryDescriptor": {
     "summary": "Di mana binernya berada dan bagaimana sebuah cluster, halaman terkemas dan bundle menyebut nama objeknya.",
@@ -2249,7 +2248,7 @@
     "description": "Enam yang pertama adalah penolakan uraian-halaman, diambil kata demi kata dari `geometryPage.ts`: seorang pemanggil membedakannya seperti sebelumnya. `PAGE_DECODE_FAILED` membawa penolakan lain apa pun dari pustaka dekompresi. `PAGE_DECODE_CANCELLED` menjawab sebuah pembatalan, `PAGE_DECODE_WORKER` sebuah eksekutor yang lenyap — hanya yang itu yang mengizinkan fallback."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Kontrak uraian-halaman di luar thread utama, versi 5: geometri yang diurai bepergian sebagai satu blok dengan galat kuantisasinya, dan slot arena mencatat galat itu di kata 8; `cut` mengubah segitiga yang digambar menjadi halaman, yang kembali sebagai byte dengan deskriptornya.",
+    "summary": "Kontrak uraian-halaman di luar thread utama, versi 6: geometri yang diurai bepergian sebagai satu blok dengan galat kuantisasinya, dan slot arena mencatat galat itu di kata 8; `cut` mengubah segitiga yang digambar menjadi halaman, yang kembali sebagai byte dengan deskriptornya, dan, sejak versi 6, dengan kerucut normalnya, segitiga yang dikemas menyatakan apakah halamannya menyimpan satu.",
     "description": "Thread pemanggil mengirim `PageDecodeRequest`, eksekutor mengembalikan `PageDecodeAnswer` yang membawa `id` yang sama. Tidak ada yang menyentuh platform di sini: tidak ada `Worker`, tidak ada fetch, tidak ada jam — adaptor peramban membawa semua itu, berkas ini hanya membawa bentuk pesan, daftar tertutup kegagalan dan batas pool. Kepemilikan buffer: `source` **ditransfer** dengan permintaan, jadi pengirim tidak lagi memilikinya. Sebuah respons `verify` mengembalikannya, ditransfer gilirannya; sebuah respons `decode` mengembalikan buffer yang diurai sebagai gantinya, juga ditransfer. Seorang eksekutor yang tidak mentransfer apa pun (fallback sinkron) mengembalikan persis nilai yang sama: kontrak tidak mengatakan bagaimana pekerjaannya bepergian, hanya apa yang dikembalikannya."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2379,7 +2378,8 @@
       "vertexCount": "Vertex dalam halaman itu.",
       "indexCount": "Indeks dalam halaman itu.",
       "flags": "Atribut mana yang dibawanya.",
-      "uncompressedBytes": "Ukurannya setelah dibongkar."
+      "uncompressedBytes": "Ukurannya setelah dibongkar.",
+      "cone": "Kerucut normal segitiganya, jika sudah dibuat."
     }
   },
   "PageCutPayload": {
@@ -2443,7 +2443,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: digest SHA-256 sebuah halaman.",
-    "description": "`decode`: indeks dan atribut per-vertex-nya. `cut`: segitiga yang digambar, dikemas sebagai lima panjang lalu lima larik empat-byte, dipotong menjadi halaman."
+    "description": "`decode`: indeks dan atribut per-vertex-nya. `cut`: segitiga yang digambar, dikemas sebagai lima panjang, apakah halamannya menyimpan kerucut, lalu lima larik empat-byte, dipotong menjadi halaman."
   },
   "PageDecodeRequest": {
     "summary": "Sebuah pesan meminta seorang worker memeriksa, membongkar atau memotong sebuah halaman.",
@@ -2832,14 +2832,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "Float lingkungan dalam buffer GPU."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Float seluruh buffer cahaya GPU: header, lalu setiap cahaya."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "Float sebuah cahaya dalam buffer GPU: lima `vec4f`, tidak pernah dialokasikan ulang."
+    "summary": "Float sebuah lampu dalam buffer GPU: lima `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "Header buffer cahaya: jumlah, ubin di X, ubin di Y, dicadangkan."
+    "summary": "Kepala buffer lampu: jumlah, lalu tiga kata cadangan."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "Versi kontrak cahaya yang dibaca mesin ini."
@@ -3043,9 +3040,9 @@
     "summary": "Cahaya sebuah scene seperti dibaca GPU, dikemas dan dijaga tetap terkini.",
     "members": {
       "settings": "Pengaturan pencahayaan langsung yang dipublikasikan. Ini adalah pilihan produk bernama, bukan konstanta terkubur: setiap batas saat berjalan membacanya ulang, dan diagnostik mempublikasikannya apa adanya.",
-      "packed": "Setiap cahaya, dikemas untuk GPU.",
+      "packed": "Setiap lampu, dikemas untuk GPU: array baru saat tabel tumbuh.",
       "environmentPacked": "Iradiansi lingkungan seperti dibaca GPU, di belakang cahaya (`../core/environment.ts`).",
-      "revision": "Dinaikkan setiap perubahan.",
+      "revision": "Dinaikkan pada setiap perubahan, per slot.",
       "sliceOf": "Irisan atlas sebuah cahaya hidup dalam buffer itu sendiri: tidak disimpan dua kali.",
       "ids": "Nama cahaya tiap slot.",
       "count": "Berapa banyak cahaya.",
@@ -3062,7 +3059,7 @@
       "remove": "Menghapus sebuah cahaya.",
       "setEnvironment": "Mengatur lingkungan itu.",
       "assignSlice": "Mencatat irisan atlas yang ditempati sebuah cahaya, tanpa menyentuh bidang lainnya. Revisi store hanya naik jika irisannya benar-benar berubah: kalau tidak, tidak ada yang didorong ke GPU.",
-      "view": "Float yang benar-benar ditempati: penulisan GPU tidak pernah mendorong slot kosong."
+      "capacity": "Slot yang disimpan tabel: buffer lampu GPU sepanjang ini."
     }
   },
   "SceneLightingView": {
@@ -4791,8 +4788,8 @@
     "summary": "Kebijakan mengevaluasi bukti; ia tidak pernah mengarang sebuah referensi atau mengambil sampel jam sendiri."
   },
   "createSceneLightStore": {
-    "summary": "Lampu scene, pada kapasitas tetap.",
-    "description": "Buffer dialokasikan sekali untuk `maxLights` lampu dan tidak pernah dialokasikan ulang; menambah, mengatur atau menghapus sebuah lampu hanya menulis enam belas float-nya dan menaikkan revisinya. `revision` per lampu memberi tahu pembaca bahwa sebuah lampu telah berubah: tidak ada struktur yang dibangun ulang per bingkai. Penjadwal bayangan membaca sendiri bentuk lampu, sehingga perubahan intensitas atau warna tidak membuat satu pun halaman bayangan usang."
+    "summary": "Lampu adegan, sebanyak yang dideklarasikan adegan: `capacity` slot, digandakan saat penuh dan tidak pernah diperkecil.",
+    "description": "Menambah, mengatur atau menghapus sebuah lampu menulis float-nya dan menaikkan `revision`-nya, yang memberi tahu pembaca bahwa lampu itu berubah: tidak ada yang dibangun ulang per bingkai. Penjadwal bayangan membaca sendiri bentuk lampu, sehingga perubahan intensitas atau warna tidak membuat satu pun halaman bayangan usang."
   },
   "createSceneRoot": {
     "summary": "Membuat sebuah hierarki scene kosong dan berversi.",
