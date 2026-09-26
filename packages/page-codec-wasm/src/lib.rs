@@ -11,7 +11,8 @@
 //! This WebAssembly module is the SDK's, and there is only one: one compilation (`pnpm run
 //! build:wasm`), one shipped resource, one instantiation and one linear memory on the browser side.
 //! Beside the page decoder it therefore carries the math-foundation batch kernels (`math.rs`, ABI
-//! in `wasm_math.rs`), the CPU cut's node walk (`cut.rs`, ABI in `wasm_cut.rs`) and the buffer
+//! in `wasm_math.rs`), the CPU cut's node walk (`cut.rs`, ABI in `wasm_cut.rs`), the normal cone
+//! of the pages the world cuts at run time (`normal_cone.rs`, ABI in `wasm_cone.rs`) and the buffer
 //! they share with JavaScript.
 
 mod attributes;
@@ -20,8 +21,12 @@ pub mod cut;
 pub mod cut_error;
 pub mod math;
 pub mod math_hierarchy;
+pub mod normal_cone;
+pub mod vec3;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
+#[cfg(target_arch = "wasm32")]
+mod wasm_cone;
 #[cfg(target_arch = "wasm32")]
 mod wasm_cut;
 #[cfg(target_arch = "wasm32")]

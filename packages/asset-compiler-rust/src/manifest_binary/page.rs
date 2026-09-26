@@ -157,7 +157,7 @@ pub(super) fn encode_page(
     let column = &mut columns[PAGE_CONE];
     match item.get("cone") {
         None => {
-            for value in crate::normal_cone::OPEN_CONE {
+            for value in trillion3d_page_codec::normal_cone::OPEN_CONE {
                 column.f64(value);
             }
         }

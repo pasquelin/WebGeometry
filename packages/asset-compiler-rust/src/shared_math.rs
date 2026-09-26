@@ -80,31 +80,9 @@ pub(crate) fn pad_to_4(length: usize) -> usize {
     (4 - length % 4) % 4
 }
 
-/// Small vector algebra on `[f64; 3]`, shared by every stage that reads geometry: the compiler
-/// carries one implementation of each, not one per module.
-pub fn sub(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
-    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
-}
-pub fn dot(a: [f64; 3], b: [f64; 3]) -> f64 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-}
-pub fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
-    [
-        a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0],
-    ]
-}
-pub fn scale(a: [f64; 3], k: f64) -> [f64; 3] {
-    [a[0] * k, a[1] * k, a[2] * k]
-}
-/// Divides each axis by `k`: not `scale(a, 1.0 / k)`, which rounds once more.
-pub fn divide(a: [f64; 3], k: f64) -> [f64; 3] {
-    [a[0] / k, a[1] / k, a[2] / k]
-}
-pub fn length(a: [f64; 3]) -> f64 {
-    dot(a, a).sqrt()
-}
+/// Small vector algebra on `[f64; 3]`, written once in the page codec beside the normal cone that
+/// reads it (`trillion3d_page_codec::vec3`): the compiler carries one implementation of each.
+pub use trillion3d_page_codec::vec3::{cross, divide, dot, length, scale, sub};
 
 /// Unit vector, or fallback when length stays under 1e-12: shorter,
 /// vector carries no direction and division makes no sense. Fallback belongs to
