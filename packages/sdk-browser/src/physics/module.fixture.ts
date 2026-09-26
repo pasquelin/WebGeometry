@@ -19,20 +19,15 @@ import type { PhysicsSession } from './session.ts';
 import { engineIdOf } from './simulatedIds.ts';
 import type { JoltThreadStart, SpawnJoltThread } from './joltThreads.ts';
 
-/** Each committed module file, compiled once for every test of the run. */
-const compiled = new Map<string, Promise<WebAssembly.Module>>();
-
 /** A committed module started for the tests: 64 bodies and 64 MB unless told otherwise. */
 export async function startModule(
   budget: Partial<PhysicsBudget> = {},
   pool: { count: number; spawn: SpawnJoltThread } | null = null,
 ) {
   const file = pool ? './joltPhysicsThreads.wasm' : './joltPhysics.wasm';
-  if (!compiled.has(file))
-    compiled.set(file, readFile(new URL(file, import.meta.url)).then(WebAssembly.compile));
-  const module = await compiled.get(file)!;
+  const bytes = await readFile(new URL(file, import.meta.url));
   const full = { ...DEFAULT_PHYSICS_BUDGET, bodies: 64, memoryBytes: 64 << 20, ...budget };
-  const opened = await openJolt(module, full.memoryBytes, pool);
+  const opened = await openJolt(bytes, full.memoryBytes, pool);
   const jolt = startJolt(opened, full, pool?.count ?? 1);
   /** A diagnostic count the module keeps since it started: the joints some work has visited. */
   const count = (name: string) => () => (opened.exports[name] as () => number)();

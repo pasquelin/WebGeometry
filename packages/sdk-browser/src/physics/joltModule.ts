@@ -63,12 +63,12 @@ export interface OpenedJolt {
 /**
  * Instantiates the physics module in a memory whose maximum is `memoryBytes`: it cannot grow past
  * it. No emscripten glue: the module imports its memory, a growth notice and a clock, all given
- * here; `bytes` may be the module already compiled, then only instantiated. With `threads`, the
- * bytes are the threaded module's, its memory is shared, and `threads.count` threads step it,
- * this one included, the others started through `threads.spawn` (`joltThreads.ts`).
+ * here. With `threads`, the bytes are the threaded module's, its memory is shared, and
+ * `threads.count` threads step it, this one included, the others started through `threads.spawn`
+ * (`joltThreads.ts`).
  */
 export async function openJolt(
-  bytes: BufferSource | WebAssembly.Module,
+  bytes: BufferSource,
   memoryBytes: number,
   threads: { count: number; spawn: SpawnJoltThread } | null,
 ): Promise<OpenedJolt> {
@@ -79,7 +79,7 @@ export async function openJolt(
       `Physics budget "memoryBytes" is below the module's ${INITIAL_PAGES * PAGE} bytes.`,
     );
   const memory = new WebAssembly.Memory({ initial: INITIAL_PAGES, maximum, shared: !!threads });
-  const module = bytes instanceof WebAssembly.Module ? bytes : await WebAssembly.compile(bytes);
+  const module = await WebAssembly.compile(bytes);
   let exports: unknown = null;
   const imports = joltImports(memory, () => exports as never, threads && { module, ...threads });
   exports = (await WebAssembly.instantiate(module, imports)).exports;

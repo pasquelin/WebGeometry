@@ -5,7 +5,7 @@ import { HUMAN_BODY } from '../../../sdk-core/src/collision/characterSettings.ts
 import { plane, sphere } from '../../../sdk-core/src/world/geometry/basic.ts';
 import type { Geometry } from '../../../sdk-core/src/world/geometry/geometry.ts';
 import type { SoftBodyOptions } from '../../../sdk-core/src/physics/index.ts';
-import { createCharacterDriver } from './characterDriver.ts';
+import { standCharacter } from './module.fixture.ts';
 import { addSoft, settle, softWorld } from './soft.fixture.ts';
 
 /** The human character walking east from the origin for 3 s at a soft body placed at `position`
@@ -18,9 +18,7 @@ async function walkInto(
 ) {
   const jolt = await softWorld();
   settle(jolt, addSoft(jolt, geometry, options, position, { quaternion }), 1);
-  const driver = createCharacterDriver();
-  jolt.step(driver.configure({ ...HUMAN_BODY }, [0, 0, 0])!, 0);
-  driver.read(jolt.character(), 0);
+  const driver = standCharacter(jolt, new Uint32Array(0), [0, 0, 0]);
   driver.press({ wishX: 1, wishZ: 0, sprint: false }, 0);
   const feet: [number, number][] = [];
   for (let t = 0; t < 3; t += PHYSICS_STEP) {

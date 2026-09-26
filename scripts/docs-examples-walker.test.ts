@@ -7,13 +7,8 @@ import {
   standCharacter,
   startModule,
 } from '../packages/sdk-browser/src/physics/module.fixture.ts';
+import type { GltfDocument } from './docs/examples/gltf-types.ts';
 
-type Gltf = {
-  accessors: { bufferView: number; componentType: number; count: number; type: string }[];
-  bufferViews: { byteOffset: number }[];
-  meshes: { primitives: { attributes: { POSITION: number }; indices: number }[] }[];
-  nodes: { mesh?: number; matrix?: number[]; translation?: number[]; rotation?: number[] }[];
-};
 type Mesh = { vertices: Float32Array; indices: Uint32Array };
 
 const FLOAT = 5126,
@@ -26,22 +21,23 @@ async function hallTriangles(): Promise<Mesh[]> {
     readFile(new URL('geometry.gltf', hall), 'utf8'),
     readFile(new URL('scene.bin', hall)),
   ]);
-  const gltf = JSON.parse(text) as Gltf;
+  const gltf = JSON.parse(text) as GltfDocument;
   const placed = gltf.nodes.filter((node) => node.mesh !== undefined);
   assert.deepEqual(placed, [{ mesh: 0, name: 'scene' }], 'one untransformed node holds the hall');
-  const read = (accessor: number, kind: number) => {
-    const { bufferView, componentType, count, type } = gltf.accessors[accessor];
-    assert.equal(componentType, kind, `accessor ${accessor}: component type ${componentType}`);
-    const offset = bin.byteOffset + gltf.bufferViews[bufferView].byteOffset;
-    const length = count * (type === 'VEC3' ? 3 : 1);
-    return kind === FLOAT
-      ? new Float32Array(bin.buffer, offset, length)
-      : new Uint32Array(bin.buffer, offset, length);
+  /** Where accessor `index` starts in `bin` and how many elements it holds, of `kind` each. */
+  const at = (index: number, kind: number) => {
+    const { bufferView, componentType, count } = gltf.accessors[index];
+    assert.equal(componentType, kind, `accessor ${index}: component type ${componentType}`);
+    return [bin.byteOffset + gltf.bufferViews[bufferView].byteOffset, count] as const;
   };
-  return gltf.meshes[0].primitives.map(({ attributes, indices }) => ({
-    vertices: read(attributes.POSITION, FLOAT) as Float32Array,
-    indices: read(indices, UINT32) as Uint32Array,
-  }));
+  return gltf.meshes[0].primitives.map(({ attributes, indices }) => {
+    const [vertexStart, vertexCount] = at(attributes.POSITION, FLOAT);
+    const [indexStart, indexCount] = at(indices, UINT32);
+    return {
+      vertices: new Float32Array(bin.buffer, vertexStart, vertexCount * 3),
+      indices: new Uint32Array(bin.buffer, indexStart, indexCount),
+    };
+  });
 }
 
 /** The walls the page adds to the hall, read from the page as it is served: centre x, y, z,
@@ -67,12 +63,12 @@ async function hallWorld(meshes: Mesh[], walls: number[][]) {
     writer.add({
       ...body(id++, 0, 0, 1),
       shape: SHAPE.triangles,
-      vertices: Array.from(vertices),
-      indices: Array.from(indices),
+      vertices,
+      indices,
     });
   for (const [x, y, z, width, height, depth] of walls)
     writer.add({
-      ...body(id++, 0, y, 1),
+      ...body(id++, 0, 0, 1),
       position: [x, y, z],
       size: [width / 2, height / 2, depth / 2],
     });
