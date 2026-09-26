@@ -150,15 +150,14 @@ export function createTileStreamer(
           if (p.id >= 0) held += p.tile.bytes;
         }
       wanted.sort((a, b) => a[0] - b[0]);
-      // The share beside the static meshes and the wanted resident tiles.
-      let room = share - bodies.count.collisionBytes + held,
-        full = false,
-        loads = LOADS;
+      // The share beside the static meshes: a tile past it never fits, and holds no one back.
+      const free = share - bodies.count.collisionBytes + held;
+      let [room, full, loads] = [free, false, LOADS];
       for (const [, p] of wanted) {
-        full ||= p.tile.bytes > room;
-        if (full) evict(p);
+        const out = p.tile.bytes > free || (full ||= p.tile.bytes > room);
+        if (out) evict(p);
         else room -= p.tile.bytes;
-        if (full || p.id >= 0 || p.loading || fetching >= FETCHES || !loads) continue;
+        if (out || p.id >= 0 || p.loading || fetching >= FETCHES || !loads) continue;
         loads--;
         void load(p);
       }

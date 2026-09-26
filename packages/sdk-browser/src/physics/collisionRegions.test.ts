@@ -92,3 +92,15 @@ test('a resident tile stays until half as far again as it came in: no load and r
   assert.deepEqual([await heldAt(11), await heldAt(16), await heldAt(18)], [2, 2, 0]);
   assert.deepEqual([await heldAt(16), fetched.length], [0, 2], 'asked once, not again at 16 m');
 });
+
+test('a tile past the whole share holds no one back: the farther tiles still load', async () => {
+  const huge = { ...tile(0), url: 'huge.bin', bytes: 100 };
+  const file = cooked([{ kind: 'mesh', tiles: [huge, tile(4)] }], [place(0)]);
+  const { tiles, bodies, errors } = await streamedModel(file, new Uint8Array(1), {
+    memoryBytes: 10,
+  });
+  tiles.update([0, 0, 0], 20);
+  await landed();
+  assert.equal(bodies.count.collisionBytes, 2, 'the tile that fits is resident');
+  assert.deepEqual(errors, []);
+});
