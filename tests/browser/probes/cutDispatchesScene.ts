@@ -21,7 +21,7 @@ export const DISPATCH_SCENE = { feuilles: 12000, niveaux: 8 } as const;
  *  the compiler's, one node per detail tier under the root. Residency goes through the engine's
  *  own upload, both bit sets of the cut rule and each node's open count (#486): ready bits alone
  *  make the cut drawn depend on the descent (`cut-dispatches-scene.test.ts`). */
-export function scene(feuilles: number, niveaux: number) {
+function scene(feuilles: number, niveaux: number) {
   const roots = sceneRoots(scenePages(feuilles, niveaux), [new G.Matrix4()], true);
   const packed = packDagSelection(roots);
   const resident = ruleResidency(packed, new Uint8Array(packed.pageCount).fill(1));
