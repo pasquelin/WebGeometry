@@ -18,3 +18,10 @@ export async function readCacheManifest(full: string) {
   const root = JSON.parse(readFileSync(rootPath, 'utf8')) as Record<string, unknown>;
   return { dir, manifest: await readPagedManifest(root, (page) => readFile(join(dir, page.url))) };
 }
+
+/** True when the cache under `full` holds a transparent primitive (`clustered-blend`), read
+ *  through its pages: the root `clusters.json` itself lists no primitive. */
+export async function cacheHoldsBlend(full: string) {
+  const { manifest } = await readCacheManifest(full);
+  return manifest.primitives.some((primitive) => primitive.pass === 'clustered-blend');
+}
