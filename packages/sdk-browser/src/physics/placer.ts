@@ -47,11 +47,14 @@ export function createPosePlacer(maxBodies: number, root: Object3D) {
     direct = false,
     placed: Bodied[] = [];
   /** The tree's stores, read once per batch: they are replaced when the tree grows. */
-  let tp = tree.position,
-    tq = tree.quaternion,
-    flags = tree.flags;
-  /** Slot `index`'s pose, as its arrays hold it, into the tree and its row. */
-  const commit = (index: number) => {
+  let [tp, tq, flags] = [tree.position, tree.quaternion, tree.flags];
+  /** The listed slots into the tree and rows; its stores as locals, not reloaded at each use. */
+  const commitAll = (list: Int32Array, count: number) => {
+    const [p, q, f] = [tp, tq, flags];
+    for (let i = 0; i < count; i++) commit(list[i], p, q, f);
+  };
+  /** Slot `index`'s pose, as its arrays hold it, into the tree's stores and its row. */
+  const commit = (index: number, tp: Float64Array, tq: Float64Array, flags: Uint8Array) => {
     const p = index * 3,
       q = index * 4,
       n = node[index];
@@ -96,7 +99,7 @@ export function createPosePlacer(maxBodies: number, root: Object3D) {
     quaternion[q + 1] = pose[at + 4];
     quaternion[q + 2] = pose[at + 5];
     quaternion[q + 3] = pose[at + 6];
-    commit(index);
+    commit(index, tp, tq, flags);
   };
   /** The mesh keeps its own numbers again, as they stand. */
   const release = (mesh: Bodied) => {
@@ -143,16 +146,14 @@ export function createPosePlacer(maxBodies: number, root: Object3D) {
       direct = rest;
       from.fill(Infinity);
       to.fill(-1);
-      tp = tree.position;
-      tq = tree.quaternion;
-      flags = tree.flags;
+      [tp, tq, flags] = [tree.position, tree.quaternion, tree.flags];
     },
     place,
+    commit: commitAll,
     /**
      * Draws the `count` slots listed in `list` the fraction `step` of the way from where they are
      * drawn to their targets (7 numbers per slot in `target`, at the slot's index × 7), each turn
-     * normalised and taken the shorter way round; a `step` of 1 lands on the targets exactly. One
-     * loop over flat arrays for the whole list: node, tree and row of every slot.
+     * normalised and taken the shorter way round; a `step` of 1 lands on the targets exactly.
      */
     draw(list: Int32Array, count: number, target: Float32Array, step: number) {
       if (step === 1) {
@@ -183,8 +184,8 @@ export function createPosePlacer(maxBodies: number, root: Object3D) {
         quaternion[q + 1] = y * n;
         quaternion[q + 2] = z * n;
         quaternion[q + 3] = w * n;
-        commit(index);
       }
+      commitAll(list, count);
     },
     /** Closes the batch: the world hears the written rows and the nodes it recomposes itself. */
     end() {
