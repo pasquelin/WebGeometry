@@ -11,7 +11,7 @@ export function blendLightResources(rt: WebgpuPagesRuntime): BlendLighting {
   const { placeholders } = rt.gpu.deferred!,
     contract = directLightResources(rt);
   return {
-    directLights: rt.lights.buffer!,
+    directLights: contract.lights!,
     shadowData: contract.slices ?? placeholders.slices,
     shadowAtlas: contract.atlas ?? placeholders.atlasView,
     shadowSampler: placeholders.sampler,

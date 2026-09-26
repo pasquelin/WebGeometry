@@ -39,7 +39,7 @@ function session(imported: readonly string[] = []) {
 /** The engine's view of a light: its held record and its floats in the packed buffer. */
 const engineView = (store: ReturnType<typeof createSceneLightStore>, id: string) => ({
   record: structuredClone(store.light(id)),
-  packed: store.view().slice(),
+  packed: store.packed.slice(),
 });
 
 test('a host that mutates a light after submitting it changes nothing in the engine', () => {

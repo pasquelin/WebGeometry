@@ -27,7 +27,7 @@ const WGSL_OWN = new Set(
     'smoothstep sqrt step storageBarrier tan tanh textureDimensions textureGather textureLoad ' +
     'textureNumLevels textureSample textureSampleBias textureSampleCompare ' +
     'textureSampleCompareLevel textureSampleGrad textureSampleLevel textureStore transpose ' +
-    'trunc unpack2x16float unpack4x8unorm workgroupBarrier'
+    'trunc unpack2x16float unpack4x8unorm workgroupBarrier workgroupUniformLoad'
   ).split(/\s+/),
 );
 

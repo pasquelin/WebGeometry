@@ -39,9 +39,11 @@ fn lightWeight(light:DirectLight,N:vec3f,P:vec3f)->f32{
 }
 fn sampledTileLighting(rgb:vec3f,metal:f32,rough:f32,N:vec3f,V:vec3f,P:vec3f,ao:f32,tile:vec2u,tilesX:u32,rank:u32,pixel:vec2f)->vec3f{
  let base=(tile.y*tilesX+tile.x)*TILE_STRIDE;
- let kept=min(tileLights[base],MAX_LIGHTS);
+ let kept=tileLights[base];
+ // A tile past its list walks every light, exactly.
+ if(kept>TILE_LIGHTS){return sceneLighting(rgb,metal,rough,N,V,P,ao);}
  if(kept<=LIGHT_SAMPLES){return tileLighting(rgb,metal,rough,N,V,P,ao,tile,tilesX,0u,TILE_OPAQUE_BASE);}
- var weights:array<f32,MAX_LIGHTS>;
+ var weights:array<f32,TILE_LIGHTS>;
  var total=0.0;
  for(var index=0u;index<kept;index++){
   weights[index]=lightWeight(directLights.items[tileLights[base+TILE_OPAQUE_BASE+index]],N,P);
