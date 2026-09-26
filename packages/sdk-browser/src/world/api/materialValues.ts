@@ -1,11 +1,12 @@
 /** The values of a scene material a page reads and sets, and how they cross a host surface
  *  (`materialApi.ts`). */
-import { EngineError, type AlphaMode, type Material } from '../../../../sdk-core/src/index.ts';
+import { EngineError, alphaModeOf, type Material } from '../../../../sdk-core/src/index.ts';
 import type { Color } from '../../../../sdk-core/src/world/math/color.ts';
 import type { GraphSurface } from '../../host/graph/surface.ts';
 import { materialTextures } from '../../scene/meshes.ts';
 import { sideOf } from '../../scene/materialSide.ts';
 import { importHostSurface } from '../../host/surfaceImport.ts';
+import { hostTextureWritten } from '../../host/textureImport.ts';
 
 /** A material of the scene as a page reads it: the engine's parameters, the id it is set by — its
  *  rank in the cache's material table — its name, and how many times its maps repeat across and
@@ -24,10 +25,6 @@ export type SceneMaterialPatch = Partial<
   > & { tiling: readonly [number, number] }
 >;
 
-/** The draw class a surface is drawn in: blended, cut out, or opaque. */
-export const classOf = (surface: GraphSurface): AlphaMode =>
-  surface.transparent ? 'blend' : surface.alphaTest > 0 ? 'mask' : 'opaque';
-
 /** A material as the engine draws it now, read where every engine path reads a host surface
  *  (`importHostSurface`), so a family without metal or glow lists what is drawn. */
 export function read(id: number, surface: GraphSurface): SceneMaterial {
@@ -42,7 +39,7 @@ export function read(id: number, surface: GraphSurface): SceneMaterial {
     roughness: drawn.roughness,
     emissive: drawn.emissive,
     side: sideOf(surface),
-    alphaMode: classOf(surface),
+    alphaMode: alphaModeOf(surface),
     alphaCutoff: drawn.alphaTest,
     tiling: map ? [map.repeat.x, map.repeat.y] : null,
   };
@@ -89,9 +86,12 @@ export function write(surface: GraphSurface, patch: SceneMaterialPatch) {
     surface.emissiveIntensity = 1;
   }
   // The cutoff of a masked surface only: written on another, it would move it into the masked class.
-  if (patch.alphaCutoff !== undefined && classOf(surface) === 'mask')
+  if (patch.alphaCutoff !== undefined && alphaModeOf(surface) === 'mask')
     surface.alphaTest = patch.alphaCutoff;
-  if (patch.tiling)
+  if (patch.tiling) {
     for (const texture of materialTextures(surface)) texture.repeat.set(...patch.tiling);
+    // A placement is followed only once a write is announced: unsaid, no engine would see it.
+    hostTextureWritten();
+  }
   surface.needsUpdate = true;
 }

@@ -1,12 +1,11 @@
-import { EngineError } from '../../../../sdk-core/src/index.ts';
 import type { Object3D } from '../../../../sdk-core/src/world/object/object3d.ts';
 import type { RenderBackend } from '../../backend/types.ts';
 import type { GraphSurface } from '../../host/graph/surface.ts';
 import type { GraphTexture } from '../../host/graph/texture.ts';
 import { tableRankOf } from '../../host/prepared/materials.ts';
 import { materialTextures, meshes } from '../../scene/meshes.ts';
+import { EngineError, alphaModeOf } from '../../../../sdk-core/src/index.ts';
 import {
-  classOf,
   invalid,
   read,
   validate,
@@ -39,18 +38,17 @@ export function createExplorerMaterialApi(inputs: Inputs) {
    *  it keeps as imported are the file's. */
   let held: ReturnType<typeof index> | undefined;
   const index = () => {
-    const surfaces = new Map<number, GraphSurface[]>();
+    const worn = new Map<number, Set<GraphSurface>>();
     const wearers = new Map<GraphTexture, Set<number>>();
-    const seen = new Set<GraphSurface>();
     for (const mesh of meshes(source))
       for (const surface of [mesh.material as GraphSurface | GraphSurface[]].flat()) {
         const rank = tableRankOf(surface);
-        if (rank === undefined || seen.has(surface)) continue;
-        seen.add(surface);
-        surfaces.set(rank, [...(surfaces.get(rank) ?? []), surface]);
+        if (rank === undefined) continue;
+        worn.set(rank, (worn.get(rank) ?? new Set()).add(surface));
         for (const texture of materialTextures(surface))
           wearers.set(texture, (wearers.get(texture) ?? new Set()).add(rank));
       }
+    const surfaces = new Map([...worn].map(([rank, set]) => [rank, [...set]]));
     const ranks = [...surfaces.keys()].sort((a, b) => a - b);
     // What the scene file carried: a page resets a material from it.
     const imported = ranks.map((rank) => read(rank, surfaces.get(rank)![0]));
@@ -64,12 +62,6 @@ export function createExplorerMaterialApi(inputs: Inputs) {
     if (!worn) throw new EngineError('UNKNOWN_MATERIAL', `the scene has no material ${id}`, { id });
     return { rank, worn };
   };
-  const copy = (material: SceneMaterial): SceneMaterial => ({
-    ...material,
-    baseColor: [...material.baseColor],
-    emissive: [...material.emissive],
-    tiling: material.tiling && [...material.tiling],
-  });
   return {
     /** The scene's materials as they are now, in table order; each a detached copy. */
     materials(): SceneMaterial[] {
@@ -86,7 +78,7 @@ export function createExplorerMaterialApi(inputs: Inputs) {
     /** The materials as the scene file carried them, whatever was set since: detached copies. */
     importedMaterials(): SceneMaterial[] {
       check();
-      return scene().imported.map(copy);
+      return structuredClone(scene().imported);
     },
     /**
      * Sets a material's values live, from the next frame; every check runs before any write.
@@ -96,7 +88,7 @@ export function createExplorerMaterialApi(inputs: Inputs) {
       check();
       const { rank, worn } = required(id);
       validate(rank, patch);
-      const from = classOf(worn[0]);
+      const from = alphaModeOf(worn[0]);
       // A masked material cut at zero is drawn as an opaque one.
       const to = from === 'mask' && patch.alphaCutoff === 0 ? 'opaque' : (patch.alphaMode ?? from);
       if (to !== from)

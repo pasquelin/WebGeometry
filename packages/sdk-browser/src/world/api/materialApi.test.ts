@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import type { TableMaterial, TableTextureSlot } from '../../../../sdk-core/src/index.ts';
 import * as G from '../../host/graph/graph.fixture.ts';
 import { preparedMaterials } from '../../host/prepared/materials.ts';
+import { followHostTexture, importHostTexture } from '../../host/textureImport.ts';
 import type { RenderBackend } from '../../backend/types.ts';
 import { createExplorerMaterialApi } from './materialApi.ts';
 
@@ -55,7 +56,7 @@ async function scene(refresh = true) {
   const materialOf = preparedMaterials(
     [
       entry({ name: 'floor', map: slot(0), baseColor: [0.5, 0.5, 0.5] }),
-      entry({ name: 'leaves', alphaMode: 'MASK', alphaTest: 0.5 }),
+      entry({ name: 'leaves', alphaMode: 'MASK' }),
       entry({ name: 'left', map: slot(1) }),
       entry({ name: 'right', map: slot(1) }),
       entry({ name: 'glass', alphaMode: 'BLEND', opacity: 0.25 }),
@@ -116,6 +117,9 @@ test('the scene materials are listed by table rank, each a detached copy', async
 test('setMaterial writes each listed value into every surface of the material, live', async () => {
   const { api, floor, textures, refreshed } = await scene();
   const versions = floor.map((surface) => surface.version);
+  const record = importHostTexture(textures[0]);
+  followHostTexture(record);
+  const placement = record.placement;
   api.setMaterial('0', {
     baseColor: [0.25, 0.5, 0.75],
     opacity: 0.5,
@@ -140,6 +144,9 @@ test('setMaterial writes each listed value into every surface of the material, l
     assert.equal(surface.roughness, 0.25);
   }
   assert.deepEqual([textures[0].repeat.x, textures[0].repeat.y], [4, 2]);
+  followHostTexture(record);
+  assert.equal(record.placement, placement + 1, 'an engine following the map sees it tiled');
+  assert.equal(record.transform[0], 4);
   assert.equal(api.setMaterial('1', { alphaCutoff: 0.25 }), true, 'every engine took it');
   assert.equal(api.material('1').alphaCutoff, 0.25);
   assert.equal(api.importedMaterials()[0].roughness, 1, 'the file values stay readable');

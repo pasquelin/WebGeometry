@@ -1,5 +1,5 @@
 import type { PhysicsMaterialPreset } from '../../physics/options.ts';
-import type { Material as EngineMaterial } from '../../contracts/material.ts';
+import { alphaModeOf, type Material as EngineMaterial } from '../../contracts/material.ts';
 import { Color, type ColorInput } from '../math/color.ts';
 import { listen } from '../math/observed.ts';
 import type { Blending, Side } from '../constants/index.ts';
@@ -181,7 +181,7 @@ export class Material {
       metalness: this.metalness,
       roughness: this.roughness,
       side: this.side,
-      alphaMode: this.transparent ? 'blend' : this.alphaTest > 0 ? 'mask' : 'opaque',
+      alphaMode: alphaModeOf(this),
       alphaCutoff: this.alphaTest,
     };
   }
