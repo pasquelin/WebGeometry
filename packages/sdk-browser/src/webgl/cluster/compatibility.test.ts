@@ -137,17 +137,14 @@ test('a transmissive physical material is a scene copy of the transmission pass,
   assert.deepEqual(physicalFeaturesLost(glass), ['clearcoat', 'thicknessMap']);
 });
 
-test('a transmissive copy mutated into another physical extension is drawn without it, heard', () => {
+test('a transmissive copy mutated into another physical extension is drawn without it', () => {
   const normal = new G.BufferAttribute(new Float32Array(9), 3);
   const glass = G.physicalSurface({ transmission: 1 });
   const copy = { material: glass, geometry: { attributes: { position, normal } } } as never;
   const copies = { ...NO_COPIES, transmissive: [copy] };
-  const heard: string[][] = [];
-  const degraded = (_: unknown, features: readonly string[]) => void heard.push([...features]);
-  validateClusterMeshes([], [], copies, new Map(), degraded);
+  validateClusterMeshes([], [], copies, new Map());
   glass.sheen = 1;
-  validateClusterMeshes([], [], copies, new Map(), degraded);
-  assert.deepEqual(heard, [['sheen']]);
+  validateClusterMeshes([], [], copies, new Map()); // never a refusal (#772)
   glass.sheen = 0;
   // A blended copy the owner submits is validated like a page: it never transmits.
   assert.throws(

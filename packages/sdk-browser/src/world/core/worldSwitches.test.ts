@@ -3,10 +3,11 @@ import { test } from 'node:test';
 import type { MeasuredWorld } from '../session/explorer.ts';
 import { sessionOptions } from './worldOptions.ts';
 import { worldSwitches } from './worldSwitches.ts';
+import { GraphSurface } from '../../host/graph/surface.ts';
 import { effect } from '../../../../sdk-core/src/world/effect/index.ts';
 
 /** The world's notices, where nothing here is said. */
-const silent = { once() {} };
+const silent = { once() {}, say() {} };
 
 /** An open session that records the switches written into it. */
 function session(draws = true) {
@@ -73,7 +74,7 @@ test('the effect chain is given to every session, and a change of it asks for a 
     () => runtime,
     { renderer: 'webgpu' },
     () => void invalidated++,
-    { once: (kind) => void said.push(kind) },
+    { once: (kind) => void said.push(kind), say: (kind) => void said.push(kind) },
   );
   const chain = switches.held.effects;
   assert.equal(sessionOptions({}, switches.held).effects, chain);
@@ -84,4 +85,7 @@ test('the effect chain is given to every session, and a change of it asks for a 
   // A WebGL2 frame drawn without the chain is said on the world's own channel.
   sessionOptions({}, switches.held).effectsRefused!('multiply');
   assert.deepEqual(said, ['effects-refused-blending']);
+  // A surface WebGL2 draws without a physical feature is said on the same channel (#772).
+  sessionOptions({}, switches.held).materialDegraded!(new GraphSurface('physical'), ['clearcoat']);
+  assert.deepEqual(said, ['effects-refused-blending', 'material-degraded']);
 });

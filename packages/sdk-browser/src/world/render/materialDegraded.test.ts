@@ -18,6 +18,7 @@ test('a clearcoat surface is drawn on WebGL2, said once, the loop never stopped'
       assert.deepEqual(view.frame(), { chained: false, submitted: 2 });
     // A second feature of the same surface is its own notice; a known one is never said again.
     coat.sheen = 1;
+    coat.needsUpdate = true;
     assert.deepEqual(view.frame(), { chained: false, submitted: 2 });
     assert.deepEqual(view.frame(), { chained: false, submitted: 2 });
   });

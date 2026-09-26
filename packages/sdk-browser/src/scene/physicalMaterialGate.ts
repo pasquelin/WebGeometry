@@ -59,16 +59,15 @@ const EXTENSION_MAPS = [
  *  transmission, the cluster BRDF keeps its dielectric F0, so the declared IOR is one of them. */
 export function physicalFeaturesLost(material: PhysicalLike) {
   if (material.family !== 'physical') return;
-  let lost: string[] | undefined;
-  const add = (feature: string) => (lost ??= []).push(feature);
-  if ((material.ior ?? 1.5) !== 1.5 && !((material.transmission ?? 0) > 0)) add('ior');
-  for (const factor of EXTENSION_FACTORS) if ((material[factor] ?? 0) !== 0) add(factor);
-  for (const map of EXTENSION_MAPS) if (material[map]) add(map);
+  const lost: string[] = [];
+  if ((material.ior ?? 1.5) !== 1.5 && !((material.transmission ?? 0) > 0)) lost.push('ior');
+  for (const factor of EXTENSION_FACTORS) if ((material[factor] ?? 0) !== 0) lost.push(factor);
+  for (const map of EXTENSION_MAPS) if (material[map]) lost.push(map);
   const specular = material.specularColor;
   if (
     (material.specularIntensity ?? 1) !== 1 ||
     (specular && (specular.r !== 1 || specular.g !== 1 || specular.b !== 1))
   )
-    add('specular');
-  return lost;
+    lost.push('specular');
+  return lost.length ? lost : undefined;
 }

@@ -5,7 +5,7 @@ import type { WebglClusterScene } from './lights.ts';
 import type { SceneCopy } from './copyCulling.ts';
 import type { HostDrawCamera } from '../../camera/world.ts';
 import type { HostMaterials } from '../../host/resources.ts';
-import type { MaterialDegraded } from './validation.ts';
+import { readDegraded, type MaterialDegraded, type ReadDegraded } from './validation.ts';
 
 /**
  * The one draw owner of a session's paged clusters, diagnostic pages and scene copies. A draw
@@ -30,8 +30,11 @@ export class WebglClusterOwner {
     for (const { material } of meshes) this.display.textures.file(material);
     this.censused = true;
   }
-  constructor(context: WebGL2RenderingContext) {
+  /** Reads the surfaces drawn without a physical feature for `hear`, across context restores. */
+  private degraded: ReadDegraded | undefined;
+  constructor(context: WebGL2RenderingContext, hear?: MaterialDegraded) {
     this.context = context;
+    this.degraded = hear && readDegraded(hear);
     this.renderer = this.display = new WebglClusterRenderer(context);
     context.canvas.addEventListener('webglcontextrestored', this.restored);
   }
@@ -39,8 +42,6 @@ export class WebglClusterOwner {
   toneCurve: number = TONE_MAPPING_RANK.aces;
   /** Image pixels per CSS pixel of the frames to come: the scale of a line's width. */
   pixelRatio = 1;
-  /** Hears a surface the frames to come draw without a physical feature (`validation.ts`). */
-  degraded: MaterialDegraded | undefined;
   get backdropBytes() {
     return this.renderer.backdropBytes;
   }
@@ -71,7 +72,6 @@ export class WebglClusterOwner {
     const renderer = (this.renderer = linear ? this.linear! : this.display);
     renderer.toneCurve = this.toneCurve;
     renderer.pass.pixelRatio = this.pixelRatio;
-    renderer.degraded = this.degraded;
     return renderer.draw(
       meshes,
       scene,
@@ -80,6 +80,7 @@ export class WebglClusterOwner {
       srgbDestination,
       diagnosticMeshes,
       copies,
+      this.degraded,
     );
   }
   private release() {

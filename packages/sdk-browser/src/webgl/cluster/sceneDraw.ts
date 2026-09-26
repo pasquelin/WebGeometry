@@ -132,8 +132,7 @@ export function createSceneDraw(
     drawHostGeometry(drawCamera: HostDrawCamera, output: HostDrawOutput) {
       if (!gl) throw new Error('HOST_SURFACE_MISSING');
       if (!opened) throw new Error('Draw before render');
-      owner ??= new WebglClusterOwner(gl);
-      owner.degraded = materialDegraded;
+      owner ??= new WebglClusterOwner(gl, materialDegraded);
       if (!owner.censused) owner.census(meshes(display));
       owner.toneCurve = TONE_MAPPING_RANK[output.toneMapping ?? DEFAULT_TONE_MAPPING];
       owner.pixelRatio = pixelRatio();
