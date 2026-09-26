@@ -87,6 +87,9 @@ export const LIGHT_SETTINGS = {
   shadowPage: 128,
   /** Side of a lamp face's finest mip, in texels: 32 × 32 pages of 128 (pool: `shadowPoolSize`). */
   lampFaceSize: 4096,
+  /** Virtual pages the shading may request per frame at least, as many as the pool holds past it;
+   *  the rest ask again the next frame. */
+  shadowRequestCap: 4096,
   /** PCF taps per pixel and per shadow light (X2). */
   pcfTaps: 16,
   /** Width of the softened edge of a spot cone, in cosine units: against staircasing. */

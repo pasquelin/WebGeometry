@@ -3,7 +3,7 @@ import {
   shadowPoolSize,
   shadowPoolShape,
 } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
-import { castsShadow } from '../../../../sdk-core/src/scene/light-shadow/casters.ts';
+import { shadowCoverage } from '../../../../sdk-core/src/scene/light-shadow/casters.ts';
 import { shadowAtlasBytes } from '../../gpu/shadow/atlas.ts';
 import { grantedShadowPool } from '../residency/poolGrants.ts';
 import { startGrant } from '../../gpu/core/errorScope.ts';
@@ -57,9 +57,7 @@ export function sizeShadowPool(rt: WebgpuPagesRuntime) {
     atlas = lights.shadows,
     device = rt.gpu.device;
   if (!atlas || !device || atlas.texture || lights.shadowGrant) return;
-  const coverage: number[] = [];
-  for (let slot = 0; slot < lights.store.count; slot++)
-    if (castsShadow(lights.store, slot)) coverage.push(1);
+  const coverage = shadowCoverage(lights.store);
   if (capture.capturing || !coverage.length) return;
   const viewport = [...rt.setup.viewport],
     wanted = Math.min(shadowPoolSize(viewport[0], viewport[1], coverage), SHADOW_POOL_PAGES),

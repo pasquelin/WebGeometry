@@ -26,7 +26,7 @@ export const LAMP_MIPS = Math.log2(LAMP_SIDE) + 1;
 const tiles = (pixels: number) => Math.ceil((2 * Math.max(1, pixels)) / SHADOW_PAGE);
 /** Pages one light reads in a frame over a smooth `w × h` screen, `c` the share of its pixels
  *  that read that light (1 for a sun): its texel rectangle, and a third more while pages wait. */
-export const lightPages = (w: number, h: number, c: number) =>
+const lightPages = (w: number, h: number, c: number) =>
   Math.ceil((4 * c * tiles(w) * tiles(h)) / 3);
 /** The pool the first frame asks: every shadowed light's read, twice — the report the pool holds
  *  and the next one, which a turn of the camera may renew in full. */
@@ -72,9 +72,9 @@ export function shadowPoolSize(width: number, height: number, coverage: ArrayLik
   const worst = 2 * Math.ceil((4 * 4 * tiles(width) * tiles(height)) / 3);
   return Math.max(Math.min(worst, LAYER_PAGES), priorPoolPages(width, height, coverage));
 }
-/** Entries a request report lists, for a pool of `pages`: one layer's pages at least, and never
- *  fewer than the pool holds — a full list names every page the pool can keep. */
-export const shadowRequestCap = (pages: number) => Math.max(LAYER_PAGES, pages);
+/** Entries a request report lists, for a pool of `pages`: never fewer than the pool holds — a full
+ *  list names every page the pool can keep. */
+export const shadowRequestCap = (pages: number) => Math.max(LIGHT_SETTINGS.shadowRequestCap, pages);
 /** Entries of a sun level, of a whole sun, of one lamp face (every mip). */
 export const SUN_LEVEL_ENTRIES = SUN_WINDOW * SUN_WINDOW;
 export const SUN_ENTRIES = SUN_LEVELS * SUN_LEVEL_ENTRIES;
@@ -97,7 +97,7 @@ export const PAGE_MAPPED = 1 << 17;
 export const PAGE_INDEX_MASK = 0xffff;
 /** Pages a side of one layer of the pool: an 8 192-texel square, the largest 2D texture side
  *  WebGPU guarantees on every device (the default `maxTextureDimension2D`). */
-export const LAYER_SIDE = Math.floor(8192 / SHADOW_PAGE);
+const LAYER_SIDE = Math.floor(8192 / SHADOW_PAGE);
 export const LAYER_PAGES = LAYER_SIDE * LAYER_SIDE;
 /** Layers the page index addresses (`PAGE_INDEX_MASK`): 16 of 4 096 pages. */
 export const MAX_LAYERS = (PAGE_INDEX_MASK + 1) / LAYER_PAGES;

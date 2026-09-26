@@ -8,8 +8,10 @@ export const baseOf = (slot: number) => SCENE_LIGHT_HEADER_FLOATS + slot * SCENE
 export const castsShadow = (store: SceneLightStore, slot: number) =>
   store.packed[baseOf(slot) + LIGHT_FIELD.castsShadow] !== 0;
 
-/** True when a light of the store declares a shadow: what a shadow pool is for. */
-export function anyCastsShadow(store: SceneLightStore) {
-  for (let slot = 0; slot < store.count; slot++) if (castsShadow(store, slot)) return true;
-  return false;
+/** The screen share each light that declares a shadow is read over — the whole screen, taken
+ *  at its largest: what a shadow pool is for (`shadowPoolSize`). Empty when none does. */
+export function shadowCoverage(store: SceneLightStore) {
+  const coverage: number[] = [];
+  for (let slot = 0; slot < store.count; slot++) if (castsShadow(store, slot)) coverage.push(1);
+  return coverage;
 }
