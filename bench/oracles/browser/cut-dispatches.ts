@@ -19,10 +19,9 @@
 import { SELECTION_WORKGROUP } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
 import { namedBufferEntries } from '../../../packages/sdk-browser/src/gpu/core/computeBindings.ts';
 import { DAG_BINDING } from '../../../packages/sdk-browser/src/gpu/dag/shader/bindings.ts';
-import {
-  DAG_UNIFORM_BYTES,
-  VIEW_WORD_ROWS,
-} from '../../../packages/sdk-browser/src/gpu/dag/shader/viewsWgsl.ts';
+import { DAG_UNIFORM_BYTES } from '../../../packages/sdk-browser/src/gpu/dag/shader/viewsWgsl.ts';
+import { dagFlagsWords } from '../../../packages/sdk-browser/src/gpu/dag/shader/lastUseWgsl.ts';
+import { dagWorkLayout } from '../../../packages/sdk-browser/src/gpu/dag/shader/floorWgsl.ts';
 import { primitiveFrameWords } from '../../../packages/sdk-browser/src/gpu/dag/worlds.ts';
 import {
   selectionListCap,
@@ -65,7 +64,9 @@ export function ressourcesAvant(
   const pageCount = packed.pageCount,
     worldCount = Math.max(1, packed.worldCount);
   const blockCount = Math.ceil(pageCount / SELECTION_WORKGROUP);
-  const base = blockCount * 2;
+  // The frozen counters run from `base` to `base + 9`, whose last word is the shipped first per-view
+  // word: `dagPrepare` zeroes it as `resetCounters` does, and only a light cut counts in it.
+  const { base, words } = dagWorkLayout(blockCount);
   const STORAGE = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC;
   // The frame words are the shipped ones: the frozen descent reads the same records.
   const frameData = primitiveFrameWords(packed);
@@ -84,11 +85,13 @@ export function ressourcesAvant(
     views: {
       buffer: tampon(DAG_UNIFORM_BYTES, null, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST),
     },
-    flags: { buffer: tampon(Math.max(16, (packed.nodeCount * 2 + pageCount * 4) * 4)) },
+    // Sized by the shipped rule: the shipped stages address words past the frozen two queues —
+    // each page's last use sits behind a third (`lastUseWgsl.ts`, #477).
+    flags: { buffer: tampon(Math.max(16, dagFlagsWords(packed.nodeCount, pageCount) * 4)) },
     // The shipped `dagWanted` stages the camera's requests behind the drawn list, where the
     // shipped `dagSortRequests` reads them (`shader/snapshotWgsl.ts`).
     out: { buffer: tampon(stagedOutputBytes(selectionListCap(pageCount))) },
-    work: { buffer: tampon(Math.max(8, (base + 10 + VIEW_WORD_ROWS + 1) * 4)) },
+    work: { buffer: tampon(words * 4) },
     worlds: { buffer: tampon(64, packed.worlds) },
     frames: { buffer: tampon(16, frameData) },
     cold: { buffer: tampon(48, packed.pageCones) },

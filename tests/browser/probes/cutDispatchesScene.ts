@@ -1,22 +1,40 @@
 // Set dressing of the dispatch measurement: the measured scene and the command count an
 // encode opens. Split from the page so each of the two keeps its responsibility.
 import * as G from '../../../packages/sdk-browser/src/host/graph/graph.fixture.ts';
-import { packDagSelection } from '../../../packages/sdk-browser/src/gpu/dag/pack.ts';
-import { residentBase, residentWords } from '../../../packages/sdk-browser/src/gpu/dag/layout.ts';
-import { dagRecords } from '../../../packages/sdk-browser/src/gpu/dag/records.ts';
+import {
+  packDagSelection,
+  packedWorldsToRenderOrigin,
+} from '../../../packages/sdk-browser/src/gpu/dag/pack.ts';
+import { cameraSelectionUniforms } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
+import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
+import { frontCamera } from '../../../packages/sdk-browser/src/page/selection/dag.fixture.ts';
+import { ruleResidency } from '../../../packages/sdk-browser/src/gpu/dag/readiness.fixture.ts';
 import {
   scenePages,
   sceneRoots,
 } from '../../../packages/sdk-browser/src/gpu/dag/cutFrontierScene.fixture.ts';
 
+/** The dispatch bench's scene size, shared with its Node guard (`cut-dispatches-scene.test.ts`). */
+export const DISPATCH_SCENE = { feuilles: 12000, niveaux: 8 } as const;
+
 /** The scene: a pyramid of levels, one pose, every page resident, front view. The hierarchy is
- *  the compiler's, one node per detail tier under the root. */
-export function scene(feuilles: number, niveaux: number) {
+ *  the compiler's, one node per detail tier under the root. Residency goes through the engine's
+ *  own upload, both bit sets of the cut rule and each node's open count (#486): ready bits alone
+ *  make the cut drawn depend on the descent (`cut-dispatches-scene.test.ts`). */
+function scene(feuilles: number, niveaux: number) {
   const roots = sceneRoots(scenePages(feuilles, niveaux), [new G.Matrix4()], true);
   const packed = packDagSelection(roots);
-  const debut = residentBase(packed.pageCount);
-  dagRecords(packed).coldInts.fill(0xffffffff, debut, debut + residentWords(packed.pageCount));
-  return { packed, roots };
+  const resident = ruleResidency(packed, new Uint8Array(packed.pageCount).fill(1));
+  return { packed, roots, resident };
+}
+
+/** The benches' view of the scene: its camera, and the worlds brought back to that camera's
+ *  render origin. */
+export function sceneView(feuilles: number, niveaux: number) {
+  const { packed, roots, resident } = scene(feuilles, niveaux);
+  const uniforms = cameraSelectionUniforms(cameraMoteur(frontCamera(16, 200)), 1, [1280, 720]);
+  packedWorldsToRenderOrigin(packed, roots, uniforms.cameraWorld);
+  return { packed, uniforms, resident };
 }
 
 /**
