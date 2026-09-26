@@ -370,6 +370,23 @@ read at large size; the driver yields 256 × 256. It carries the same reference 
 `rgb24.bmp` of the same folder, but **quantised at the source** by its encoder: comparing it pixel to
 pixel with the BMP would report that encoder's loss, not the driver's. It is not committed here.
 
+## gltf-world
+
+`world.gltf` and `world.bin` (124 bytes), **CC0-1.0**, written by hand for this repository (#823):
+one triangle `(0,0,0) (1,0,0) (0,1,0)` placed by nested and instanced nodes, so each cooked
+position can be checked against the world position the file declares.
+
+- `house`, the root: translation `(10,0,0)`, a quarter turn about Y, scale 2 — it maps a point
+  `(x,y,z)` to `(10+2z, 2y, -2x)`;
+- `wall`, its child: the triangle, moved by `(1,0,0)`;
+- `lamp`, the child of `wall`: a `KHR_lights_punctual` point light moved by `(0,1,0)`, so at
+  `(10,2,-2)` in the world;
+- `wing`, the other child of `house`: the triangle moved by `(0,0,3)` and drawn twice through
+  `EXT_mesh_gpu_instancing` — once moved by `(1,0,0)`, once scaled by 3, turned a quarter about Z
+  and moved by `(0,2,0)`. `world.bin` holds, in order, the three positions (float), the three
+  indices (u16, padded to 4 bytes), then the two instances' translations, rotations and scales
+  (float).
+
 ## hdr
 
 **Golden fixture — Radiance HDR (RGBE) driver.**

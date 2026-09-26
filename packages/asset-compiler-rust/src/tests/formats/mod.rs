@@ -5,6 +5,7 @@ pub(in crate::tests) mod blend_golden;
 pub(in crate::tests) mod driver_uris;
 pub(in crate::tests) mod gltf_cycle;
 pub(in crate::tests) mod gltf_scenes;
+pub(in crate::tests) mod gltf_world;
 pub(in crate::tests) mod import_opacity;
 pub(in crate::tests) mod ma;
 pub(in crate::tests) mod obj_golden;

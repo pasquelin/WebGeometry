@@ -48,6 +48,7 @@ pub(super) fn load_model_file(
         (g, binary, offsets, sidecars)
     };
     flatten_buffer_views(&mut g, &offsets, binary.bytes().len())?;
+    expand_gpu_instances(&mut g, binary.bytes())?;
     let bin_hash = hash(binary.bytes());
     let (manifest, manifest_bytes) = if let Some(pair) = declared {
         pair
