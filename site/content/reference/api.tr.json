@@ -2357,7 +2357,8 @@
       "vertexCount": "Sayfadaki köşeler.",
       "indexCount": "Sayfadaki indeksler.",
       "flags": "Hangi öznitelikleri taşıdığı.",
-      "uncompressedBytes": "Açıldıktan sonraki boyutu."
+      "uncompressedBytes": "Açıldıktan sonraki boyutu.",
+      "cone": "Üçgenlerinin normallerinin konisi, oluşturulduysa."
     }
   },
   "PageCutPayload": {

@@ -2375,7 +2375,8 @@
       "vertexCount": "Vertex dalam halaman itu.",
       "indexCount": "Indeks dalam halaman itu.",
       "flags": "Atribut mana yang dibawanya.",
-      "uncompressedBytes": "Ukurannya setelah dibongkar."
+      "uncompressedBytes": "Ukurannya setelah dibongkar.",
+      "cone": "Kerucut normal segitiganya, jika sudah dibuat."
     }
   },
   "PageCutPayload": {

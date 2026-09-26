@@ -2357,7 +2357,8 @@
       "vertexCount": "그 페이지 안의 정점 수.",
       "indexCount": "그 페이지 안의 인덱스 수.",
       "flags": "어떤 속성을 담고 있는가.",
-      "uncompressedBytes": "압축 해제 후 크기."
+      "uncompressedBytes": "압축 해제 후 크기.",
+      "cone": "삼각형 법선을 감싸는 원뿔. 만들어진 경우에만."
     }
   },
   "PageCutPayload": {

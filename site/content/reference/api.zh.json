@@ -2357,7 +2357,8 @@
       "vertexCount": "该页面中的顶点数。",
       "indexCount": "该页面中的索引数。",
       "flags": "它携带了哪些属性。",
-      "uncompressedBytes": "解包后的大小。"
+      "uncompressedBytes": "解包后的大小。",
+      "cone": "其三角形法线的包围锥，若已构建。"
     }
   },
   "PageCutPayload": {

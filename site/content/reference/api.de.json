@@ -4480,7 +4480,8 @@
       "vertexCount": "Scheitelpunkte der Seite.",
       "indexCount": "Indizes der Seite.",
       "flags": "Welche Attribute sie trägt.",
-      "uncompressedBytes": "Ihre Größe nach Dekomprimierung."
+      "uncompressedBytes": "Ihre Größe nach Dekomprimierung.",
+      "cone": "Der Kegel der Normalen ihrer Dreiecke, sofern einer gebaut wurde."
     }
   },
   "PageCutPayload": {

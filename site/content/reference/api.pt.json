@@ -2357,7 +2357,8 @@
       "vertexCount": "Vértices na página.",
       "indexCount": "Índices na página.",
       "flags": "Quais atributos carrega.",
-      "uncompressedBytes": "Seu tamanho depois de descompactada."
+      "uncompressedBytes": "Seu tamanho depois de descompactada.",
+      "cone": "O cone das normais dos seus triângulos, quando foi construído."
     }
   },
   "PageCutPayload": {

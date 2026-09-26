@@ -2375,7 +2375,8 @@
       "vertexCount": "الرؤوس في الصفحة.",
       "indexCount": "الفهارس في الصفحة.",
       "flags": "أي الخصائص تحملها.",
-      "uncompressedBytes": "حجمها بعد فكّ الحزم."
+      "uncompressedBytes": "حجمها بعد فكّ الحزم.",
+      "cone": "مخروط اتجاهات أوجه مثلثاتها، إن بُني."
     }
   },
   "PageCutPayload": {

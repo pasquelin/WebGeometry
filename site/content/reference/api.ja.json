@@ -2357,7 +2357,8 @@
       "vertexCount": "そのページ内の頂点数。",
       "indexCount": "そのページ内のインデックス数。",
       "flags": "どの属性を持つか。",
-      "uncompressedBytes": "展開後のサイズ。"
+      "uncompressedBytes": "展開後のサイズ。",
+      "cone": "三角形の法線を囲む円錐。作られた場合のみ。"
     }
   },
   "PageCutPayload": {

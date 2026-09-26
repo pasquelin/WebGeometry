@@ -2375,7 +2375,8 @@
       "vertexCount": "Số đỉnh trong trang.",
       "indexCount": "Số chỉ số trong trang.",
       "flags": "Những thuộc tính nào nó mang theo.",
-      "uncompressedBytes": "Kích thước của nó sau khi giải nén."
+      "uncompressedBytes": "Kích thước của nó sau khi giải nén.",
+      "cone": "Hình nón bao pháp tuyến các tam giác của nó, nếu đã được dựng."
     }
   },
   "PageCutPayload": {

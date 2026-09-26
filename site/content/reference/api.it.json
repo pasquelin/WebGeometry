@@ -4480,7 +4480,8 @@
       "vertexCount": "Vertici della pagina.",
       "indexCount": "Indici della pagina.",
       "flags": "Quali attributi porta.",
-      "uncompressedBytes": "La sua dimensione una volta decompressa."
+      "uncompressedBytes": "La sua dimensione una volta decompressa.",
+      "cone": "Il cono delle normali dei suoi triangoli, se ne è stato costruito uno."
     }
   },
   "PageCutPayload": {

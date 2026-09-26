@@ -37,7 +37,7 @@ export interface PageCutPage {
   /** Indices in the page. */ indexCount: number;
   /** Which attributes it carries. */ flags: number;
   /** Its size once unpacked. */ uncompressedBytes: number;
-  /** The cone of its triangles' normals, when the SDK module built one (`Page.cone`). */
+  /** The cone of its triangles' normals, when one was built. */
   cone?: Page['cone'];
 }
 /** What a `cut` returns: its pages, and the grids they were quantized on. */
