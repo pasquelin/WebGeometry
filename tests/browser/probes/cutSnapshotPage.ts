@@ -1,4 +1,4 @@
-import { scene } from './cutDispatchesScene.ts';
+import { sceneView } from './cutDispatchesScene.ts';
 import { median } from '../../../scripts/median.ts';
 /**
  * Page side of the READOUT measurement: what a frame pays to bring the cut back, on the engine's
@@ -14,17 +14,11 @@ import { median } from '../../../scripts/median.ts';
  * buffers it: this figure is the total work of a frame, not the stall it suffers.
  * `encodage` splits it from what the CPU spends writing commands.
  */
-import * as G from '../../../packages/sdk-browser/src/host/graph/graph.fixture.ts';
 import { createDagResources } from '../../../packages/sdk-browser/src/gpu/dag/resources.ts';
 import { encodeDagKernels } from '../../../packages/sdk-browser/src/gpu/dag/encode.ts';
-import { packedWorldsToRenderOrigin } from '../../../packages/sdk-browser/src/gpu/dag/pack.ts';
-import {
-  cameraSelectionUniforms,
-  SELECTION_UNIFORM_BYTES,
-} from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
+import { SELECTION_UNIFORM_BYTES } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
 import { writeDagUniforms } from '../../../packages/sdk-browser/src/gpu/dag/uniforms.ts';
 import { SELECTION_HEADER_WORDS } from '../../../packages/sdk-browser/src/gpu/dag/layout.ts';
-import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
 import { ouvrirAppareil } from './webgpuDevice.ts';
 
 interface ExecuterParams {
@@ -48,16 +42,12 @@ export async function executer({
   const appareil = await ouvrirAppareil();
   if (!appareil) return { indisponible: 'no WebGPU adapter' };
   const { device, erreurs } = appareil;
-  const camera = G.perspectiveCamera(55, 16 / 9, 0.1, 200);
-  camera.position.set(0, 0, 16);
-  camera.lookAt(0, 0, 0);
-  camera.updateMatrixWorld();
 
   const lignes: Ligne[] = [];
   for (const feuilles of tailles) {
     let ligne: Ligne;
     try {
-      ligne = await mesure(device, scene(feuilles, niveaux), camera, { tours, rondes, seuils });
+      ligne = await mesure(device, sceneView(feuilles, niveaux), { tours, rondes, seuils });
     } catch (error) {
       lignes.push({ feuilles, refus: String(error instanceof Error ? error.message : error) });
       break;
@@ -70,12 +60,9 @@ export async function executer({
 
 async function mesure(
   device: GPUDevice,
-  { packed, roots }: ReturnType<typeof scene>,
-  camera: G.GraphCamera,
+  { packed, uniforms }: ReturnType<typeof sceneView>,
   { tours, rondes, seuils }: { tours: number; rondes: number; seuils: number[] },
 ) {
-  const uniforms = cameraSelectionUniforms(cameraMoteur(camera), 1, [1280, 720]);
-  packedWorldsToRenderOrigin(packed, roots, uniforms.cameraWorld);
   const livre = await createDagResources(device, packed, true);
   if (!livre) throw new Error('the shipped cut does not mount');
   const uni = new Float32Array(SELECTION_UNIFORM_BYTES / 4);

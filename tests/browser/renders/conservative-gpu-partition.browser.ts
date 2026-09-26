@@ -12,15 +12,21 @@
 //
 //   node --experimental-strip-types tests/browser/renders/conservative-gpu-partition.browser.ts
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { launchChrome } from '../../../bench/runner/chrome.ts';
 import { empaquetePage } from '../probes/pageWebgpu.ts';
 import { startServer } from '../../kit/server/staticServer.ts';
-import { ASSETS, DEFAULT_SCENE, assetsManifest } from '../../../bench/runner/scene.ts';
+import {
+  ASSETS,
+  DEFAULT_SCENE,
+  assetsManifest,
+  sceneDerived,
+} from '../../../bench/runner/scene.ts';
 import { poseAt } from '../../../bench/runner/poses.ts';
+import { cacheHoldsBlend } from '../../../bench/runner/cacheManifest.ts';
 
 const ROOT = resolve(import.meta.dirname, '../../..');
 const SDK_URL = '/sdk/witnesses/measurement.js',
@@ -37,19 +43,6 @@ function packageDir(name: string) {
 }
 
 const manifestUrl = assetsManifest(DEFAULT_SCENE, true);
-/**
- * True when the cache holds at least one transparent cluster: without it, the transparent half
- * of the proof has nothing to examine and says so, rather than failing or dropping the opaque half.
- */
-function cacheAvecTransparents() {
-  const manifest = join(ASSETS, manifestUrl.replace('/benchmark-assets/', ''));
-  const clusters = JSON.parse(
-    readFileSync(join(dirname(manifest), JSON.parse(readFileSync(manifest, 'utf8')).url), 'utf8'),
-  );
-  return clusters.primitives.some(
-    (primitive: { pass?: string }) => primitive.pass === 'clustered-blend',
-  );
-}
 assert.ok(
   existsSync(join(ROOT, 'dist/witnesses/measurement.js')),
   'dist missing: run `pnpm run build` before this proof',
@@ -151,7 +144,9 @@ assert.deepEqual(
   [],
   'removed transparent clusters remain visible to the reference',
 );
-if (cacheAvecTransparents()) {
+// Without a transparent cluster in the cache, the transparent half has nothing to examine and
+// says so, rather than failing or dropping the opaque half.
+if (await cacheHoldsBlend(join(sceneDerived(DEFAULT_SCENE), 'native/full'))) {
   assert.ok(occ.examinees > 0, 'no transparent cluster was examined');
   assert.ok(occ.rejetees > 0, 'the transparent occlusion test rejected nothing: nothing to prove');
   assert.equal(occ.violations, 0, `${occ.violations} transparent clusters wrongly rejected`);

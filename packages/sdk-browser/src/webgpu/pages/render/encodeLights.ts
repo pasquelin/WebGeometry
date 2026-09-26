@@ -3,7 +3,8 @@ import {
   DEFAULT_TONE_MAPPING,
   TONE_MAPPING_RANK,
 } from '../../../../../sdk-core/src/scene/core/environment.ts';
-import { noteShadowFrame, uploadSceneLights } from '../state/lights.ts';
+import { noteShadowFrame } from '../state/lights.ts';
+import { uploadSceneLights } from '../state/lightBuffer.ts';
 import { planImageShadows } from './encodeShadows.ts';
 import { encodeShadowBatches } from './encodeShadowBatches.ts';
 import { ensureBounce } from '../prepare/bounce.ts';
@@ -74,7 +75,8 @@ export function encodeDirectLights(
   }
   noteShadowFrame(lights);
   if (!tiles || !gpu.depthView) return directParams;
-  if (!tiles.ensure(width, height, gpu.depthView)) return directParams;
+  if (!lights.buffer || !tiles.ensure(width, height, gpu.depthView, lights.buffer))
+    return directParams;
   tiles.update(inverseViewProjection, width, height);
   if (!tiles.encode(encoder)) return directParams;
   directParams[0] = active;
@@ -175,6 +177,8 @@ export function directLightingState(rt: WebgpuPagesRuntime) {
     shadowPagesOverflow: lights.plan.requests.counts.refused + lights.plan.requests.counts.unlisted,
     shadowWaitMs: lights.plan.counts.waitedMs,
     shadowWaitFrames: lights.plan.counts.waitedFrames,
+    /** Shadow casters past the slices: lit without a shadow (#818, #822). */
+    shadowCastersUnsliced: lights.plan.counts.unslicedCasters,
     poolPages: lights.shadows
       ? { used: lights.plan.counts.poolPages, total: lights.plan.pool.pages }
       : null,

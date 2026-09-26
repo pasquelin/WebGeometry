@@ -2,7 +2,7 @@
 //! their sidecars, its root, then the scope pointer. Split out of
 //! `compiler_build.rs` to keep the repository line limit.
 use super::*;
-use crate::compiler_manifest_pages::write_manifest;
+use crate::compiler_manifest_pages::{write_manifest, MeshPages};
 use crate::texture_preview::TexturePreview;
 
 /// Where a result is stored, and what it takes with it.
@@ -16,6 +16,8 @@ pub(super) struct Publication<'a> {
     /// Every product already on disk in the folder, as its writer recorded it.
     pub products: &'a [Product],
     pub previews: &'a [TexturePreview],
+    /// The mesh pages, written before the tables that name them.
+    pub mesh_pages: &'a MeshPages,
 }
 
 /// Name under which the manifest records the other products of its folder.
@@ -27,11 +29,6 @@ pub(super) const FILES_FIELD: &str = "files";
 /// never name a key whose manifest would not yet be written.
 pub(super) fn publish(inputs: &Publication<'_>, result: &Value) -> Result<()> {
     let _t = perf::Timer::new(perf::Phase::Manifest);
-    let templates = manifest_binary::Templates {
-        page: "../../objects/{sha}.bin",
-        geometry: "../../objects/{sha}.bin",
-        bundle: "../../objects/{sha}.bin",
-    };
     let mut slim = json!({});
     // Baked-level template: `{sha}` is the source-bytes fingerprint, `{kind}` the
     // atlas (`srgb` or `linear`), `{level}` the level rank. One truth, as for pages.
@@ -44,7 +41,7 @@ pub(super) fn publish(inputs: &Publication<'_>, result: &Value) -> Result<()> {
         bytes: inputs.proxy_bytes.len() as u64,
     };
     slim[FILES_FIELD] = files_record(inputs.products.iter().chain([&proxy]));
-    write_manifest(result, slim, inputs.previews, &templates, directory)?;
+    write_manifest(result, slim, inputs.previews, inputs.mesh_pages, directory)?;
     write_pointer(inputs.o, inputs.key, inputs.cache_format)
 }
 

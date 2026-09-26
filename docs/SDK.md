@@ -931,10 +931,18 @@ light is a `SceneLight` (version 2) of one of three kinds. `point` and `spot` ca
 `range` in metres, `spot` also `direction` and a `coneAngle` half-angle; `directional` (sun,
 overcast sky) carries only `direction` — the propagation direction — and is refused if given a
 `position`, a `range` or a `coneAngle`. All three carry linear `color`, a positive radiometric
+<<<<<<< HEAD
 `intensity` and `castsShadow`. Bounds: 64 lights, 32 per 16×16 screen tile, and at most 24 shadow
 regions redrawn per frame. The shadow pool is sized once, at the first frame that casts a shadow,
 from its screen and its shadowed lights: layers of up to 64 × 64 pages of 128², within the budget's
 shadow share; `metric.frame(world)` publishes its `shadowPoolBytes` and `shadowPoolLayers`.
+=======
+`intensity` and `castsShadow`. Bounds: none on the count — the light table grows with the scene;
+a 16×16 screen tile lists up to 64 lights reaching it and walks every light of the scene past
+that, a walk #849 bounds by the view —; 64 shadow slices,
+past which a caster lights without a shadow (`shadowCastersUnsliced`), a 4096-square shadow atlas,
+and at most 24 shadow regions redrawn per frame. WebGL2 draws 64 lights and refuses more (#835).
+>>>>>>> origin/develop
 
 `capability.lighting(world)` reports what the **active** renderer applies — `{ sceneLights,
 lightingView, shadows, transforms, reason? }` — not what the contract accepts: a call the light
@@ -1000,8 +1008,8 @@ directional. A `point` or `spot` with no `range` gets `sqrt(I / 0.01 W·m⁻²)`
 A light that does not hold the contract is counted in the file's `rejected` map and left out.
 
 A light casts a shadow when the file says so (FBX carries the flag; glTF has none, so imported glTF
-lights cast one). Beyond 64 lights, the ones that carry furthest are kept — directionals first, then
-by peak channel intensity — and the rest are counted in the `imported-lights` diagnostic. A world
+lights cast one). Every light of the file is declared, however many: the `imported-lights`
+diagnostic counts them. A world
 reads them as `(await scene.load(url)).lights`, in cache order; each lamp is a child of the model,
 changed with `light.visible = false`, `model.remove(light)` or `light.intensity = …`. A cache
 without `lights.json` has none; one the server refuses otherwise fails the load
@@ -1361,11 +1369,12 @@ bend }` simulates the mesh's vertices one by one on Jolt's soft bodies. A cloth 
   static world only, are simulated only in range and in view, and leave the simulation once asleep:
   their mesh stays where it came to rest (set `physics` again to simulate it anew), and their
   joints break (`j.broken`, `'break'`).
-- **Budgets.** `world.budget.physics`, read when the physics starts: bodies, static triangles,
-  decorative bodies, memory (a hard ceiling: the module's memory cannot grow past it), body pairs
+- **Budgets.** `world.budget.physics`, read when the physics starts: bodies, decorative bodies,
+  memory (a hard ceiling: the module's memory cannot grow past it; half of it holds the static
+  collision, a static triangle mesh past it refused naming `memoryBytes`), body pairs
   and contacts per step, contact events per step, and threads (Jolt's thread pool, the worker's
   included, when the page is cross-origin isolated; never more than the logical cores minus the
-  page's own; one elsewhere). The defaults are `DEFAULT_PHYSICS_BUDGET`. A request past one is
+  page's own; one elsewhere). The defaults are `DEFAULT_PHYSICS_BUDGET`; a key that is no budget (the removed `triangles`) is refused by name, `PHYSICS_BUDGET` from `createWorld`, a `TypeError` when added to `world.budget.physics`. A request past one is
   refused with `PHYSICS_BUDGET` on `world.physics.error`; a step that finds more pairs or contacts
   than its budget says so the same way, and an `enter` past the events budget is counted in
   `stats.droppedEvents` (its `leave` is then never sent). `softVertices` bounds the vertices of
@@ -1375,9 +1384,10 @@ bend }` simulates the mesh's vertices one by one on Jolt's soft bodies. A cloth 
   own clock: the two are never added.
 - **Compiled models.** A model loaded with `scene.load()` collides with its own triangles once the
   physics is on: the compiler cooked them (`physics.json`, [FORMAT.md](FORMAT.md)) and the physics
-  streams its tiles in, restored from Jolt's binary state, around the eye up to `camera.far` and
-  around every moving body, nearest first, within `budget.physics.triangles`; past it, the nearest
-  stay and `PHYSICS_BUDGET` names the triangles asked. A file of another format or cooked by
+  streams its tiles in, restored from Jolt's binary state, around every moving body and around the
+  eye up to `camera.far`, nearest first, within half of `budget.physics.memoryBytes`, and releases
+  them as they move away (a tile stays until half as far again as it came in). A scene is never
+  refused for its size: a tile that does not fit waits, the farthest leaving for it. A file of another format or cooked by
   another Jolt is refused (`PHYSICS_FORMAT`); a model compiled before the cook collides nowhere.
   A tile or a soft body's settings the server refuses is `RESOURCE_HTTP_ERROR` on
   `world.physics.error` ([Files over HTTP](#files-over-http)); a model that leaves the scene lets

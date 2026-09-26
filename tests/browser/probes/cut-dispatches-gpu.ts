@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { dansPageWebgpu, empaquetePage } from './pageWebgpu.ts';
 import { median } from '../../../scripts/median.ts';
 import type { executer } from './cutDispatchesPage.ts';
+import { DISPATCH_SCENE } from './cutDispatchesScene.ts';
 
 declare global {
   var coupeLancements: { executer: typeof executer };
@@ -40,8 +41,7 @@ test('cut opens fewer commands and retains exactly the same pages', async () => 
   const releve = await dansPageWebgpu(
     (argument: Parameters<typeof executer>[0]) => globalThis.coupeLancements.executer(argument),
     {
-      feuilles: 12000,
-      niveaux: 8,
+      ...DISPATCH_SCENE,
       profondeurs: PROFONDEURS,
       tours: TOURS,
       rondes: RONDES,

@@ -168,9 +168,9 @@ pub fn compile(o: &Options, progress: impl Fn(Value) + Sync) -> Result<Value> {
     let lights = stage_scene_lights(g, bin, &scene_nodes, &directory, &progress)?;
     let (autonomous_scene, autonomous_refusal, autonomous, mut products) =
         write_autonomous_scene(&directory, &source, &primitives, &output_views)?;
-    let tables = stage_scene_tables(&source, autonomous.as_ref(), &directory, &progress)?;
-    let (physics_file, physics) =
-        physics_cook::stage_physics(&scene, &primitives, &collisions, &directory)?;
+    let paged = write_mesh_pages(&primitives, &directory)?;
+    let tables = stage_scene_tables(&source, autonomous.as_ref(), &paged, &directory, &progress)?;
+    let (physics_file, physics) = stage_physics(&scene, &primitives, &collisions, &directory)?;
     products.extend([tables, source_bin, source_gltf, lights, physics_file]);
     let unsupported = compiler_format::unsupported(&o.simplification, autonomous_refusal);
     let cache_format = compiler_format::cache_format(&primitives);
@@ -185,6 +185,7 @@ pub fn compile(o: &Options, progress: impl Fn(Value) + Sync) -> Result<Value> {
             proxy_sha: &proxy_sha,
             products: &products,
             previews: &texture_previews,
+            mesh_pages: &paged,
         },
         &result,
     )?;

@@ -24,7 +24,7 @@ test('a model compiled before the cook — a 404, or the 403 of a store that hid
     await landed();
     tiles.update([0, 0, 0], 1000);
     await landed();
-    assert.deepEqual([bodies.count.triangles, errors], [0, []]);
+    assert.deepEqual([bodies.count.collisionBytes, errors], [0, []]);
   }
 });
 
@@ -38,7 +38,7 @@ test('a tile a busy server refuses (503) is asked once per update: the next one 
   const resident = heard();
   tiles.update([0, 0, 0], 1000);
   await resident;
-  assert.deepEqual([asked.length, bodies.count.triangles], [2, 2]);
+  assert.deepEqual([asked.length, bodies.count.collisionBytes], [2, 2]);
 });
 
 test('a tile the server refuses (404) is asked once, never at the next updates', async (t) => {
@@ -59,7 +59,7 @@ test('a cooked file that lists no soft bodies still brings its tiles in, no fail
   const resident = heard();
   tiles.update([0, 0, 0], 1000);
   await resident;
-  assert.deepEqual([bodies.count.triangles, errors], [2, []]);
+  assert.deepEqual([bodies.count.collisionBytes, errors], [2, []]);
 });
 
 test('a model leaving while its physics.json or a tile is on its way lets the read go, no failure', async (t) => {

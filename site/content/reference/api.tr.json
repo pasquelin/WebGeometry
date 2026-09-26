@@ -931,11 +931,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "Motorun kendi WebGL2 yolu bu modeli çizemiyor.",
       "PAGE_BUDGET": "Görünümün ihtiyaç duyduğu sayfalar bellek bütçesine sığmıyor, ya da bu yolun bütçesi yok.",
       "UNSUPPORTED_MEMORY_BUDGETS": "Görünümün ihtiyaç duyduğu sayfalar bellek bütçesine sığmıyor, ya da bu yolun bütçesi yok.",
-      "INVALID_SCENE_LIGHT": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, bir fazla, ya da gidecek yeri yok.",
-      "DUPLICATE_SCENE_LIGHT": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, bir fazla, ya da gidecek yeri yok.",
-      "UNKNOWN_SCENE_LIGHT": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, bir fazla, ya da gidecek yeri yok.",
-      "SCENE_LIGHT_BUDGET": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, bir fazla, ya da gidecek yeri yok.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, bir fazla, ya da gidecek yeri yok.",
+      "INVALID_SCENE_LIGHT": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, ya da gidecek yeri yok.",
+      "DUPLICATE_SCENE_LIGHT": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, ya da gidecek yeri yok.",
+      "UNKNOWN_SCENE_LIGHT": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, ya da gidecek yeri yok.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Bir ışık bozuk şekillenmiş, ikilenmiş, bilinmiyor, ya da gidecek yeri yok.",
       "INVALID_SCENE_ENVIRONMENT": "Sahnenin pozlaması ya da çevresi geçerli sayılar değil.",
       "INVALID_MATERIAL": "Bir malzeme değişikliği bilinmiyor, aralık dışında, onu başka bir çizim sınıfına taşıyacak ya da paylaştığı bir haritayı döşeyecek.",
       "UNKNOWN_MATERIAL": "Bir malzeme değişikliği bilinmiyor, aralık dışında, onu başka bir çizim sınıfına taşıyacak ya da paylaştığı bir haritayı döşeyecek.",
@@ -962,9 +961,9 @@
       "WEBGPU_LOST": "WebGPU cihazını kaybetti ya da cihazdaki bir hata hiçbir şeyin çizemeyeceği bir durum bıraktı: `render`, `flush` ve cihaza ihtiyaç duyan okumalar tarafından fırlatılır, `gpu-device-lost` tanılamasıyla adlandırılır ve bu yüzden bir oturum açılamadığında `world.diagnostic.error` üzerinde görünür.",
       "UNSUPPORTED_SCENE_FORMAT": "Kaydedilmiş bir sahne başka bir biçimde ya da sürümde, veya kaydedilmiş bir sahnenin saklayamayacağı bir şey içeriyor.",
       "SCENE_NOT_SAVABLE": "Kaydedilmiş bir sahne başka bir biçimde ya da sürümde, veya kaydedilmiş bir sahnenin saklayamayacağı bir şey içeriyor.",
-      "PHYSICS_BUDGET": "Fizikten sınırlarından birinin ötesi istendi (`world.budget.physics`: cisimler, üçgenler, dekoratif cisimler, bellek), ya da dinamik bir cisim sahnenin doğrudan çocuğu değildi (`PHYSICS_NESTED`), ya da fizik modülü başarısız oldu (`PHYSICS_FAILED`): `world.physics.error` üzerinde.",
-      "PHYSICS_NESTED": "Fizikten sınırlarından birinin ötesi istendi (`world.budget.physics`: cisimler, üçgenler, dekoratif cisimler, bellek), ya da dinamik bir cisim sahnenin doğrudan çocuğu değildi (`PHYSICS_NESTED`), ya da fizik modülü başarısız oldu (`PHYSICS_FAILED`): `world.physics.error` üzerinde.",
-      "PHYSICS_FAILED": "Fizikten sınırlarından birinin ötesi istendi (`world.budget.physics`: cisimler, üçgenler, dekoratif cisimler, bellek), ya da dinamik bir cisim sahnenin doğrudan çocuğu değildi (`PHYSICS_NESTED`), ya da fizik modülü başarısız oldu (`PHYSICS_FAILED`): `world.physics.error` üzerinde.",
+      "PHYSICS_BUDGET": "Fizikten sınırlarından birinin ötesi istendi (`world.budget.physics`: cisimler, dekoratif cisimler, bellek), ya da dinamik bir cisim sahnenin doğrudan çocuğu değildi (`PHYSICS_NESTED`), ya da fizik modülü başarısız oldu (`PHYSICS_FAILED`): `world.physics.error` üzerinde.",
+      "PHYSICS_NESTED": "Fizikten sınırlarından birinin ötesi istendi (`world.budget.physics`: cisimler, dekoratif cisimler, bellek), ya da dinamik bir cisim sahnenin doğrudan çocuğu değildi (`PHYSICS_NESTED`), ya da fizik modülü başarısız oldu (`PHYSICS_FAILED`): `world.physics.error` üzerinde.",
+      "PHYSICS_FAILED": "Fizikten sınırlarından birinin ötesi istendi (`world.budget.physics`: cisimler, dekoratif cisimler, bellek), ya da dinamik bir cisim sahnenin doğrudan çocuğu değildi (`PHYSICS_NESTED`), ya da fizik modülü başarısız oldu (`PHYSICS_FAILED`): `world.physics.error` üzerinde.",
       "PHYSICS_FORMAT": "Derlenmiş bir modelin hazırlanmış fiziği (`physics.json`) başka bir biçimde ya da motorunkinden başka bir Jolt ile hazırlanmış (`PHYSICS_FORMAT`): yeniden derleyin. Fizik kapalıyken kesin bir raycast istendi (`PHYSICS_OFF`).",
       "PHYSICS_OFF": "Derlenmiş bir modelin hazırlanmış fiziği (`physics.json`) başka bir biçimde ya da motorunkinden başka bir Jolt ile hazırlanmış (`PHYSICS_FORMAT`): yeniden derleyin. Fizik kapalıyken kesin bir raycast istendi (`PHYSICS_OFF`).",
       "NO_VEHICLE": "`world.controls.vehicle` `null` iken `world.controls.kind` `'vehicle'` yapıldı: sürülecek bir şey yok.",
@@ -1604,7 +1603,7 @@
     "summary": "Yayımlanmış doğrudan aydınlatma ayarları.",
     "description": "Bunlar adlandırılmış ürün kararlarıdır, gömülü sabitler değil: her çalışma zamanı sınırı onları yeniden okur, ve tanı onları oldukları gibi yayımlar.",
     "members": {
-      "maxLights": "Sözleşmenin toplamda kabul ettiği ışıklar; bunun ötesinde `addLight` reddeder. Bir ekran karosu kendisine dokunan her ışığı tutar; listesi ve piksel döngüsü bu sayıyla sınırlıdır (X2).",
+      "tileLights": "Bir ekran karosunun listesinin iki derinlik diliminin her birinde tuttuğu ışıklar: belleği, sahne ne tutarsa tutsun, karo başına budur. Daha fazla ışığın ulaştığı bir karo liste tutmaz ve sahnenin her ışığını dolaşır — onu ıskalayanlar tam bir sıfır ekler —, böylece hiçbir ışık kaybolmaz (X2).",
       "tileSize": "Işık listesinin bir ekran karosunun piksel cinsinden kenarı.",
       "samplesPerPixel": "HAREKETLİ bir görselin pikseli başına tamamen gölgelendirilen — gölge okuması dahil — ışıklar (X2): diğerleri gölgeleri olmadan tartılır, ve gölgelendirilenler orantılı olarak çizilir, bu yüzden tahmin yansız kalır ve zamansal kenar yumuşatma onu ortalar. Sabit bir görsel, karosunun her ışığını gölgelendirir ve tam toplama yakınsar; orada bu sayının hiçbir rolü yoktur.",
       "shadowPage": "Bir gölge sayfasının kenarı, texel olarak: fiziksel havuzun, sanal haritaların ve geçersiz kılmanın birimi. Hareket eden bir nesne yalnızca izdüşen kutusunun kapladığı sayfaları eskitir.",
@@ -1770,7 +1769,7 @@
     "summary": "Katmanlar önbelleğin dört bitinde yaşar, bu yüzden derleyicinin tanımlayabileceği en derin yığın 15'tir."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Bir gölge kesitinin atlas içinde adresleyebileceği ışıklar: bildirilen her gölgeli ışık için bir tane."
+    "summary": "Atlasın adreslediği gölge dilimleri, sayfa tablosunun kendi kurallarıyla (#818) — ışıklar için asla bir sınır değil: bunların ötesindeki gölge düşüren bir ışık gölgesiz aydınlatır ve kare onu sayar (`shadowCastersUnsliced`)."
   },
   "ManifestBinaryDescriptor": {
     "summary": "İkilinin nerede oturduğu ve bir cluster'ın, paketlenmiş bir sayfanın ve bir paketin nesnesini nasıl adlandırdığı.",
@@ -2231,7 +2230,7 @@
     "description": "İlk altısı, `geometryPage.ts`'ten kelimesi kelimesine alınan sayfa çözme reddidir: bir çağıran onları eskisi gibi ayırt eder. `PAGE_DECODE_FAILED`, sıkıştırma açma kütüphanesinden başka herhangi bir reddi taşır. `PAGE_DECODE_CANCELLED` bir iptale yanıt verir, `PAGE_DECODE_WORKER` kaybolan bir yürütücüye — yalnızca o, yedeğe izin verir."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Ana iş parçacığı dışında sayfa çözme sözleşmesi, sürüm 5: çözülmüş geometri, kuantalama hatasıyla tek bir blok olarak yolculuk eder, ve arena yuvası o hatayı 8. kelimede kaydeder; `cut`, çizilen üçgenleri, açıklayıcılarıyla birlikte bayt olarak geri dönen sayfalara dönüştürür.",
+    "summary": "Ana iş parçacığı dışında sayfa çözme sözleşmesi, sürüm 6: çözülmüş geometri, kuantalama hatasıyla tek bir blok olarak yolculuk eder, ve arena yuvası o hatayı 8. kelimede kaydeder; `cut`, çizilen üçgenleri, açıklayıcılarıyla birlikte bayt olarak geri dönen sayfalara dönüştürür. Sürüm 6'dan beri normal konileriyle birlikte döner; paketlenmiş üçgenler sayfalarının bir koni tutup tutmadığını taşır.",
     "description": "Çağıran iş parçacığı bir `PageDecodeRequest` gönderir, yürütücü aynı `id`'yi taşıyan bir `PageDecodeAnswer` döndürür. Burada hiçbir şey platforma dokunmaz: `Worker` yok, fetch yok, saat yok — tarayıcı adaptörü bunların hepsini taşır, bu dosya yalnızca mesaj şeklini, kapalı hata listesini ve havuz sınırını taşır. Tampon sahipliği: `source`, istekle birlikte **aktarılır**, bu yüzden gönderen artık ona sahip değildir. Bir `verify` yanıtı onu, sırayla aktarılmış olarak döndürür; bir `decode` yanıtı bunun yerine çözülmüş tamponları, o da aktarılmış olarak döndürür. Hiçbir şey aktarmayan bir yürütücü (senkron yedek) tam olarak aynı değerleri döndürür: sözleşme işin nasıl yolculuk ettiğini söylemez, yalnızca ne döndürdüğünü."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2361,7 +2360,8 @@
       "vertexCount": "Sayfadaki köşeler.",
       "indexCount": "Sayfadaki indeksler.",
       "flags": "Hangi öznitelikleri taşıdığı.",
-      "uncompressedBytes": "Açıldıktan sonraki boyutu."
+      "uncompressedBytes": "Açıldıktan sonraki boyutu.",
+      "cone": "Üçgenlerinin normallerinin konisi, oluşturulduysa."
     }
   },
   "PageCutPayload": {
@@ -2425,7 +2425,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: bir sayfanın SHA-256 özeti.",
-    "description": "`decode`: indeksleri ve köşe başına öznitelikleri. `cut`: beş uzunluk sonra beş dört baytlık dizi olarak paketlenmiş, sayfalara kesilmiş çizilen üçgenler."
+    "description": "`decode`: indeksleri ve köşe başına öznitelikleri. `cut`: beş uzunluk, sayfalarının bir koni tutup tutmadığı, sonra beş dört baytlık dizi olarak paketlenmiş, sayfalara kesilmiş çizilen üçgenler."
   },
   "PageDecodeRequest": {
     "summary": "Bir worker'dan bir sayfayı kontrol etmesini, açmasını ya da kesmesini isteyen bir mesaj.",
@@ -2808,14 +2808,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "GPU tamponundaki ortamın float'ları."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Tüm GPU ışık tamponunun float'ları: başlık, sonra her ışık."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "GPU tamponunda bir ışığın float'ları: asla yeniden tahsis edilmeyen beş `vec4f`."
+    "summary": "GPU tamponunda bir ışığın float'ları: beş `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "Işık tamponu başlığı: sayım, X'te karolar, Y'de karolar, ayrılmış."
+    "summary": "Işık tamponu başlığı: sayı, ardından üç ayrılmış sözcük."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "Bu motorun okuduğu ışık sözleşmesinin sürümü."
@@ -2960,9 +2957,9 @@
     "summary": "GPU'nun okuduğu şekliyle bir sahnenin ışıkları, paketlenmiş ve güncel tutulmuş.",
     "members": {
       "settings": "Yayımlanmış doğrudan aydınlatma ayarları. Bunlar adlandırılmış ürün kararlarıdır, gömülü sabitler değil: her çalışma zamanı sınırı onları yeniden okur, ve tanı onları oldukları gibi yayımlar.",
-      "packed": "GPU için paketlenmiş her ışık.",
+      "packed": "GPU için paketlenmiş her ışık: tablo büyüdüğünde yeni bir dizi.",
       "environmentPacked": "GPU'nun okuduğu şekliyle, ışıkların arkasındaki ortamın ışınımı (`../core/environment.ts`).",
-      "revision": "Her değişiklikte artırılır.",
+      "revision": "Her değişiklikte, yuva başına artırılır.",
       "sliceOf": "Bir ışığın atlas kesiti tamponun kendisinde yaşar: iki kez tutulmaz.",
       "ids": "Her slotun ışık adı.",
       "count": "Kaç ışık.",
@@ -2979,7 +2976,7 @@
       "remove": "Bir ışığı kaldırır.",
       "setEnvironment": "Ortamı ayarlar.",
       "assignSlice": "Diğer alanlarına dokunmadan, bir ışığın kapladığı atlas kesitini kaydeder. Depo revizyonu yalnızca kesit gerçekten değiştiyse yükselir: aksi halde GPU'ya hiçbir şey itilmez.",
-      "view": "Gerçekten kaplanan float'lar: GPU yazımı asla boş slotları itmez."
+      "capacity": "Tablonun tuttuğu yuvalar: GPU ışık tamponu bu uzunluktadır."
     }
   },
   "SceneLightingView": {
@@ -4037,7 +4034,7 @@
       "texturePoolCeiling": "Bir dünyanın isteyebileceği en büyük doku havuzu, bayt cinsinden.",
       "geometryPool": "Geometri sayfaları için ayrılan GPU belleği baytı; zarfı değiştirmek için ayarlayın, `gpu`nun gölgelerin, sekme sondalarının ve doku havuzunun yanında bıraktığı kadarıyla.",
       "texturePool": "Doku sayfaları için ayrılan GPU belleği baytı, doku havuzu olmayan bir motorda (WebGL2) `null`; zarfı değiştirmek için ayarlayın, `gpu`nun gölgelerin, sekme sondalarının ve geometri havuzunun yanında bıraktığı kadarıyla.",
-      "physics": "Fiziğin sınırları (cisimler, üçgenler, dekoratif cisimler, bellek), başlangıçta bir kez okunur; birini aşmak `PHYSICS_BUDGET` fırlatır.",
+      "physics": "Fiziğin sınırları (cisimler, dekoratif cisimler, bellek), başlangıçta bir kez okunur; birini aşmak `PHYSICS_BUDGET` fırlatır.",
       "raycastTrees": "`raycast`'in üçgen ağaçları için tuttuğu CPU belleği baytı, sayfadaki tüm dünyalar tarafından paylaşılır; aşıldığında en uzun süredir kullanılmayan ağaç bırakılır. Sınırı değiştirmek için ayarlayın.",
       "gpu": "Dünyanın tutabileceği GPU belleği baytı, tüm havuzlar birlikte; her havuzu paylaşım kuralıyla (`split`) yeniden çizmek için ayarlayın. Üç sabit payın — gölge havuzu, sekme sondaları ve efekt hedefleri — altındaki bir toplam reddedilir (`GPU_BUDGET_UNDER_SHADOW_POOL`). Asla makineden okunmaz.",
       "canvas": "Dünyanın bildirdiği en büyük tuval, çizim arabelleğinin pikselleriyle: efekt zincirinin hedefleri onun boyutunda ayrılır (`split.effectTargets`); varsayılan 3840 × 2160'dır ve varsayılan `gpu` yalnızca bu rezerv kadar büyür. Her havuzu kurala göre yeniden dağıtmak için ayarlayın. Daha büyük çizilen bir tuval yine de bütünüyle çizilir: tanılama, rezervi aşan baytlarla `effect targets over budget` der.",
@@ -4804,8 +4801,8 @@
     "summary": "Politika kanıtları değerlendirir; asla bir referans uydurmaz ya da kendisi bir saat örneklemez."
   },
   "createSceneLightStore": {
-    "summary": "Sabit kapasitede sahne ışıkları.",
-    "description": "Tampon, `maxLights` ışık için bir kez tahsis edilir ve asla yeniden tahsis edilmez; bir ışığı eklemek, ayarlamak ya da kaldırmak yalnızca on altı float'ını yazar ve revizyonunu artırır. Işık başına `revision`, bir okuyucuya bir ışığın değiştiğini bildirir: hiçbir yapı kare başına yeniden inşa edilmez. Gölge zamanlayıcısı ışığın biçimini kendisi okur, bu yüzden yoğunluk ya da renk değişikliği hiçbir gölge sayfasını eskitmez."
+    "summary": "Sahne ışıkları, sahnenin bildirdiği kadar: `capacity` yuva, dolunca ikiye katlanır ve asla küçültülmez.",
+    "description": "Bir ışığı eklemek, ayarlamak ya da kaldırmak float'larını yazar ve `revision` değerini artırır; bu, okuyucuya ışığın değiştiğini bildirir: kare başına hiçbir şey yeniden kurulmaz. Gölge zamanlayıcısı ışığın biçimini kendisi okur, bu yüzden yoğunluk ya da renk değişikliği hiçbir gölge sayfasını eskitmez."
   },
   "createSceneRoot": {
     "summary": "Boş, sürümlenmiş bir sahne hiyerarşisi oluşturur.",
@@ -7166,9 +7163,8 @@
     "summary": "Motorun varsayılan fizik bütçeleri.",
     "members": {
       "bodies": "Aynı anda her türden cisim.",
-      "triangles": "Aynı anda tüm statik üçgen şekillerinin üçgenleri.",
       "decorative": "Aynı anda dekoratif cisimler.",
-      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez.",
+      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez. Yarısı statik çarpışmayı aynı anda tutar: derlenmiş bir modelin karoları bunun içinde gözün ve hareket eden cisimlerin çevresinde akıtılır, en uzaktakiler önce çıkar; bunu aşan statik bir üçgen ağı reddedilir.",
       "threads": "Simülasyonu ilerleten iş parçacıkları, fizik işçisininki dahil. 1'in üstü çapraz köken yalıtımlı bir sayfa (paylaşılan bellek) ister; aksi halde simülasyon tek iş parçacığında ilerler. Asla makinenin mantıksal çekirdeklerinden sayfanınkini çıkarınca kalan sayıyı aşmaz.",
       "bodyPairs": "Bir adımda sınırları örtüşen cisim çiftleri. Yoğun bir yığında cisim başına yaklaşık dört tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",
       "contactConstraints": "Bir adımda çözülen temas eden çiftler. Oturmuş bir yığında cisim başına yaklaşık iki tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",
@@ -7249,9 +7245,8 @@
     "summary": "Bir dünyanın fiziğinin sabit sınırları; makineden asla okunmaz.",
     "members": {
       "bodies": "Aynı anda her türden cisim.",
-      "triangles": "Aynı anda tüm statik üçgen şekillerinin üçgenleri.",
       "decorative": "Aynı anda dekoratif cisimler.",
-      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez.",
+      "memoryBytes": "Fizik modülünün bellek baytı: katı bir tavan, modül bunun ötesine büyüyemez. Yarısı statik çarpışmayı aynı anda tutar: derlenmiş bir modelin karoları bunun içinde gözün ve hareket eden cisimlerin çevresinde akıtılır, en uzaktakiler önce çıkar; bunu aşan statik bir üçgen ağı reddedilir.",
       "threads": "Simülasyonu ilerleten iş parçacıkları, fizik işçisininki dahil. 1'in üstü çapraz köken yalıtımlı bir sayfa (paylaşılan bellek) ister; aksi halde simülasyon tek iş parçacığında ilerler. Asla makinenin mantıksal çekirdeklerinden sayfanınkini çıkarınca kalan sayıyı aşmaz.",
       "bodyPairs": "Bir adımda sınırları örtüşen cisim çiftleri. Yoğun bir yığında cisim başına yaklaşık dört tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",
       "contactConstraints": "Bir adımda çözülen temas eden çiftler. Oturmuş bir yığında cisim başına yaklaşık iki tane olur; daha fazlasını bulan adım temasları kaçırır ve `PHYSICS_BUDGET` verir.",

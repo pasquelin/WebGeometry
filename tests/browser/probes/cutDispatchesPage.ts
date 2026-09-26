@@ -14,19 +14,13 @@
  */
 import { createDagResources } from '../../../packages/sdk-browser/src/gpu/dag/resources.ts';
 import { encodeDagKernels } from '../../../packages/sdk-browser/src/gpu/dag/encode.ts';
-import { packedWorldsToRenderOrigin } from '../../../packages/sdk-browser/src/gpu/dag/pack.ts';
-import * as G from '../../../packages/sdk-browser/src/host/graph/graph.fixture.ts';
-import {
-  cameraSelectionUniforms,
-  SELECTION_UNIFORM_BYTES,
-} from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
+import { SELECTION_UNIFORM_BYTES } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
 import { writeDagUniforms } from '../../../packages/sdk-browser/src/gpu/dag/uniforms.ts';
 import { SELECTION_HEADER_WORDS } from '../../../packages/sdk-browser/src/gpu/dag/layout.ts';
-import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
 import { encodeAvant, ressourcesAvant } from '../../../bench/oracles/browser/cut-dispatches.ts';
 import { DAG_SELECTION_SHADER_AVANT } from '../../../bench/oracles/browser/cut-dispatches-wgsl.ts';
 import { ouvrirAppareil } from './webgpuDevice.ts';
-import { commandes, scene } from './cutDispatchesScene.ts';
+import { commandes, sceneView } from './cutDispatchesScene.ts';
 import { median } from '../../../scripts/median.ts';
 import type { ExecuterParams, ExecuterResultat } from './cutDispatchesTypes.ts';
 
@@ -41,13 +35,7 @@ export async function executer({
   const appareil = await ouvrirAppareil();
   if (!appareil) return { indisponible: 'no WebGPU adapter' };
   const { device, erreurs } = appareil;
-  const { packed, roots } = scene(feuilles, niveaux);
-  const camera = G.perspectiveCamera(55, 16 / 9, 0.1, 200);
-  camera.position.set(0, 0, 16);
-  camera.lookAt(0, 0, 0);
-  camera.updateMatrixWorld();
-  const uniforms = cameraSelectionUniforms(cameraMoteur(camera), 1, [1280, 720]);
-  packedWorldsToRenderOrigin(packed, roots, uniforms.cameraWorld);
+  const { packed, uniforms } = sceneView(feuilles, niveaux);
 
   // The shipped side: its buffers, its stages, its encode. Nothing of it is rewritten.
   const livre = await createDagResources(device, packed, true);

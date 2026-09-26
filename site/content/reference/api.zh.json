@@ -931,11 +931,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "引擎自身的 WebGL2 路径无法绘制这个模型。",
       "PAGE_BUDGET": "视图所需的页面超出了内存预算,或者这条路径根本没有预算概念。",
       "UNSUPPORTED_MEMORY_BUDGETS": "视图所需的页面超出了内存预算,或者这条路径根本没有预算概念。",
-      "INVALID_SCENE_LIGHT": "某个光源格式错误、重复、未知、数量过多,或者没有可去的地方。",
-      "DUPLICATE_SCENE_LIGHT": "某个光源格式错误、重复、未知、数量过多,或者没有可去的地方。",
-      "UNKNOWN_SCENE_LIGHT": "某个光源格式错误、重复、未知、数量过多,或者没有可去的地方。",
-      "SCENE_LIGHT_BUDGET": "某个光源格式错误、重复、未知、数量过多,或者没有可去的地方。",
-      "SCENE_LIGHTS_UNAVAILABLE": "某个光源格式错误、重复、未知、数量过多,或者没有可去的地方。",
+      "INVALID_SCENE_LIGHT": "某个光源格式错误、重复、未知,或者没有可去的地方。",
+      "DUPLICATE_SCENE_LIGHT": "某个光源格式错误、重复、未知,或者没有可去的地方。",
+      "UNKNOWN_SCENE_LIGHT": "某个光源格式错误、重复、未知,或者没有可去的地方。",
+      "SCENE_LIGHTS_UNAVAILABLE": "某个光源格式错误、重复、未知,或者没有可去的地方。",
       "INVALID_SCENE_ENVIRONMENT": "场景的曝光或环境设置不是有效的数值。",
       "INVALID_MATERIAL": "材质更改未知、超出范围、会把它移到另一个绘制类别,或会平铺它与其他材质共享的贴图。",
       "UNKNOWN_MATERIAL": "材质更改未知、超出范围、会把它移到另一个绘制类别,或会平铺它与其他材质共享的贴图。",
@@ -962,9 +961,9 @@
       "WEBGPU_LOST": "WebGPU 丢失了它的设备，或设备上的错误留下了无法再绘制的状态：由 `render`、`flush` 以及需要设备的读取抛出，由诊断 `gpu-device-lost` 以此命名，并在会话因此无法打开时出现在 `world.diagnostic.error` 上。",
       "UNSUPPORTED_SCENE_FORMAT": "保存的场景是另一种格式或版本，或者包含保存的场景无法存储的内容。",
       "SCENE_NOT_SAVABLE": "保存的场景是另一种格式或版本，或者包含保存的场景无法存储的内容。",
-      "PHYSICS_BUDGET": "物理被要求超出其某个上限（`world.budget.physics`：物体、三角形、装饰物体、内存），或动态物体不是场景的直接子节点（`PHYSICS_NESTED`），或物理模块失败（`PHYSICS_FAILED`）：见 `world.physics.error`。",
-      "PHYSICS_NESTED": "物理被要求超出其某个上限（`world.budget.physics`：物体、三角形、装饰物体、内存），或动态物体不是场景的直接子节点（`PHYSICS_NESTED`），或物理模块失败（`PHYSICS_FAILED`）：见 `world.physics.error`。",
-      "PHYSICS_FAILED": "物理被要求超出其某个上限（`world.budget.physics`：物体、三角形、装饰物体、内存），或动态物体不是场景的直接子节点（`PHYSICS_NESTED`），或物理模块失败（`PHYSICS_FAILED`）：见 `world.physics.error`。",
+      "PHYSICS_BUDGET": "物理被要求超出其某个上限（`world.budget.physics`：物体、装饰物体、内存），或动态物体不是场景的直接子节点（`PHYSICS_NESTED`），或物理模块失败（`PHYSICS_FAILED`）：见 `world.physics.error`。",
+      "PHYSICS_NESTED": "物理被要求超出其某个上限（`world.budget.physics`：物体、装饰物体、内存），或动态物体不是场景的直接子节点（`PHYSICS_NESTED`），或物理模块失败（`PHYSICS_FAILED`）：见 `world.physics.error`。",
+      "PHYSICS_FAILED": "物理被要求超出其某个上限（`world.budget.physics`：物体、装饰物体、内存），或动态物体不是场景的直接子节点（`PHYSICS_NESTED`），或物理模块失败（`PHYSICS_FAILED`）：见 `world.physics.error`。",
       "PHYSICS_FORMAT": "已编译模型的预制物理（`physics.json`）格式不同，或由与引擎不同的 Jolt 预制（`PHYSICS_FORMAT`）：请重新编译。物理关闭时请求了精确射线检测（`PHYSICS_OFF`）。",
       "PHYSICS_OFF": "已编译模型的预制物理（`physics.json`）格式不同，或由与引擎不同的 Jolt 预制（`PHYSICS_FORMAT`）：请重新编译。物理关闭时请求了精确射线检测（`PHYSICS_OFF`）。",
       "NO_VEHICLE": "在 `world.controls.vehicle` 为 `null` 时把 `world.controls.kind` 设为了 `'vehicle'`：没有可驾驶的东西。",
@@ -1604,7 +1603,7 @@
     "summary": "直接光照的公开设置。",
     "description": "这些是命名清楚的产品级选择,而不是隐藏起来的常量:每一处运行时的边界都会重新读取它们,诊断信息也会原样公开它们。",
     "members": {
-      "maxLights": "契约总共接受的光源数量;超过这个数,`addLight` 会拒绝。 屏幕图块保留每一个触及它的光源;其列表和像素循环的上限就是这个数字(X2)。",
+      "tileLights": "屏幕图块的列表在其两个深度切片中各自保存的光源数:无论场景有多少,每个图块的内存就是这些。被更多光源触及的图块不保存列表,而是遍历场景的每一盏灯——未触及它的灯加上精确的零——,因此不会丢失任何光源(X2)。",
       "tileSize": "光源列表所用屏幕图块一条边的长度,单位像素。",
       "samplesPerPixel": "一张**运动**图像中,每个像素完整着色(包含阴影读取)的光源数(乘以 2):其余的光源只按权重计算而不读取阴影,被完整着色的光源则按相应比例绘制,因此这个估计值是无偏的,时间性抗锯齿会对其求平均。静止图像会为其所在图块的每一个光源着色,并收敛到精确的总和;在那种情况下,这个数字不起任何作用。",
       "shadowPage": "阴影页的边长（纹素）：物理池、虚拟贴图与失效的单位。移动的物体只使其投影包围盒覆盖的页失效。",
@@ -1770,7 +1769,7 @@
     "summary": "层级信息保存在缓存的四个比特位中,因此编译器能够描述的最深堆栈是 15。"
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "阴影切片在图集中能够寻址的光源数量:每个已声明的投影光源对应一个。"
+    "summary": "图集寻址的阴影切片,遵循页表自身的规则(#818)——绝不是光源数量的上限:超出它们的投射阴影的光源照亮时没有阴影,帧会统计它(`shadowCastersUnsliced`)。"
   },
   "ManifestBinaryDescriptor": {
     "summary": "二进制数据所在的位置,以及一个簇、一个打包页面和一个资源包各自如何命名它们的对象。",
@@ -2231,7 +2230,7 @@
     "description": "前六项是页面解码的拒绝原因,逐字取自 `geometryPage.ts`:调用者按原有方式区分它们。`PAGE_DECODE_FAILED` 承载来自解压缩库的其他任何拒绝原因。`PAGE_DECODE_CANCELLED` 对应被取消的情况,`PAGE_DECODE_WORKER` 对应某个消失了的执行者——只有后者才允许启用回退方案。"
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "主线程之外的页面解码契约,第 5 版:解码后的几何体连同其量化误差作为一个整体块传输,竞技场槽位把这个误差记录在第 8 个字中;`cut` 把被绘制的三角形转换成一个个页面,这些页面随其描述符以字节形式返回。",
+    "summary": "主线程之外的页面解码契约,第 6 版:解码后的几何体连同其量化误差作为一个整体块传输,竞技场槽位把这个误差记录在第 8 个字中;`cut` 把被绘制的三角形转换成一个个页面,这些页面随其描述符以字节形式返回;自第 6 版起还带有其法线锥,打包的三角形标明其页面是否保留法线锥。",
     "description": "调用方线程发送一个 `PageDecodeRequest`,执行者返回一个携带相同 `id` 的 `PageDecodeAnswer`。这里的内容不涉及任何平台细节:没有 `Worker`,没有网络请求,没有时钟——这些都由浏览器适配层负责,这份契约只承载消息的形状、封闭的失败原因列表,以及池的边界。缓冲区所有权:`source` 会随请求一起被**转移**,因此发送方之后不再拥有它。`verify` 的响应会把它转移回来;`decode` 的响应则改为返回解码后的缓冲区,同样以转移方式给出。一个不进行任何转移的执行者(同步回退方案)返回的值完全相同:这份契约不规定工作是如何传递的,只规定返回什么。"
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2361,7 +2360,8 @@
       "vertexCount": "该页面中的顶点数。",
       "indexCount": "该页面中的索引数。",
       "flags": "它携带了哪些属性。",
-      "uncompressedBytes": "解包后的大小。"
+      "uncompressedBytes": "解包后的大小。",
+      "cone": "其三角形法线的包围锥，若已构建。"
     }
   },
   "PageCutPayload": {
@@ -2425,7 +2425,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`:某个页面的 SHA-256 摘要。",
-    "description": "`decode`:它的索引和逐顶点属性。`cut`:被绘制的三角形,先打包成五个长度值,再打包成五个四字节数组,然后被切分成若干页面。"
+    "description": "`decode`:它的索引和逐顶点属性。`cut`:被绘制的三角形,先打包成五个长度值和其页面是否保留法线锥,再打包成五个四字节数组,然后被切分成若干页面。"
   },
   "PageDecodeRequest": {
     "summary": "请求某个工作线程校验、解包或切分某个页面的消息。",
@@ -2808,14 +2808,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "GPU 缓冲区中环境信息所占的浮点数。"
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "整个 GPU 光源缓冲区所占的浮点数:先是头部信息,然后是每一个光源。"
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "GPU 缓冲区中一个光源所占的浮点数:五个 `vec4f`,从不重新分配。"
+    "summary": "GPU 缓冲区中一盏灯的浮点数:五个 `vec4f`。"
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "光源缓冲区的头部信息:数量、X 方向图块数、Y 方向图块数、保留字段。"
+    "summary": "光源缓冲区头部:数量,然后是三个保留字。"
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "此引擎所读取的光源契约版本。"
@@ -2960,9 +2957,9 @@
     "summary": "以 GPU 读取的方式打包并保持最新的一个场景的所有光源。",
     "members": {
       "settings": "直接光照的公开设置。这些是命名清楚的产品级选择,而不是隐藏起来的常量:每一处运行时的边界都会重新读取它们,诊断信息也会原样公开它们。",
-      "packed": "为 GPU 打包好的每一个光源。",
+      "packed": "每盏灯,为 GPU 打包:表增长时是一个新数组。",
       "environmentPacked": "以 GPU 读取的方式表示的环境辐照度,排在光源数据之后(`../core/environment.ts`)。",
-      "revision": "每次变化都会递增。",
+      "revision": "每次变化时按槽位递增。",
       "sliceOf": "一个光源的图集切片本身就保存在缓冲区里:不会被重复保存。",
       "ids": "每个槽位对应的光源名称。",
       "count": "光源的数量。",
@@ -2979,7 +2976,7 @@
       "remove": "移除一个光源。",
       "setEnvironment": "设置环境。",
       "assignSlice": "记录某个光源占用的图集切片,不触碰它的其他字段。只有当切片确实发生变化时,存储的版本号才会上升:否则不会向 GPU 推送任何内容。",
-      "view": "实际被占用的浮点数:GPU 写入操作绝不会推送空槽位。"
+      "capacity": "表保留的槽位:GPU 光源缓冲区就这么长。"
     }
   },
   "SceneLightingView": {
@@ -4037,7 +4034,7 @@
       "texturePoolCeiling": "一个世界可以请求的最大纹理池,单位字节。",
       "geometryPool": "为几何页面保留的 GPU 内存字节数；设置它以改变范围，限于 `gpu` 在阴影、反弹探针和纹理池之外剩下的部分。",
       "texturePool": "为纹理页面保留的 GPU 内存字节数，在没有纹理池的引擎（WebGL2）上为 `null`；设置它以改变范围，限于 `gpu` 在阴影、反弹探针和几何池之外剩下的部分。",
-      "physics": "物理的上限（物体、三角形、装饰物体、内存），启动时读取一次；超出任一项会抛出 `PHYSICS_BUDGET`。",
+      "physics": "物理的上限（物体、装饰物体、内存），启动时读取一次；超出任一项会抛出 `PHYSICS_BUDGET`。",
       "raycastTrees": "`raycast` 为三角形树保留的 CPU 内存字节数，由页面上的所有世界共享；超出后，最久未使用的树会被丢弃。设置它即可更改上限。",
       "gpu": "世界可占用的 GPU 内存字节数（所有池合计）；设置后按分配规则（`split`）重新划分每个池。低于三个固定份额（阴影池、反弹探针和效果目标）的总量会被拒绝（`GPU_BUDGET_UNDER_SHADOW_POOL`）。从不从机器读取。",
       "canvas": "世界声明的最大画布，以绘制缓冲区的像素计：效果链的目标按其尺寸预留（`split.effectTargets`）；默认 3840 × 2160，默认 `gpu` 只增加这部分预留。设置它会按分配规则重新划分每个池。绘制得更大的画布仍以完整分辨率渲染：诊断会报告 `effect targets over budget` 以及超出预留的字节数。",
@@ -4804,8 +4801,8 @@
     "summary": "策略只评估已有的证据;它绝不会凭空捏造一个参考值,也绝不会自己去采样时钟。"
   },
   "createSceneLightStore": {
-    "summary": "容量固定的场景光源集合。",
-    "description": "缓冲区只为 `maxLights` 盏灯分配一次,此后绝不会重新分配;添加、设置或移除一盏灯,只会写入它的十六个浮点数并递增它的版本号。每盏灯各自的 `revision` 告诉读取方某盏灯已经发生变化:不会每帧都重建结构。阴影调度器自行读取灯的形状,因此强度或颜色的变化不会让任何阴影页过期。"
+    "summary": "场景的光源,场景声明多少就有多少:`capacity` 个槽位,满时翻倍,且从不缩小。",
+    "description": "添加、设置或移除一盏灯,会写入它的浮点数并递增它的 `revision`,以此告诉读取方它已改变:不会每帧重建任何东西。阴影调度器自行读取灯的形状,因此强度或颜色的变化不会让任何阴影页过期。"
   },
   "createSceneRoot": {
     "summary": "创建一个空的、带版本管理的场景层级结构。",
@@ -7166,9 +7163,8 @@
     "summary": "引擎默认的物理预算。",
     "members": {
       "bodies": "同时存在的各类物体。",
-      "triangles": "所有静态三角形形状的三角形总数。",
       "decorative": "同时存在的装饰物体。",
-      "memoryBytes": "物理模块的内存字节数：硬上限，模块无法超出。",
+      "memoryBytes": "物理模块的内存字节数：硬上限，模块无法超出。其中一半同时容纳静态碰撞：已编译模型的瓦片在其内围绕视点和运动物体流式载入，最远的先离开；超出它的静态三角网格会被拒绝。",
       "threads": "推进模拟的线程数，包括物理 worker 自己的线程。大于 1 时页面需跨源隔离（共享内存）；否则模拟在单线程上推进。绝不超过机器的逻辑核心数减去页面自身占用的一个。",
       "bodyPairs": "一步中包围盒重叠的物体对。密集的堆约为每个物体四对；找到更多的一步会漏掉接触并报 `PHYSICS_BUDGET`。",
       "contactConstraints": "一步中求解的接触对。静止的堆约为每个物体两对；找到更多的一步会漏掉接触并报 `PHYSICS_BUDGET`。",
@@ -7249,9 +7245,8 @@
     "summary": "一个世界物理的固定上限；从不从机器读取。",
     "members": {
       "bodies": "同时存在的各类物体。",
-      "triangles": "所有静态三角形形状的三角形总数。",
       "decorative": "同时存在的装饰物体。",
-      "memoryBytes": "物理模块的内存字节数：硬上限，模块无法超出。",
+      "memoryBytes": "物理模块的内存字节数：硬上限，模块无法超出。其中一半同时容纳静态碰撞：已编译模型的瓦片在其内围绕视点和运动物体流式载入，最远的先离开；超出它的静态三角网格会被拒绝。",
       "threads": "推进模拟的线程数，包括物理 worker 自己的线程。大于 1 时页面需跨源隔离（共享内存）；否则模拟在单线程上推进。绝不超过机器的逻辑核心数减去页面自身占用的一个。",
       "bodyPairs": "一步中包围盒重叠的物体对。密集的堆约为每个物体四对；找到更多的一步会漏掉接触并报 `PHYSICS_BUDGET`。",
       "contactConstraints": "一步中求解的接触对。静止的堆约为每个物体两对；找到更多的一步会漏掉接触并报 `PHYSICS_BUDGET`。",

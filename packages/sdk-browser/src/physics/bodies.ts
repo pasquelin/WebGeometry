@@ -5,10 +5,11 @@ import {
   FLAG,
   LAYER,
   MOTION,
-  physicsBudgetError,
+  checkPhysicsBudget,
   physicsMatterOf,
   isSoftType,
   resolveShape,
+  TRIANGLE_BYTES,
   type CommandWriter,
   type PhysicsBudget,
   type PhysicsHost,
@@ -51,9 +52,9 @@ export function createPhysicsBodies(
   const slots = createBodySlots(budget.bodies);
   const { meshes, physicsAt } = slots;
   /** What each slot's body counts against the budget beyond itself; a soft body's vertex map. */
-  const claimed = new Map<number, { triangles: number; softVertices: number }>();
+  const claimed = new Map<number, { bytes: number; softVertices: number }>();
   const softMaps: (Uint32Array | null)[] = [];
-  const count = { bodies: 0, decorative: 0, triangles: 0, softVertices: 0 };
+  const count = { bodies: 0, decorative: 0, collisionBytes: 0, softVertices: 0 };
   /** Bodies taken out: asleep decorative or refused ones (`null`), their mesh left where it came
    *  to rest; soft ones placed at another scale than the one they were made at, kept. */
   const retired = new WeakMap<Bodied['physics'], readonly number[] | null>();
@@ -62,10 +63,8 @@ export function createPhysicsBodies(
     const scale = retired.get(mesh.physics);
     return !!scale && fits(worldScaleOf(mesh), scale);
   };
-  const check = (key: keyof typeof count, more: number) => {
-    const limit = budget[key];
-    if (count[key] + more > limit) throw physicsBudgetError(key, limit, count[key] + more);
-  };
+  const check = (key: keyof typeof count, more: number) =>
+    checkPhysicsBudget(budget, key, count[key] + more);
   const add = (mesh: Bodied) => {
     const p = mesh.physics;
     if (p._host) return;
@@ -83,12 +82,12 @@ export function createPhysicsBodies(
     const owner: SlotOwner = { mesh, physics: p };
     if (isSoftType(p.type)) {
       owner.scale = [size.x, size.y, size.z];
-      const take = (triangles: number, vertices: number) => claim(triangles, vertices, owner);
+      const take = (bytes: number, vertices: number) => claim(bytes, vertices, owner);
       return hold(mesh, addSoftBody(writer, mesh, pose, size, take, softMaps, flagsOf(mesh)));
     }
     const matter = physicsMatterOf(mesh.material);
     const shape = resolveShape(mesh.geometry, size, p.type, p.shape, mesh.name);
-    const id = claim(shape.triangles, 0, owner);
+    const id = claim(shape.triangles * TRIANGLE_BYTES, 0, owner);
     writer.add({
       id,
       motion: MOTION[p.type],
@@ -116,16 +115,16 @@ export function createPhysicsBodies(
     if (p.decorative) count.decorative++;
     p._attach(host, index, state);
   };
-  /** A slot held by `owner` and its engine id, counted against the budget with `triangles`
-   *  triangles and `softVertices` soft-body vertices. */
-  const claim = (triangles: number, softVertices: number, owner: SlotOwner) => {
+  /** A slot held by `owner` and its engine id, counted against the budget with `bytes` bytes of
+   *  static collision and `softVertices` soft-body vertices. */
+  const claim = (bytes: number, softVertices: number, owner: SlotOwner) => {
     check('bodies', 1);
-    check('triangles', triangles);
+    check('collisionBytes', bytes);
     check('softVertices', softVertices);
     const id = slots.take(owner);
     count.bodies++;
-    if (triangles || softVertices) claimed.set(id & BODY_INDEX, { triangles, softVertices });
-    count.triangles += triangles;
+    if (bytes || softVertices) claimed.set(id & BODY_INDEX, { bytes, softVertices });
+    count.collisionBytes += bytes;
     count.softVertices += softVertices;
     return id;
   };
@@ -134,7 +133,7 @@ export function createPhysicsBodies(
     writer.remove(index);
     slots.release(index);
     count.bodies--;
-    count.triangles -= claimed.get(index)?.triangles ?? 0;
+    count.collisionBytes -= claimed.get(index)?.bytes ?? 0;
     count.softVertices -= claimed.get(index)?.softVertices ?? 0;
     claimed.delete(index);
     softMaps[index] = null;

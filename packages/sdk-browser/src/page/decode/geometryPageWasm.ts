@@ -66,6 +66,17 @@ export type SdkWasm = {
     leafCapacity: number,
     result: number,
   ): number;
+  /** The normal cone of the run-time cut's clusters (`../../world/page/cutCones.ts`): 0 written,
+   *  1 refused. */
+  cone_clusters(
+    positions: number,
+    positionValues: number,
+    indices: number,
+    indexValues: number,
+    ranges: number,
+    clusters: number,
+    out: number,
+  ): number;
 };
 type SourceWasm = BufferSource | (() => Promise<BufferSource>);
 

@@ -4,7 +4,7 @@ import {
   LAYER,
   MOTION,
   SHAPE,
-  physicsBudgetError,
+  collisionBytesOf,
   physicsMatterOf,
   type CommandWriter,
   type PhysicsBudget,
@@ -18,23 +18,27 @@ import {
   isModel,
   locate,
   moversOf,
+  nearness,
   placedOf,
   tilePose,
   type Model,
   type Placed,
 } from './tilePlace.ts';
-import { boxPointDistance } from '../../../sdk-core/src/math/primitives/box.ts';
 import { ONE_REQUEST, retriableError } from '../cluster/pages.ts';
 
 /** Tile fetches in flight at once. */
 const FETCHES = 8;
+/** Tile loads one update starts at most: each is a restore in the worker's next step. */
+const LOADS = 2;
 
 /**
  * The cooked collision of the compiled models in a scene (`physics.json`), streamed into the
- * simulation within `budget.physics.triangles`: tiles load around the eye up to the active range
- * — the camera's draw distance, the scene's own — and around every moving body, nearest first,
- * and leave once no longer wanted. A tile is restored from Jolt's binary state, never rebuilt;
- * so are the bodies its nodes declare (`cookedBodies.ts`), made as it opens.
+ * simulation within the static collision's share of `budget.memoryBytes` (`collisionBytesOf`):
+ * tiles load around every moving body first, then around the eye up to the active range — the
+ * camera's draw distance, the scene's own —, nearest first, and leave once no longer wanted. A
+ * scene is never refused for its size: a tile that does not fit waits, the farther ones leaving
+ * for it. A tile is restored from Jolt's binary state, never rebuilt; so are the bodies its nodes
+ * declare (`cookedBodies.ts`), made as it opens.
  */
 export function createTileStreamer(
   writer: CommandWriter,
@@ -48,8 +52,8 @@ export function createTileStreamer(
   type Opening = { placed: Placed[]; abort: AbortController };
   const models = new Map<Model, Opening>();
   const declared = createModelBodies(writer, bodies, invalidate, failed);
-  let fetching = 0,
-    overBudget = false;
+  const share = collisionBytesOf(budget);
+  let fetching = 0;
   function open(model: Model) {
     const opening: Opening = { placed: [], abort: new AbortController() };
     const { signal } = opening.abort;
@@ -66,6 +70,7 @@ export function createTileStreamer(
       .catch((error) => signal.aborted || failed(error as EngineError));
   }
   const evict = (p: Placed) => {
+    p.out = true;
     if (p.id < 0) return;
     bodies.release(p.id & BODY_INDEX);
     p.id = -1;
@@ -86,7 +91,9 @@ export function createTileStreamer(
       const bytes = await cookedBytes(p.model, p.tile.url, signal, ONE_REQUEST);
       // Its model left, or was opened again meanwhile: this tile is no longer one it holds.
       if (signal.aborted) return;
-      p.id = bodies.claim(p.tile.triangles, 0, { model: p.model, tile: p });
+      // Left out since, or its room taken by a static mesh: it waits, the room kept for the nearer.
+      if (p.out || bodies.count.collisionBytes + p.tile.bytes > share) return;
+      p.id = bodies.claim(p.tile.bytes, 0, { model: p.model, tile: p });
       const handle = p.id & BODY_INDEX;
       const { position, quaternion, scale } = tilePose(p);
       // The matter the node's collider declares, over the engine's default, as for every body.
@@ -128,39 +135,33 @@ export function createTileStreamer(
         }
     },
     /**
-     * Brings the resident tiles in line with what is wanted: within `range` of `eye`, or within
-     * reach of a moving body. Past the budget, the nearest are kept and the error is raised once,
-     * naming the triangles asked.
+     * Brings the resident tiles in line with what is wanted (`nearness`). The nearest that fit
+     * stay or load, `LOADS` at most; past the first that does not, the farther leave and wait.
      */
     update(eye: ArrayLike<number>, range: number) {
       if (!models.size) return;
       const wanted: [number, Placed][] = [],
         movers = moversOf(bodies.meshes);
+      let held = 0; // What the wanted resident tiles hold.
       for (const { placed } of models.values())
         for (const p of placed) {
-          let near = boxPointDistance(p.box, 0, eye[0], eye[1], eye[2]);
-          if (near > range) near = Infinity;
-          for (let m = 0; m < movers.length; m += 4)
-            if (
-              boxPointDistance(p.box, 0, movers[m], movers[m + 1], movers[m + 2]) <= movers[m + 3]
-            )
-              near = 0;
-          if (near < Infinity && !declared.holds(p.model, p.instance.node)) wanted.push([near, p]);
-          else evict(p);
+          const near = nearness(p, eye, range, movers);
+          if (near === Infinity || declared.holds(p.model, p.instance.node)) evict(p);
+          else wanted.push([near, p]);
+          if (p.id >= 0) held += p.tile.bytes;
         }
       wanted.sort((a, b) => a[0] - b[0]);
-      let room = budget.triangles - bodies.count.triangles,
-        asked = bodies.count.triangles;
+      // The share beside the static meshes: a tile past it never fits, and holds no one back.
+      const free = share - bodies.count.collisionBytes + held;
+      let [room, full, loads] = [free, false, LOADS];
       for (const [, p] of wanted) {
-        if (p.id >= 0 || p.loading) continue;
-        asked += p.tile.triangles;
-        if (p.tile.triangles > room) continue;
-        room -= p.tile.triangles;
-        if (fetching < FETCHES) void load(p);
+        p.out = p.tile.bytes > free || (full ||= p.tile.bytes > room);
+        if (p.out) evict(p);
+        else room -= p.tile.bytes;
+        if (p.out || p.id >= 0 || p.loading || fetching >= FETCHES || !loads) continue;
+        loads--;
+        void load(p);
       }
-      if (asked > budget.triangles && !overBudget)
-        failed(physicsBudgetError('triangles', budget.triangles, asked));
-      overBudget = asked > budget.triangles;
     },
     /** The model a tile body's or a cooked body's engine id belongs to, or `null`. */
     modelOf: bodies.slots.modelOf,

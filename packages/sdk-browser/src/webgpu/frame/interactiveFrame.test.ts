@@ -26,9 +26,7 @@ async function heldWhileCompiling() {
   Object.assign(rt.lights, { store });
   Object.assign(rt.vis, { textures: { counters: { pending: 0 }, settled: () => textures } });
   // The wiring of `../pages/prepare/prepare.ts`: an arrived program breaks the hold.
-  const lighting = await createDeferredLighting(h.device, {} as GPUBuffer, () =>
-    rt.run.gate.resourcesChanged(),
-  );
+  const lighting = await createDeferredLighting(h.device, () => rt.run.gate.resourcesChanged());
   rt.gpu.deferred = lighting;
   const requested: FrameRequestCallback[] = [];
   const scheduler = createExplorerFrameScheduler({
@@ -37,7 +35,14 @@ async function heldWhileCompiling() {
     // `renderWebgpuPages` reduced to its two outcomes: the frame held, or encoded and kept.
     render() {
       if (holdWebgpuFrame(rt, h.device)) return;
-      lighting.bind(surface, view(), view(), wantsContractLighting(rt), {}, () => {});
+      lighting.bind(
+        surface,
+        view(),
+        view(),
+        wantsContractLighting(rt),
+        { lights: {} as GPUBuffer },
+        () => {},
+      );
       rt.run.frame++;
       keepWebgpuFrame(rt);
     },

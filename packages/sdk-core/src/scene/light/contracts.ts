@@ -63,9 +63,12 @@ export type SceneLightingView = 'auto' | 'lit' | 'unlit' | 'bounce';
  * constants: every runtime bound rereads them, and the diagnostic publishes them as-is.
  */
 export const LIGHT_SETTINGS = {
-  /** Lights the contract accepts in total; beyond that, `addLight` rejects. A screen tile keeps
-   *  every one of them that touches it: its list, and the pixel loop, are bounded by this (X2). */
-  maxLights: 64,
+  /**
+   * Lights a screen tile's list holds, in each of its two depth slices: its memory is this, per
+   * tile, whatever the scene holds. A tile more lights reach keeps no list and walks every light
+   * of the scene — those that miss it add an exact zero —, so no light is ever dropped (X2).
+   */
+  tileLights: 64,
   /** Side in pixels of a screen tile of the light list. */
   tileSize: 16,
   /**
@@ -134,17 +137,19 @@ export const LIGHT_SETTINGS = {
    */
   shadowNormalOffsetTexels: 0.5,
 } as const;
-/** Lights a shadow slice can address in the atlas: one per declared shadow light. */
-export const MAX_SHADOW_SLICES = LIGHT_SETTINGS.maxLights;
+/**
+ * Shadow slices the atlas addresses, under the page table's own rules (#818) — never a limit on
+ * the lights: a shadow-casting light beyond them lights without a shadow, and the frame counts it
+ * (`shadowCastersUnsliced`).
+ */
+export const MAX_SHADOW_SLICES = 64;
+
 /** Faces of a point light's slice: six. */
 export const POINT_FACES = 6;
-/** Floats of a light in the GPU buffer: five `vec4f`, never reallocated. */
+/** Floats of a light in the GPU buffer: five `vec4f`. */
 export const SCENE_LIGHT_FLOATS = 20;
-/** Light-buffer header: count, tiles in X, tiles in Y, reserved. */
+/** Light-buffer header: count, then three reserved words. */
 export const SCENE_LIGHT_HEADER_FLOATS = 4;
-/** Floats of the whole GPU light buffer: header, then every light. */
-export const SCENE_LIGHT_BUFFER_FLOATS =
-  SCENE_LIGHT_HEADER_FLOATS + LIGHT_SETTINGS.maxLights * SCENE_LIGHT_FLOATS;
 /** Rank of a light kind in the GPU buffer: the shader refers to it by this number, not by name.
  *  @property point - A bulb. @property spot - A torch. @property directional - The sun.
  *  @property rect - A glowing rectangle. */

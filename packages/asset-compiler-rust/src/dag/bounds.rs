@@ -1,13 +1,4 @@
-use crate::shared_math::{extend_aabb, length};
-
-pub(crate) fn point(positions: &[f32], id: u32) -> [f64; 3] {
-    let i = id as usize * 3;
-    [
-        positions[i] as f64,
-        positions[i + 1] as f64,
-        positions[i + 2] as f64,
-    ]
-}
+use crate::shared_math::{extend_aabb, length, point};
 
 /// AABB centre plus the farthest vertex. Conservative and deterministic.
 pub fn bounding_sphere(positions: &[f32], indices: &[u32]) -> [f64; 4] {
