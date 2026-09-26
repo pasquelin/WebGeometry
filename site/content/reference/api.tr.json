@@ -2231,7 +2231,7 @@
     "description": "İlk altısı, `geometryPage.ts`'ten kelimesi kelimesine alınan sayfa çözme reddidir: bir çağıran onları eskisi gibi ayırt eder. `PAGE_DECODE_FAILED`, sıkıştırma açma kütüphanesinden başka herhangi bir reddi taşır. `PAGE_DECODE_CANCELLED` bir iptale yanıt verir, `PAGE_DECODE_WORKER` kaybolan bir yürütücüye — yalnızca o, yedeğe izin verir."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Ana iş parçacığı dışında sayfa çözme sözleşmesi, sürüm 5: çözülmüş geometri, kuantalama hatasıyla tek bir blok olarak yolculuk eder, ve arena yuvası o hatayı 8. kelimede kaydeder; `cut`, çizilen üçgenleri, açıklayıcılarıyla birlikte bayt olarak geri dönen sayfalara dönüştürür.",
+    "summary": "Ana iş parçacığı dışında sayfa çözme sözleşmesi, sürüm 6: çözülmüş geometri, kuantalama hatasıyla tek bir blok olarak yolculuk eder, ve arena yuvası o hatayı 8. kelimede kaydeder; `cut`, çizilen üçgenleri, açıklayıcılarıyla birlikte bayt olarak geri dönen sayfalara dönüştürür. Sürüm 6'dan beri normal konileriyle birlikte döner; paketlenmiş üçgenler sayfalarının bir koni tutup tutmadığını taşır.",
     "description": "Çağıran iş parçacığı bir `PageDecodeRequest` gönderir, yürütücü aynı `id`'yi taşıyan bir `PageDecodeAnswer` döndürür. Burada hiçbir şey platforma dokunmaz: `Worker` yok, fetch yok, saat yok — tarayıcı adaptörü bunların hepsini taşır, bu dosya yalnızca mesaj şeklini, kapalı hata listesini ve havuz sınırını taşır. Tampon sahipliği: `source`, istekle birlikte **aktarılır**, bu yüzden gönderen artık ona sahip değildir. Bir `verify` yanıtı onu, sırayla aktarılmış olarak döndürür; bir `decode` yanıtı bunun yerine çözülmüş tamponları, o da aktarılmış olarak döndürür. Hiçbir şey aktarmayan bir yürütücü (senkron yedek) tam olarak aynı değerleri döndürür: sözleşme işin nasıl yolculuk ettiğini söylemez, yalnızca ne döndürdüğünü."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2361,7 +2361,8 @@
       "vertexCount": "Sayfadaki köşeler.",
       "indexCount": "Sayfadaki indeksler.",
       "flags": "Hangi öznitelikleri taşıdığı.",
-      "uncompressedBytes": "Açıldıktan sonraki boyutu."
+      "uncompressedBytes": "Açıldıktan sonraki boyutu.",
+      "cone": "Üçgenlerinin normallerinin konisi, oluşturulduysa."
     }
   },
   "PageCutPayload": {
@@ -2425,7 +2426,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: bir sayfanın SHA-256 özeti.",
-    "description": "`decode`: indeksleri ve köşe başına öznitelikleri. `cut`: beş uzunluk sonra beş dört baytlık dizi olarak paketlenmiş, sayfalara kesilmiş çizilen üçgenler."
+    "description": "`decode`: indeksleri ve köşe başına öznitelikleri. `cut`: beş uzunluk, sayfalarının bir koni tutup tutmadığı, sonra beş dört baytlık dizi olarak paketlenmiş, sayfalara kesilmiş çizilen üçgenler."
   },
   "PageDecodeRequest": {
     "summary": "Bir worker'dan bir sayfayı kontrol etmesini, açmasını ya da kesmesini isteyen bir mesaj.",

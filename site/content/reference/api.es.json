@@ -4449,7 +4449,7 @@
     "description": "Los seis primeros son los rechazos de la decodificación de página, tomados palabra por palabra de `geometryPage.ts`: un llamador los distingue como antes. `PAGE_DECODE_FAILED` lleva cualquier otro rechazo de la biblioteca de descompresión. `PAGE_DECODE_CANCELLED` responde a una cancelación, `PAGE_DECODE_WORKER` a un ejecutor desaparecido — solo este último permite el repliegue."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Contrato de decodificación de páginas fuera del hilo principal, versión 5: la geometría decodificada viaja en un único bloque con su error de cuantización, y el emplazamiento de la arena registra ese error en la palabra 8; `cut` convierte triángulos dibujados en páginas, que vuelven en bytes con sus descriptores.",
+    "summary": "Contrato de decodificación de páginas fuera del hilo principal, versión 6: la geometría decodificada viaja en un único bloque con su error de cuantización, y el emplazamiento de la arena registra ese error en la palabra 8; `cut` convierte triángulos dibujados en páginas, que vuelven en bytes con sus descriptores, y, desde la versión 6, con su cono de normales, los triángulos empaquetados indican si sus páginas conservan uno.",
     "description": "El hilo llamador envía una `PageDecodeRequest`, el ejecutor devuelve una `PageDecodeAnswer` que lleva el mismo `id`. Nada aquí toca la plataforma: sin `Worker`, sin recuperación, sin reloj — el adaptador del navegador lleva todo eso, este archivo solo lleva la forma del mensaje, la lista cerrada de fallos y el límite de la reserva. Propiedad de los búferes: `source` se **transfiere** con la solicitud, así que el remitente ya no la posee. Una respuesta `verify` la devuelve, transferida a su vez; una respuesta `decode` devuelve en su lugar los búferes decodificados, también transferidos. Un ejecutor que no transfiere nada (el repliegue síncrono) devuelve exactamente los mismos valores: el contrato no dice cómo viaja el trabajo, solo lo que devuelve."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -4484,7 +4484,8 @@
       "vertexCount": "Vértices de la página.",
       "indexCount": "Índices de la página.",
       "flags": "Qué atributos lleva.",
-      "uncompressedBytes": "Su tamaño una vez descomprimida."
+      "uncompressedBytes": "Su tamaño una vez descomprimida.",
+      "cone": "El cono de las normales de sus triángulos, si se construyó uno."
     }
   },
   "PageCutPayload": {
@@ -4551,7 +4552,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: la huella SHA-256 de una página.",
-    "description": "`decode`: sus índices y sus atributos por vértice. `cut`: los triángulos dibujados, dispuestos en cinco longitudes y luego cinco arrays de cuatro bytes, cortados en páginas."
+    "description": "`decode`: sus índices y sus atributos por vértice. `cut`: los triángulos dibujados, dispuestos en cinco longitudes, si sus páginas conservan un cono, y luego cinco arrays de cuatro bytes, cortados en páginas."
   },
   "PageDecodeRequest": {
     "summary": "Un mensaje que pide a un worker verificar, descomprimir o cortar una página.",

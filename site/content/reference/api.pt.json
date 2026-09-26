@@ -2231,7 +2231,7 @@
     "description": "As primeiras seis são as rejeições de decodificação de página, tomadas palavra por palavra de `geometryPage.ts`: um chamador as distingue como antes. `PAGE_DECODE_FAILED` carrega qualquer outra rejeição da biblioteca de descompressão. `PAGE_DECODE_CANCELLED` responde a um cancelamento, `PAGE_DECODE_WORKER` a um executor que desapareceu — só esse permite o fallback."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Contrato de decodificação de página fora da thread principal, versão 5: a geometria decodificada viaja como um único bloco com seu erro de quantização, e o slot da arena registra esse erro na palavra 8; `cut` transforma triângulos desenhados em páginas, que voltam como bytes com seus descritores.",
+    "summary": "Contrato de decodificação de página fora da thread principal, versão 6: a geometria decodificada viaja como um único bloco com seu erro de quantização, e o slot da arena registra esse erro na palavra 8; `cut` transforma triângulos desenhados em páginas, que voltam como bytes com seus descritores, e, desde a versão 6, com seu cone de normais, os triângulos empacotados dizendo se suas páginas mantêm um.",
     "description": "A thread chamadora envia um `PageDecodeRequest`, o executor devolve um `PageDecodeAnswer` carregando o mesmo `id`. Nada aqui toca a plataforma: nenhum `Worker`, nenhum fetch, nenhum relógio — o adaptador do navegador carrega tudo isso, este arquivo só carrega a forma da mensagem, a lista fechada de falhas e o limite do pool. Propriedade do buffer: `source` é **transferido** com a requisição, então o remetente não o possui mais. Uma resposta `verify` o devolve, transferido por sua vez; uma resposta `decode` devolve os buffers decodificados em vez disso, também transferidos. Um executor que não transfere nada (o fallback síncrono) devolve exatamente os mesmos valores: o contrato não diz como o trabalho viaja, só o que ele devolve."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2361,7 +2361,8 @@
       "vertexCount": "Vértices na página.",
       "indexCount": "Índices na página.",
       "flags": "Quais atributos carrega.",
-      "uncompressedBytes": "Seu tamanho depois de descompactada."
+      "uncompressedBytes": "Seu tamanho depois de descompactada.",
+      "cone": "O cone das normais dos seus triângulos, quando foi construído."
     }
   },
   "PageCutPayload": {
@@ -2425,7 +2426,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: o digest SHA-256 de uma página.",
-    "description": "`decode`: seus índices e atributos por vértice. `cut`: triângulos desenhados, empacotados como cinco comprimentos e depois cinco arrays de quatro bytes, cortados em páginas."
+    "description": "`decode`: seus índices e atributos por vértice. `cut`: triângulos desenhados, empacotados como cinco comprimentos, se suas páginas mantêm um cone, e depois cinco arrays de quatro bytes, cortados em páginas."
   },
   "PageDecodeRequest": {
     "summary": "Uma mensagem pedindo a um worker que verifique, descompacte ou corte uma página.",

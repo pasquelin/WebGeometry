@@ -919,6 +919,9 @@ dependencies = [
 [[package]]
 name = "trillion3d-page-codec"
 version = "0.1.0"
+dependencies = [
+ "libm",
+]
 
 [[package]]
 name = "twox-hash"

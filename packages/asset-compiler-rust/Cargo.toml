@@ -24,8 +24,8 @@ sha2 = "0.10"
 rayon = "1.10"
 memmap2 = "0.9"
 meshopt = "0.6"
-# A portable arc cosine for `dag/quality.rs` (#415) and the cooked normal cones
-# (`normal_cone.rs`), pure Rust from musl (MIT); already in the tree through `num-traits`.
+# A portable arc cosine for `dag/quality.rs` (#415), pure Rust from musl (MIT); already in the
+# tree through `num-traits`.
 libm = "0.2.16"
 ufbx = "0.11.3"
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "tga", "tiff", "webp", "bmp", "gif"] }

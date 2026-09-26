@@ -2249,7 +2249,7 @@
     "description": "Sáu cái đầu tiên là các lượt từ chối giải mã trang, lấy nguyên văn từ `geometryPage.ts`: bên gọi phân biệt chúng như trước. `PAGE_DECODE_FAILED` mang bất kỳ lượt từ chối nào khác từ thư viện giải nén. `PAGE_DECODE_CANCELLED` trả lời một lần hủy, `PAGE_DECODE_WORKER` một bộ thực thi đã biến mất — chỉ cái đó cho phép phương án dự phòng."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Hợp đồng giải mã trang ngoài luồng chính, phiên bản 5: hình học đã giải mã di chuyển như một khối duy nhất cùng sai số lượng tử hóa của nó, và khe của vùng nhớ ghi lại sai số đó ở từ thứ 8; `cut` biến các tam giác đã vẽ thành các trang, trở lại dưới dạng byte cùng bộ mô tả của chúng.",
+    "summary": "Hợp đồng giải mã trang ngoài luồng chính, phiên bản 6: hình học đã giải mã di chuyển như một khối duy nhất cùng sai số lượng tử hóa của nó, và khe của vùng nhớ ghi lại sai số đó ở từ thứ 8; `cut` biến các tam giác đã vẽ thành các trang, trở lại dưới dạng byte cùng bộ mô tả của chúng, và từ phiên bản 6 kèm hình nón pháp tuyến của chúng, các tam giác đã đóng gói cho biết trang của chúng có giữ hình nón hay không.",
     "description": "Luồng gọi gửi một `PageDecodeRequest`, bộ thực thi trả về một `PageDecodeAnswer` mang cùng `id`. Không có gì ở đây chạm vào nền tảng: không `Worker`, không fetch, không đồng hồ — bộ điều hợp trình duyệt mang tất cả những thứ đó, tệp này chỉ mang hình dạng thông điệp, danh sách đóng các lỗi và giới hạn của pool. Quyền sở hữu bộ đệm: `source` được **chuyển giao** cùng yêu cầu, nên bên gửi không còn sở hữu nó nữa. Một phản hồi `verify` trả nó lại, được chuyển giao ngược lại; một phản hồi `decode` trả về các bộ đệm đã giải mã thay vào đó, cũng được chuyển giao. Một bộ thực thi không chuyển giao gì cả (phương án dự phòng đồng bộ) trả về chính xác các giá trị giống nhau: hợp đồng không nói công việc di chuyển như thế nào, chỉ nói nó trả về gì."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2379,7 +2379,8 @@
       "vertexCount": "Số đỉnh trong trang.",
       "indexCount": "Số chỉ số trong trang.",
       "flags": "Những thuộc tính nào nó mang theo.",
-      "uncompressedBytes": "Kích thước của nó sau khi giải nén."
+      "uncompressedBytes": "Kích thước của nó sau khi giải nén.",
+      "cone": "Hình nón bao pháp tuyến các tam giác của nó, nếu đã được dựng."
     }
   },
   "PageCutPayload": {
@@ -2443,7 +2444,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: khối tóm tắt SHA-256 của một trang.",
-    "description": "`decode`: các chỉ số và thuộc tính theo từng đỉnh của nó. `cut`: các tam giác đã vẽ, đóng gói thành năm độ dài rồi năm mảng bốn-byte, cắt thành các trang."
+    "description": "`decode`: các chỉ số và thuộc tính theo từng đỉnh của nó. `cut`: các tam giác đã vẽ, đóng gói thành năm độ dài, trang có giữ hình nón hay không, rồi năm mảng bốn-byte, cắt thành các trang."
   },
   "PageDecodeRequest": {
     "summary": "Một thông điệp yêu cầu một worker kiểm tra, giải nén hoặc cắt một trang.",

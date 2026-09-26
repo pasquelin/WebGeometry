@@ -93,12 +93,11 @@ test('compteMateriauxEtTangentes on an empty catalogue and geometry table yields
   );
 });
 
-test('posting a cone declares its root; a root whose pages receive no cone stays declared bare', () => {
+test('posting a cone declares its root; a root whose pages carry no cone stays declared bare', () => {
   // `collectClusterPages` declares `cones: false`; without this sample, the cut would no longer read
-  // the cone this prepare just wrote, and cone culling would vanish without a sound. A page without
-  // index bytes yet keeps no cone, as when its cone was built from them: its root declares none.
+  // the cone this prepare just wrote, and cone culling would vanish without a sound.
   const porte = triangle(G.basicSurface());
-  const nue = { ...triangle(G.basicSurface()), array: undefined } as unknown as PageRec;
+  const nue = { ...triangle(G.basicSurface()), cone: undefined } as unknown as PageRec;
   const roots = [
     { cones: false, pages: [porte] },
     { cones: false, pages: [nue] },
@@ -106,5 +105,14 @@ test('posting a cone declares its root; a root whose pages receive no cone stays
   prepareCones(runtime([], roots));
   assert.equal(roots[0].cones, true);
   assert.equal(roots[1].cones, false);
-  assert.equal(nue.cone, undefined);
+});
+
+test('a cooked cluster whose indices are not held posts its cone all the same (#828)', () => {
+  // A streamed cluster, or an opaque one drawn from its geometry page, holds no index array at
+  // prepare time: its cone is the compiler's, read from no index, and the cut culls it.
+  const streamed = { ...triangle(G.basicSurface()), array: undefined } as unknown as PageRec;
+  const roots = [{ cones: false, pages: [streamed] }];
+  prepareCones(runtime([], roots));
+  assert.equal(streamed.cone, COOKED);
+  assert.equal(roots[0].cones, true);
 });
