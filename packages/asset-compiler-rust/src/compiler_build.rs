@@ -169,13 +169,7 @@ pub fn compile(o: &Options, progress: impl Fn(Value) + Sync) -> Result<Value> {
     let (autonomous_scene, autonomous_refusal, autonomous, mut products) =
         write_autonomous_scene(&directory, &source, &primitives, &output_views)?;
     let paged = write_mesh_pages(&primitives, &directory)?;
-    let tables = stage_scene_tables(
-        &source,
-        autonomous.as_ref(),
-        &paged.by_mesh,
-        &directory,
-        &progress,
-    )?;
+    let tables = stage_scene_tables(&source, autonomous.as_ref(), &paged, &directory, &progress)?;
     let (physics_file, physics) = stage_physics(&scene, &primitives, &collisions, &directory)?;
     products.extend([tables, source_bin, source_gltf, lights, physics_file]);
     let unsupported = compiler_format::unsupported(&o.simplification, autonomous_refusal);
