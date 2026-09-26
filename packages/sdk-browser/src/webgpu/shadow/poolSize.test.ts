@@ -9,7 +9,7 @@ import { shadowPoolFor, sizeShadowPool } from './poolSize.ts';
 import { SHADOW_ATLAS_BYTES } from '../../residency/memoryBudget.ts';
 import { shadowAtlasBytes } from '../../gpu/shadow/atlas.ts';
 import { SUN } from '../../../../sdk-core/src/scene/light-shadow/lightShadow.fixture.ts';
-import { asWebgpuDevice } from '../../../../../tests/kit/gpu/webgpuDevice.ts';
+import { refusingDevice } from './poolDevice.fixture.ts';
 import { installGpuGlobals } from '../../../../../tests/kit/gpu/globals.ts';
 import type { WebgpuPagesRuntime } from '../pages/runtime.ts';
 
@@ -24,14 +24,7 @@ function session(viewport: [number, number], limit = Infinity) {
   let texture: object | undefined,
     uncaptured = 0,
     changed = 0;
-  const gpu = asWebgpuDevice({
-    createBuffer: () => ({ destroy() {} }),
-    limits: { maxTextureDimension2D: 8192 },
-    createTexture: ({ size }: { size: number[] }) => {
-      if (size[0] * size[1] * 4 > limit) gpu.raise('Out of memory');
-      return { destroy() {}, createView: () => ({}) };
-    },
-  });
+  const gpu = refusingDevice(limit);
   gpu.device.addEventListener('uncapturederror', () => uncaptured++);
   lights.shadows = {
     get texture() {
