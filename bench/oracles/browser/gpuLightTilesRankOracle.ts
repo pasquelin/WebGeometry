@@ -4,7 +4,7 @@
  * one per thread; each thread, in any order, writes its kept light at what the batches before
  * kept plus the rank `rankBefore` reads from the batch's mask while that rank is within the
  * list's `TILE_LIGHTS`, and thread zero writes the two true counts once every batch is done. A
- * count past `TILE_LIGHTS` makes the reader walk every light (`tileWalk`, `tileLight`).
+ * count past `TILE_LIGHTS` makes the reader walk every light (`tileLighting`).
  *
  * The tile layout is read from the shader's own WGSL constants, never restated here, so a shader whose
  * record has no room for a light it keeps fails the port: a write that leaves its list lands in
@@ -129,7 +129,7 @@ export function compactTile(
 }
 
 /** The lights a pixel of the tile walks in each slice: its list, or every light of the scene
- *  when the count passes `TILE_LIGHTS` (`tileWalk` and `tileLight` of the resolve). */
+ *  when the count passes `TILE_LIGHTS` (`tileLighting` of the resolve). */
 export function tileLists(layout: TileLayout, tiles: Uint32Array, lightCount: number) {
   const walk = (count: number, base: number) =>
     count <= layout.tileLights

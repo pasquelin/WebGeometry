@@ -61,23 +61,28 @@ fn environmentLighting(rgb:vec3f,metal:f32,N:vec3f,ao:f32)->vec3f{
  return rgb*(1.0-metal)*max(E,vec3f(0.0))*ao*${INVERSE_PI};
 }
 fn pixelTile(pixel:vec2f)->vec2u{return vec2u(u32(pixel.x)/TILE_SIZE,u32(pixel.y)/TILE_SIZE);}
-/** Lights a tile's slice walks: its list's count, or — past \`TILE_LIGHTS\`, when it keeps no
- *  list — every light of the scene. A light that misses the tile adds an exact zero either way. */
-fn tileWalk(kept:u32)->u32{return select(directLights.count,kept,kept<=TILE_LIGHTS);}
-/** The light at \`index\` of that walk: the list's, or the scene's own rank. */
-fn tileLight(at:u32,index:u32,kept:u32)->u32{
- if(kept<=TILE_LIGHTS){return tileLights[at+index];}
- return index;
+/** Every declared light of the scene, in rank order. */
+fn sceneLighting(rgb:vec3f,metal:f32,rough:f32,N:vec3f,V:vec3f,P:vec3f,ao:f32)->vec3f{
+ var result=vec3f(0.0);
+ for(var index=0u;index<directLights.count;index++){
+  result+=declaredLight(directLights.items[index],rgb,metal,rough,N,V,P,ao);
+ }
+ return result;
 }
-/** Lights of a slice of a tile's list: its count at countSlot, its indices from firstSlot. */
+/** Lights of a slice of a tile's list: its count at countSlot, its indices from firstSlot. A
+ *  count past \`TILE_LIGHTS\` says the tile keeps no list: it walks every light of the scene, and
+ *  one that misses it adds an exact zero. */
 fn tileLighting(rgb:vec3f,metal:f32,rough:f32,N:vec3f,V:vec3f,P:vec3f,ao:f32,tile:vec2u,tilesX:u32,countSlot:u32,firstSlot:u32)->vec3f{
  var result=vec3f(0.0);
  let base=(tile.y*tilesX+tile.x)*TILE_STRIDE;
  let kept=tileLights[base+countSlot];
- for(var index=0u;index<tileWalk(kept);index++){
-  result+=declaredLight(directLights.items[tileLight(base+firstSlot,index,kept)],rgb,metal,rough,N,V,P,ao);
+ if(kept<=TILE_LIGHTS){
+  for(var index=0u;index<kept;index++){
+   result+=declaredLight(directLights.items[tileLights[base+firstSlot+index]],rgb,metal,rough,N,V,P,ao);
+  }
+  return result;
  }
- return result;
+ return sceneLighting(rgb,metal,rough,N,V,P,ao);
 }`;
 
 /**
@@ -137,11 +142,7 @@ fn declaredLighting(rgb:vec3f,metal:f32,rough:f32,N:vec3f,V:vec3f,P:vec3f,ao:f32
  let tilesY=u32(uni.lightTiles.y);
  let tile=pixelTile(pixel);
  if(tilesX==0u||tilesY==0u||tile.x>=tilesX||tile.y>=tilesY){
-  var result=vec3f(0.0);
-  for(var index=0u;index<directLights.count;index++){
-   result+=declaredLight(directLights.items[index],rgb,metal,rough,N,V,P,ao);
-  }
-  return result;
+  return sceneLighting(rgb,metal,rough,N,V,P,ao);
  }
  return tileLighting(rgb,metal,rough,N,V,P,ao,tile,tilesX,1u,TILE_BLEND_BASE);
 }`;

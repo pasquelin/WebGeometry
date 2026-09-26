@@ -15,7 +15,7 @@ export const DIRECT_LIGHT_WGSL = `
 const TILE_SIZE:u32=${LIGHT_SETTINGS.tileSize}u;
 /** A tile carries two lists: two header words — the count of each —, the opaque list, then
  *  the blend one, which covers a deeper depth slice. Each list holds \`TILE_LIGHTS\` lights; a
- *  count past it says the tile keeps no list and walks every light of the scene (\`tileLight\`). */
+ *  count past it says the tile keeps no list and walks every light of the scene (\`tileLighting\`). */
 const TILE_LIGHTS:u32=${LIGHT_SETTINGS.tileLights}u;
 const TILE_STRIDE:u32=${TILE_STRIDE_WORDS}u;
 const TILE_OPAQUE_BASE:u32=2u;

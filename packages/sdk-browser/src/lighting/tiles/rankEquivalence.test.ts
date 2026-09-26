@@ -102,24 +102,31 @@ test('the tile shader writes each kept light at its rank, after the batches befo
   // Every light is tested: the batch loop runs to the scene's count, uniform for the workgroup.
   assert.match(LIGHT_TILES_SHADER, /let count=workgroupUniformLoad\(&lightCount\);/);
   assert.match(LIGHT_TILES_SHADER, /for\(var first=0u;first<count;first\+=256u\)\{/);
-  for (const [slice, kept, name] of [
-    ['OPAQUE', 'x', 'opaque'],
-    ['BLEND', 'y', 'blend'],
-  ]) {
-    assert.match(
-      LIGHT_TILES_SHADER,
-      new RegExp(`let ${name}At=kept\\.${kept}\\+rankBefore\\(${slice}_MASK,lane\\);`),
-    );
+  for (const [slice, kept] of [
+    ['OPAQUE', 'x'],
+    ['BLEND', 'y'],
+  ])
     assert.match(
       LIGHT_TILES_SHADER,
       new RegExp(
-        `if\\(index<count&&maskHolds\\(${slice}_MASK,lane\\)&&${name}At<TILE_LIGHTS\\)\\{\\n` +
-          ` {3}tiles\\[base\\+TILE_${slice}_BASE\\+${name}At\\]=index;`,
+        `if\\(index<count&&maskHolds\\(${slice}_MASK,lane\\)\\)\\{\\n` +
+          ` {3}let at=kept\\.${kept}\\+rankBefore\\(${slice}_MASK,lane\\);\\n` +
+          ` {3}if\\(at<TILE_LIGHTS\\)\\{tiles\\[base\\+TILE_${slice}_BASE\\+at\\]=index;\\}`,
       ),
     );
-  }
   assert.match(
     LIGHT_TILES_SHADER,
-    /if\(lane==0u\)\{tiles\[base\]=kept\.x;tiles\[base\+1u\]=kept\.y;\}/,
+    /if\(lane==0u\)\{tiles\[base\]=kept\.x\+maskTotal\(OPAQUE_MASK\);tiles\[base\+1u\]=kept\.y\+maskTotal\(BLEND_MASK\);\}/,
   );
+});
+
+test('up to 256 lights, the tile pass waits at the four barriers it always had (#822)', () => {
+  // The clear before a later batch and the count after one run only when a batch follows: one
+  // batch runs init, depth, bounds and tests, each behind one barrier, as before the batches.
+  const body = LIGHT_TILES_SHADER.slice(LIGHT_TILES_SHADER.indexOf('fn lightTiles('));
+  const unguarded = body
+    .split('\n')
+    .filter((line) => !/if\(first>0u\)|if\(first\+256u<count\)/.test(line));
+  const waits = unguarded.join('\n').match(/workgroupBarrier\(\)|workgroupUniformLoad\(/g);
+  assert.equal(waits?.length, 4);
 });

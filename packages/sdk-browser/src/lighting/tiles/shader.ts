@@ -8,10 +8,9 @@ const WORDS = LIGHT_SETTINGS.tileSize ** 2 / 32; // one mask bit per thread, a t
  * Light lists per 16 × 16 pixel screen tile. One workgroup per tile: the 256 threads reduce the
  * tile's min and max depth, thread zero derives the tile's world bounds, each thread tests one
  * light, then each kept thread writes its rank at the place the bit count before it names —
- * order stays increasing and determined, so the frame is too. Past 256 lights, the lights are
- * tested 256 at a time, each batch writing after what the batches before kept. Each list holds
- * `TILE_LIGHTS` lights, its memory bounded by the view: its count stays the true one, and a tile
- * more lights reach walks them all (`tileLight`), so no light is dropped.
+ * order stays increasing and determined, so the frame is too. Past 256 lights, batches of 256
+ * write after what the batches before kept. Each list holds `TILE_LIGHTS` lights, its memory
+ * bounded by the view; its count stays true, and a tile more lights reach walks them all.
  *
  * **Two lists per tile, two depth slices.** The opaque list covers the slice between the tile's
  * two depths, the tightest there is, and deferred resolve loses neither a light nor a
@@ -52,8 +51,9 @@ var<workgroup> hits:array<atomic<u32>,${2 * WORDS}u>;
 var<workgroup> opaqueBox:Box;
 var<workgroup> blendBox:Box;
 var<workgroup> column:array<vec4f,5>;
-/** The light count: one bound for the whole workgroup. */
+/** The light count, one bound for the whole workgroup, and what the batches before kept. */
 var<workgroup> lightCount:u32;
+var<workgroup> kept:vec2u;
 fn unproject(ndc:vec3f)->vec3f{
  let point=view.inverseViewProjection*vec4f(ndc,1.0);
  return point.xyz/point.w;
@@ -135,6 +135,8 @@ fn lightTiles(@builtin(workgroup_id) tile:vec3u,@builtin(local_invocation_index)
   atomicStore(&covered,0u);
   atomicStore(&skyward,0u);
   lightCount=lights.count;
+  kept=vec2u(0u);
+  for(var word=0u;word<${2 * WORDS}u;word++){atomicStore(&hits[word],0u);}
  }
  workgroupBarrier();
  let pixel=vec2u(tile.x*TILE_SIZE+lane%TILE_SIZE,tile.y*TILE_SIZE+lane/TILE_SIZE);
@@ -157,11 +159,9 @@ fn lightTiles(@builtin(workgroup_id) tile:vec3u,@builtin(local_invocation_index)
  }
  let count=workgroupUniformLoad(&lightCount);
  let base=(tile.y*u32(view.viewport.z)+tile.x)*TILE_STRIDE;
- // What the batches before kept, in each list: every thread counts it from the masks.
- var kept=vec2u(0u);
+ // Up to 256 lights, one batch: the barriers and the work of a single pass, no more.
  for(var first=0u;first<count;first+=${WORDS * 32}u){
-  if(lane<${2 * WORDS}u){atomicStore(&hits[lane],0u);}
-  workgroupBarrier();
+  if(first>0u){if(lane<${2 * WORDS}u){atomicStore(&hits[lane],0u);}workgroupBarrier();}
   let index=first+lane;
   if(index<count){
    let light=lights.items[index];
@@ -185,16 +185,16 @@ fn lightTiles(@builtin(workgroup_id) tile:vec3u,@builtin(local_invocation_index)
   // Parallel compact: each thread writes its light at its rank after what the batches before
   // kept, so each list carries the light ranks in increasing order, as a single-thread loop
   // would. A rank past TILE_LIGHTS is not written: that tile walks every light.
-  let opaqueAt=kept.x+rankBefore(OPAQUE_MASK,lane);
-  if(index<count&&maskHolds(OPAQUE_MASK,lane)&&opaqueAt<TILE_LIGHTS){
-   tiles[base+TILE_OPAQUE_BASE+opaqueAt]=index;
+  if(index<count&&maskHolds(OPAQUE_MASK,lane)){
+   let at=kept.x+rankBefore(OPAQUE_MASK,lane);
+   if(at<TILE_LIGHTS){tiles[base+TILE_OPAQUE_BASE+at]=index;}
   }
-  let blendAt=kept.y+rankBefore(BLEND_MASK,lane);
-  if(index<count&&maskHolds(BLEND_MASK,lane)&&blendAt<TILE_LIGHTS){
-   tiles[base+TILE_BLEND_BASE+blendAt]=index;
+  if(index<count&&maskHolds(BLEND_MASK,lane)){
+   let at=kept.y+rankBefore(BLEND_MASK,lane);
+   if(at<TILE_LIGHTS){tiles[base+TILE_BLEND_BASE+at]=index;}
   }
-  kept+=vec2u(maskTotal(OPAQUE_MASK),maskTotal(BLEND_MASK));
-  workgroupBarrier();
+  // Another batch follows: what this one kept is counted before its mask is cleared.
+  if(first+${WORDS * 32}u<count){workgroupBarrier();if(lane==0u){kept+=vec2u(maskTotal(OPAQUE_MASK),maskTotal(BLEND_MASK));}workgroupBarrier();}
  }
- if(lane==0u){tiles[base]=kept.x;tiles[base+1u]=kept.y;}
+ if(lane==0u){tiles[base]=kept.x+maskTotal(OPAQUE_MASK);tiles[base+1u]=kept.y+maskTotal(BLEND_MASK);}
 }`;

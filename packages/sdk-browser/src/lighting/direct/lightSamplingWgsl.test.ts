@@ -29,11 +29,11 @@ test('the sample budget is the published setting, and a list within it is summed
   );
   assert.match(
     DIRECT_LIGHT_SAMPLING_WGSL,
-    /if\(walk<=LIGHT_SAMPLES\)\{return tileLighting\(rgb,metal,rough,N,V,P,ao,tile,tilesX,0u,TILE_OPAQUE_BASE\);\}/,
+    /if\(kept<=LIGHT_SAMPLES\|\|kept>TILE_LIGHTS\)\{return tileLighting\(rgb,metal,rough,N,V,P,ao,tile,tilesX,0u,TILE_OPAQUE_BASE\);\}/,
   );
   // A light worth a sample's share is shaded exactly and leaves the pool; the drawn ones are
   // divided by their probability, copies counted.
-  assert.match(DIRECT_LIGHT_SAMPLING_WGSL, /if\(weight\*f32\(LIGHT_SAMPLES\)>=total\)\{/);
+  assert.match(DIRECT_LIGHT_SAMPLING_WGSL, /if\(weights\[index\]\*f32\(LIGHT_SAMPLES\)>=total\)/);
   assert.match(DIRECT_LIGHT_SAMPLING_WGSL, /factors\[used\]=pool\/\(f32\(samples\)\*weight\);/);
   // The offset depends on the pixel and the bounded rank only: a replayed image is the same image.
   assert.match(
@@ -41,4 +41,23 @@ test('the sample budget is the published setting, and a list within it is summed
     /fract\(hashUnit\(u32\(pixel\.y\)\*65536u\+u32\(pixel\.x\)\)\+f32\(rank\)\*GOLDEN_RATIO\)/,
   );
   assert.ok(SAMPLED_RANKS * 0.61803399 < 2 ** 10, 'the rank keeps the fraction its precision');
+});
+
+test('up to TILE_LIGHTS lights a tile runs the loops of before, and past them the exact walk (#822)', () => {
+  // A listed tile: the list walk and the sampled weights, each weight computed once and kept.
+  assert.match(
+    DIRECT_LIGHTING_WGSL,
+    /if\(kept<=TILE_LIGHTS\)\{\s*for\(var index=0u;index<kept;index\+\+\)\{\s*result\+=declaredLight\(directLights\.items\[tileLights\[base\+firstSlot\+index\]\],rgb,metal,rough,N,V,P,ao\);\s*\}\s*return result;\s*\}\s*return sceneLighting\(/,
+  );
+  assert.match(DIRECT_LIGHT_SAMPLING_WGSL, /var weights:array<f32,TILE_LIGHTS>;/);
+  assert.equal(
+    occurrences(DIRECT_LIGHT_SAMPLING_WGSL, 'lightWeight('),
+    2,
+    'defined once, called once',
+  );
+  // Past the list, every light of the scene in rank order: those that miss add an exact zero.
+  assert.match(
+    DIRECT_LIGHTING_WGSL,
+    /fn sceneLighting\([^)]*\)->vec3f\{\s*var result=vec3f\(0\.0\);\s*for\(var index=0u;index<directLights\.count;index\+\+\)\{\s*result\+=declaredLight\(directLights\.items\[index\]/,
+  );
 });
