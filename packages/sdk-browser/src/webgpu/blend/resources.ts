@@ -1,6 +1,4 @@
 import { BLEND_ITEM_WORDS, writeBlendItemRecord } from './items.ts';
-import { blendRgba } from './prepare.ts';
-import { refreshSurface } from '../../page/surface.ts';
 import { BLEND_VIEW_SIZE } from './uniforms.ts';
 import { buildBlendStatics, refreshBlendPlan } from './plan.ts';
 import { createBlendExpand } from './expand.ts';
@@ -107,16 +105,6 @@ export function refreshBlendScene(rt: WebgpuPagesRuntime, device: GPUDevice) {
   );
   refreshBlendPlan(blendState);
   writeVolumeRecords(rt, device);
-}
-
-/**
- * Surfaces the host rewrote in place (#335, `setMaterial`): each item's surface record is read
- * again, the colour and opacity it copied at prepare taken again from it, and the records written
- * by the same path as a scene move.
- */
-export function refreshBlendMaterials(rt: WebgpuPagesRuntime, device: GPUDevice) {
-  for (const item of rt.blendState.blendGpu) blendRgba(refreshSurface(item.surface), item.rgba);
-  refreshBlendScene(rt, device);
 }
 
 /**

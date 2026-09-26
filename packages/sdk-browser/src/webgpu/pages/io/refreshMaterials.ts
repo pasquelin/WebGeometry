@@ -1,7 +1,6 @@
 import { followHostTexture } from '../../../host/textureImport.ts';
 import { pictureFits } from '../../tile/live.ts';
 import type { WebgpuPagesRuntime } from '../runtime.ts';
-import { refreshBlendMaterials } from '../../blend/resources.ts';
 
 /**
  * Host surfaces rewritten in place (#335). When their values moved, every row is written again at
@@ -17,8 +16,8 @@ export function refreshWebgpuMaterials(rt: WebgpuPagesRuntime, values = true) {
   if (values) {
     rt.layout.rows.tableEpoch++;
     rt.run.gate.sceneMoved();
-    // A transparent item copied its colour at prepare: it is taken again, its record rewritten.
-    if (rt.gpu.device) refreshBlendMaterials(rt, rt.gpu.device);
+    // The transparent records are written by the image, not the setting: ten sets, one write.
+    rt.blendState.surfacesMoved = true;
   }
   const textures = rt.vis.textures;
   if (!textures) return true;

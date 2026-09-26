@@ -80,7 +80,6 @@ function writeLines(lineWidth: number) {
     {
       surface: surfaceOf(G.basicSurface({ transparent: true, opacity: 0.5, lineWidth })),
       matrix: new G.Matrix4(),
-      rgba: [1, 1, 1, 0.5],
       count: 6,
       flags: 0,
     },

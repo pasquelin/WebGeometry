@@ -43,7 +43,6 @@ export type BlendGpuItem = {
    *  Absent, the item never has a box; present, `bounds` points at it or is `undefined` because
    *  the bounds obtained were not usable (`worlds.ts`). */
   worldBox?: Float64Array;
-  rgba: [number, number, number, number];
   map?: Texture;
   /** Material flags (`../../visibility/types.ts`) in the low sixteen bits; above them the one-based water
    *  rank of a transmissive item, zero for a blend (`../water/surfaceWgsl.ts`). */
@@ -74,6 +73,9 @@ export function createWebgpuBlendState() {
   const visibleBlend: BlendGpuItem[] = [];
   const state = {
     blendGpu,
+    /** A surface an item wears was rewritten in place (`refreshMaterials`): the next image writes
+     *  the item records again (`../pages/render/render.ts`). */
+    surfacesMoved: false,
     pagedBlendGpu,
     visibleBlend,
     /** Normalised frustum planes of the frame, against which an item is rejected. */
