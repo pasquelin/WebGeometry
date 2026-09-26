@@ -29,7 +29,7 @@ test('the sample budget is the published setting, and a list within it is summed
   );
   assert.match(
     DIRECT_LIGHT_SAMPLING_WGSL,
-    /if\(kept<=LIGHT_SAMPLES\|\|kept>TILE_LIGHTS\)\{return tileLighting\(rgb,metal,rough,N,V,P,ao,tile,tilesX,0u,TILE_OPAQUE_BASE\);\}/,
+    /if\(kept<=LIGHT_SAMPLES\)\{return tileLighting\(rgb,metal,rough,N,V,P,ao,tile,tilesX,0u,TILE_OPAQUE_BASE\);\}/,
   );
   // A light worth a sample's share is shaded exactly and leaves the pool; the drawn ones are
   // divided by their probability, copies counted.

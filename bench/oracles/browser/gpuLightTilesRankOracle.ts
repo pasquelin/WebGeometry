@@ -3,7 +3,8 @@
  * packages/sdk-browser/src/lighting/tiles/shader.ts. The scene's lights are tested 256 at a time,
  * one per thread; each thread, in any order, writes its kept light at what the batches before
  * kept plus the rank `rankBefore` reads from the batch's mask while that rank is within the
- * list's `TILE_LIGHTS`, and thread zero writes the two true counts once every batch is done. A
+ * list's `TILE_LIGHTS`; thread zero counts a full batch between batches and writes the two true
+ * counts, the last batch's filled words added, once every batch is done. A
  * count past `TILE_LIGHTS` makes the reader walk every light (`tileLighting`).
  *
  * The tile layout is read from the shader's own WGSL constants, never restated here, so a shader whose
@@ -65,9 +66,9 @@ function rankBefore(hits: Uint32Array, mask: number, lane: number) {
 const maskHolds = (hits: Uint32Array, mask: number, lane: number) =>
   ((hits[mask + (lane >>> 5)] >>> (lane & 31)) & 1) === 1;
 
-function maskTotal(hits: Uint32Array, layout: TileLayout, mask: number) {
+function maskTotal(hits: Uint32Array, mask: number, words: number) {
   let total = 0;
-  for (let w = 0; w < layout.words; w++) total += countOneBits(hits[mask + w]);
+  for (let w = 0; w < words; w++) total += countOneBits(hits[mask + w]);
   return total;
 }
 
@@ -96,8 +97,13 @@ export function compactTile(
     hits = new Uint32Array(2 * layout.words);
   let opaqueKept = 0,
     blendKept = 0;
+  // Thread zero clears the masks before the first batch, and between batches counts a full one.
   for (let first = 0; first < lightCount; first += layout.threads) {
-    hits.fill(0);
+    if (first > 0) {
+      opaqueKept += maskTotal(hits, layout.opaqueMask, layout.words);
+      blendKept += maskTotal(hits, layout.blendMask, layout.words);
+      hits.fill(0);
+    }
     for (let lane = 0; lane < layout.threads && first + lane < lightCount; lane++) {
       const bit = 1 << (lane & 31);
       if (opaque.has(first + lane)) hits[layout.opaqueMask + (lane >>> 5)] |= bit;
@@ -105,26 +111,24 @@ export function compactTile(
     }
     for (const lane of order) {
       const index = first + lane;
-      const opaqueAt = opaqueKept + rankBefore(hits, layout.opaqueMask, lane);
-      if (
-        index < lightCount &&
-        maskHolds(hits, layout.opaqueMask, lane) &&
-        opaqueAt < layout.tileLights
-      )
-        write(layout.opaqueBase, layout.blendBase, layout.opaqueBase + opaqueAt, index);
-      const blendAt = blendKept + rankBefore(hits, layout.blendMask, lane);
-      if (
-        index < lightCount &&
-        maskHolds(hits, layout.blendMask, lane) &&
-        blendAt < layout.tileLights
-      )
-        write(layout.blendBase, layout.stride, layout.blendBase + blendAt, index);
+      if (index < lightCount && maskHolds(hits, layout.opaqueMask, lane)) {
+        const at = opaqueKept + rankBefore(hits, layout.opaqueMask, lane);
+        if (at < layout.tileLights)
+          write(layout.opaqueBase, layout.blendBase, layout.opaqueBase + at, index);
+      }
+      if (index < lightCount && maskHolds(hits, layout.blendMask, lane)) {
+        const at = blendKept + rankBefore(hits, layout.blendMask, lane);
+        if (at < layout.tileLights)
+          write(layout.blendBase, layout.stride, layout.blendBase + at, index);
+      }
     }
-    opaqueKept += maskTotal(hits, layout, layout.opaqueMask);
-    blendKept += maskTotal(hits, layout, layout.blendMask);
   }
-  write(0, layout.opaqueBase, 0, opaqueKept);
-  write(0, layout.opaqueBase, 1, blendKept);
+  // The last batch's words: those its lights fill.
+  const live = Math.ceil(
+    (lightCount - Math.floor(Math.max(lightCount - 1, 0) / layout.threads) * layout.threads) / 32,
+  );
+  write(0, layout.opaqueBase, 0, opaqueKept + maskTotal(hits, layout.opaqueMask, live));
+  write(0, layout.opaqueBase, 1, blendKept + maskTotal(hits, layout.blendMask, live));
   return tiles;
 }
 

@@ -122,9 +122,15 @@ fn rankBefore(mask:u32,lane:u32)->u32{
 fn maskHolds(mask:u32,lane:u32)->bool{
  return (atomicLoad(&hits[mask+lane/32u])&(1u<<(lane%32u)))!=0u;
 }
-fn maskTotal(mask:u32)->u32{
+/** Adds a full batch's totals to \`kept\` and clears its masks: thread zero, between batches. */
+fn clearedKept(){
+ kept+=vec2u(maskTotal(OPAQUE_MASK,${WORDS}u),maskTotal(BLEND_MASK,${WORDS}u));
+ for(var word=0u;word<${2 * WORDS}u;word++){atomicStore(&hits[word],0u);}
+}
+/** Kept bits of a slice's first \`words\` mask words: those a batch's lights fill. */
+fn maskTotal(mask:u32,words:u32)->u32{
  var total=0u;
- for(var w=0u;w<${WORDS}u;w++){total=total+countOneBits(atomicLoad(&hits[mask+w]));}
+ for(var w=0u;w<words;w++){total=total+countOneBits(atomicLoad(&hits[mask+w]));}
  return total;
 }
 @compute @workgroup_size(${LIGHT_SETTINGS.tileSize},${LIGHT_SETTINGS.tileSize},1)
@@ -134,10 +140,9 @@ fn lightTiles(@builtin(workgroup_id) tile:vec3u,@builtin(local_invocation_index)
   atomicStore(&farthest,0xffffffffu);
   atomicStore(&covered,0u);
   atomicStore(&skyward,0u);
-  lightCount=lights.count;
-  kept=vec2u(0u);
-  for(var word=0u;word<${2 * WORDS}u;word++){atomicStore(&hits[word],0u);}
+  lightCount=lights.count;kept=vec2u(0u);
  }
+ if(lane<${2 * WORDS}u){atomicStore(&hits[lane],0u);}
  workgroupBarrier();
  let pixel=vec2u(tile.x*TILE_SIZE+lane%TILE_SIZE,tile.y*TILE_SIZE+lane/TILE_SIZE);
  if(pixel.x<u32(view.viewport.x)&&pixel.y<u32(view.viewport.y)){
@@ -161,7 +166,6 @@ fn lightTiles(@builtin(workgroup_id) tile:vec3u,@builtin(local_invocation_index)
  let base=(tile.y*u32(view.viewport.z)+tile.x)*TILE_STRIDE;
  // Up to 256 lights, one batch: the barriers and the work of a single pass, no more.
  for(var first=0u;first<count;first+=${WORDS * 32}u){
-  if(first>0u){if(lane<${2 * WORDS}u){atomicStore(&hits[lane],0u);}workgroupBarrier();}
   let index=first+lane;
   if(index<count){
    let light=lights.items[index];
@@ -182,19 +186,13 @@ fn lightTiles(@builtin(workgroup_id) tile:vec3u,@builtin(local_invocation_index)
    }
   }
   workgroupBarrier();
-  // Parallel compact: each thread writes its light at its rank after what the batches before
-  // kept, so each list carries the light ranks in increasing order, as a single-thread loop
-  // would. A rank past TILE_LIGHTS is not written: that tile walks every light.
-  if(index<count&&maskHolds(OPAQUE_MASK,lane)){
-   let at=kept.x+rankBefore(OPAQUE_MASK,lane);
-   if(at<TILE_LIGHTS){tiles[base+TILE_OPAQUE_BASE+at]=index;}
-  }
-  if(index<count&&maskHolds(BLEND_MASK,lane)){
-   let at=kept.y+rankBefore(BLEND_MASK,lane);
-   if(at<TILE_LIGHTS){tiles[base+TILE_BLEND_BASE+at]=index;}
-  }
-  // Another batch follows: what this one kept is counted before its mask is cleared.
-  if(first+${WORDS * 32}u<count){workgroupBarrier();if(lane==0u){kept+=vec2u(maskTotal(OPAQUE_MASK),maskTotal(BLEND_MASK));}workgroupBarrier();}
+  // Parallel compact, each light at its rank after what the batches before kept: increasing
+  // order, as a single-thread loop. A rank past TILE_LIGHTS is not written: that tile walks all.
+  if(index<count&&maskHolds(OPAQUE_MASK,lane)){let at=kept.x+rankBefore(OPAQUE_MASK,lane);if(at<TILE_LIGHTS){tiles[base+TILE_OPAQUE_BASE+at]=index;}}
+  if(index<count&&maskHolds(BLEND_MASK,lane)){let at=kept.y+rankBefore(BLEND_MASK,lane);if(at<TILE_LIGHTS){tiles[base+TILE_BLEND_BASE+at]=index;}}
+  // Another batch follows: thread zero counts what this one kept, then clears its mask.
+  if(first+${WORDS * 32}u<count){workgroupBarrier();if(lane==0u){clearedKept();}workgroupBarrier();}
  }
- if(lane==0u){tiles[base]=kept.x+maskTotal(OPAQUE_MASK);tiles[base+1u]=kept.y+maskTotal(BLEND_MASK);}
+ let live=(count-(max(count,1u)-1u)/${WORDS * 32}u*${WORDS * 32}u+31u)/32u; // the last batch's words
+ if(lane==0u){tiles[base]=kept.x+maskTotal(OPAQUE_MASK,live);tiles[base+1u]=kept.y+maskTotal(BLEND_MASK,live);}
 }`;
