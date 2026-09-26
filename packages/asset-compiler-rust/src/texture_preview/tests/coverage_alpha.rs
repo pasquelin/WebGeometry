@@ -1,3 +1,4 @@
+use super::coverage_filtered::strays;
 use super::*;
 use crate::texture_preview::collect::atlas_textures;
 use crate::texture_preview::coverage::{cutoff_byte, Covered};
@@ -30,27 +31,6 @@ fn foliage(side: u32) -> image::RgbaImage {
     })
 }
 
-/// Levels of `chain` whose count of texels at or above `cutoff` strays from level 0's share
-/// by more than 2.5 %, or by more than one texel where 2.5 % is less: a level cannot cover a
-/// fraction of a texel.
-fn strays(chain: &[Vec<u8>], cutoff: u8) -> Vec<usize> {
-    let covered = |level: &[u8]| {
-        level
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .filter(|t| t[3] >= cutoff)
-            .count()
-    };
-    let share = covered(&chain[0]) as f64 / (chain[0].len() / 4) as f64;
-    (0..chain.len())
-        .filter(|&k| {
-            let target = share * (chain[k].len() / 4) as f64;
-            (covered(&chain[k]) as f64 - target).abs() > (0.025 * target).max(1.0)
-        })
-        .collect()
-}
-
 // #44: a masked chain keeps level 0's coverage at every level, whatever the cutoff; the median
 // alone — develop's rule, which a blended-only chain keeps — thins the foliage out from 64 × 64.
 #[test]
@@ -64,9 +44,10 @@ fn coverage_holds_at_every_level_of_a_masked_chain() {
     assert_eq!(strays(&median, 128), [3, 4, 5, 6, 7, 8]);
 }
 
-// #44, step 4: `a × (C − 0.5) / (t − 0.5)` rounded half up, in integers, on a table the card's
-// test reads too (`texture/coverageRule.test.ts`, #748). Its first case: level 0 covers half its
-// texels at 128, the level's alphas two of four from `t` = 11 to 90, and 90 is nearest the cutoff.
+// #44, steps 3 and 4: `a × (C − 0.5) / (t − 0.5)` rounded half up, in integers, on a table the
+// card's test reads too (`texture/coverageRule.test.ts`, #748) — each case's alphas its histogram.
+// Its first case: level 0 covers half at 128, the level two of four from `t` = 11 to 90, and 90
+// is nearest the cutoff.
 #[test]
 fn the_scale_lands_on_the_cutoff_in_integers() {
     let table: Value = serde_json::from_str(include_str!(
@@ -77,18 +58,34 @@ fn the_scale_lands_on_the_cutoff_in_integers() {
         let alphas = alphas.split_whitespace().map(|a| a.parse().expect("byte"));
         alphas.flat_map(|a: u8| [9, 9, 9, a]).collect()
     };
+    let histogram = |level: &[u8]| {
+        let mut bins = [0u64; 256];
+        level
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .for_each(|texel| bins[usize::from(texel[3])] += 1);
+        bins
+    };
     for case in table["cases"].as_array().expect("cases") {
         let parts: Vec<&str> = case.as_str().expect("case").split('|').collect();
-        let [cutoff, level0, level, _, scaled] = parts[..] else {
+        let [cutoff, level0, level, t, scaled] = parts[..] else {
             panic!("{case}")
         };
-        let covered = Covered::of(&bytes(level0), AtlasKind::Coverage(bytes(cutoff)[3]));
+        let level0 = bytes(level0);
+        let covered = Covered::counted(
+            bytes(cutoff)[3],
+            &histogram(&level0),
+            level0.len() as u64 / 4,
+        );
         let mut level = bytes(level);
-        covered.expect("cut").preserve(&mut level);
+        let picked = covered.pick(&histogram(&level), level.len() as u64 / 4);
+        assert_eq!(picked, bytes(t)[3], "{case}");
+        covered.scale(&mut level, picked);
         assert_eq!(level, bytes(scaled), "{case}");
     }
     assert!(
-        Covered::of(&bytes("200 200 0 0"), AtlasKind::Coverage(0)).is_none(),
+        Covered::of(&bytes("200 200 0 0"), 2, AtlasKind::Coverage(0)).is_none(),
         "blended: median alone"
     );
 }

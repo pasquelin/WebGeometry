@@ -3,6 +3,7 @@ import type { PageSurface } from '../page/surface.ts';
 import type { Texture } from '../../../sdk-core/src/index.ts';
 import type { MatrixElements } from '../math/matrixElements.ts';
 import { HOST_FORMAT_RGBA } from '../host/surfaceConstants.ts';
+import { texelFormatOf } from '../host/textureImport.ts';
 
 export const VIS_INVALID = 0;
 /**
@@ -154,6 +155,12 @@ export const texelsReason = ({ format, image }: { format?: number; image: unknow
   if (data.length !== width * height * 4)
     return `texel storage holds ${data.length} bytes, not ${width}×${height} RGBA`;
 };
+
+/** Why the texels a record holds in memory cannot be read as `textureRgba` reads them, in
+ *  `texelsReason`'s words: its host's format for raw texels, RGBA for any other picture. The
+ *  WebGPU fill throws it (#43), as the WebGL2 gate refuses the host by `texelsReason`. */
+export const texelsRefusal = (texture: Texture) =>
+  texelsReason({ format: texelFormatOf(texture) ?? HOST_FORMAT_RGBA, image: texture.image });
 
 export type TextureRgba = { data: Uint8Array; width: number; height: number };
 /**

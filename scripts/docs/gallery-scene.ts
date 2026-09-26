@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { readCacheManifest } from '../../bench/runner/cacheManifest.ts';
 
 /** Asserts that `write`, run in a throwaway folder, rebuilds the published source byte for byte. */
 export async function assertSourceReproduced(
@@ -34,9 +35,6 @@ export interface CacheManifest {
 
 /** The cache manifest a published scene's full pass points at. */
 export async function publishedManifest(published: string): Promise<CacheManifest> {
-  const directory = resolve(published, 'cache/native/full'),
-    pointer = JSON.parse(await readFile(resolve(directory, 'manifest.json'), 'utf8')) as {
-      url: string;
-    };
-  return JSON.parse(await readFile(resolve(directory, pointer.url), 'utf8')) as CacheManifest;
+  const { manifest } = await readCacheManifest(resolve(published, 'cache/native/full'));
+  return manifest as unknown as CacheManifest;
 }

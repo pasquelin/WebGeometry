@@ -30,18 +30,26 @@ test('each cut kernel dispatches over the list the previous one filled', () => {
   const ordre = lancements.map((l) => l.noyau);
   assert.ok(ordre.indexOf('dagWanted') > ordre.lastIndexOf('dagLevel2'));
   assert.ok(ordre.indexOf('dagMask') > ordre.indexOf('dagWanted'));
-  // The count launched flat is that of primitives, blocks or a hierarchy level:
+  // The count launched flat is that of primitives, blocks, a hierarchy level or one workgroup:
   // never that of clusters.
   const plats = lancements.filter((l) => l.groupes !== 'indirect').map((l) => l.noyau);
-  assert.deepEqual(plats, ['dagPrepare', 'dagLevel0', 'dagLevel1', 'dagLevel2', 'dagDrawPrefix']);
+  assert.deepEqual(plats, [
+    'dagPrepare',
+    'dagLevel0',
+    'dagLevel1',
+    'dagLevel2',
+    'dagDrawPrefix',
+    'dagSortRequests',
+  ]);
 });
 
 test('wait between launches depends only on depth, not on cluster count', () => {
   const { encoder, lancements } = encodeurTemoin();
   encodeDagKernels(encoder as unknown as GPUCommandEncoder, ressources(true));
-  // Log clear, prepare, one pass per level (three), candidates, mask, prefix and compaction: the
-  // cut rule decides each cluster once, in the mask, with no round per primitive before it.
-  assert.equal(lancements.length, 9);
+  // Log clear, prepare, one pass per level (three), candidates, mask, prefix, compaction and the
+  // request sort: the cut rule decides each cluster once, in the mask, with no round per
+  // primitive before it.
+  assert.equal(lancements.length, 10);
   const noyaux = lancements.map((l) => l.noyau);
   assert.ok(!noyaux.includes('dagArgs') && !noyaux.includes('dagDrawCount'));
   assert.equal(noyaux[0], 'dagClearDrawn');

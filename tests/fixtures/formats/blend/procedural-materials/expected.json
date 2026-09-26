@@ -65,7 +65,7 @@
       "normalsComputed": 1,
       "textures": 1
     },
-    "formatVersion": 8,
+    "formatVersion": 10,
     "notes": [],
     "plugin": {
       "name": "blend",

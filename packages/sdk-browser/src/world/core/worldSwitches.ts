@@ -36,6 +36,7 @@ export function worldSwitches(
     guides: createGuideSet(invalidate),
     // The particle pools the measurement entry attaches (`attachParticles`); none by default.
     particles: [] as ParticlePool[],
+    particlesRefused: (reason: string) => notices.once('particles-refused', reason),
   };
   return {
     held,

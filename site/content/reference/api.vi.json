@@ -943,6 +943,10 @@
       "UNKNOWN_SCENE_LIGHT": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, hoặc không có nơi để đi.",
       "SCENE_LIGHTS_UNAVAILABLE": "Một nguồn sáng bị dị dạng, trùng lặp, không xác định, hoặc không có nơi để đi.",
       "INVALID_SCENE_ENVIRONMENT": "Độ phơi sáng hoặc môi trường xung quanh của cảnh không phải là các con số hợp lệ.",
+      "INVALID_MATERIAL": "Một thay đổi vật liệu không xác định, ngoài phạm vi, sẽ chuyển nó sang lớp vẽ khác, hoặc sẽ lặp lại một bản đồ mà nó dùng chung.",
+      "UNKNOWN_MATERIAL": "Một thay đổi vật liệu không xác định, ngoài phạm vi, sẽ chuyển nó sang lớp vẽ khác, hoặc sẽ lặp lại một bản đồ mà nó dùng chung.",
+      "MATERIAL_CLASS_CHANGE": "Một thay đổi vật liệu không xác định, ngoài phạm vi, sẽ chuyển nó sang lớp vẽ khác, hoặc sẽ lặp lại một bản đồ mà nó dùng chung.",
+      "MATERIAL_TEXTURE_SHARED": "Một thay đổi vật liệu không xác định, ngoài phạm vi, sẽ chuyển nó sang lớp vẽ khác, hoặc sẽ lặp lại một bản đồ mà nó dùng chung.",
       "INVALID_TRANSFORM": "Vị trí đặt của một node không phải là một ma trận dùng được, hoặc một node sẽ trở thành tổ tiên của chính nó.",
       "NON_FINITE_TRANSFORM": "Vị trí đặt của một node không phải là một ma trận dùng được, hoặc một node sẽ trở thành tổ tiên của chính nó.",
       "SINGULAR_PARENT_TRANSFORM": "Vị trí đặt của một node không phải là một ma trận dùng được, hoặc một node sẽ trở thành tổ tiên của chính nó.",
@@ -4350,8 +4354,14 @@
     "description": "Trả về URL tệp kê khai bộ nhớ đệm mà con trỏ nêu tên, để được giải quyết dựa trên URL của con trỏ. Một ứng dụng chủ không có việc gì phải tự đọc các trường này; đây là phép kiểm tra mà trình đọc thực hiện."
   },
   "assertCacheReady": {
-    "summary": "Những gì một ứng dụng chủ có thể kiểm tra chỉ trên tệp kê khai bộ nhớ đệm, dù các cụm của nó được viết nội tuyến hay trong một tệp phụ nhị phân: bộ nhớ đệm đã sẵn sàng, thuộc phạm vi được yêu cầu, ở một định dạng mà SDK này đọc được, và khai báo hình học mà nó đã chọn.",
-    "description": "Trả về số lượng tam giác đó, nên một phép dò tính khả dụng không cần đọc gì khác và không cần biết tên trường nào. Danh tính của chính các cụm là `assertCacheIdentity`: nó đọc các trang, nên nó chạy trên một tệp kê khai đã giải mã, thứ mà một phép dò cố tình không tải về."
+    "summary": "Điều một máy chủ có thể kiểm tra trên manifest bộ đệm đọc qua các trang của nó (`readPagedManifest`): gốc của nó (`assertCacheRoot`) và hình học nó đã chọn.",
+    "description": "Trả về số tam giác đó, để một phép thăm dò khả dụng không cần biết tên trường nào. Danh tính của chính các cụm do `assertCacheIdentity` kiểm tra: nó đọc các trang nên chạy trên manifest đã giải mã."
+  },
+  "assertCacheRoot": {
+    "summary": "Điều một máy chủ có thể kiểm tra trên gốc của manifest bộ đệm (`clusters.json`) trước mọi trang của nó: bộ đệm đã sẵn sàng, đúng phạm vi yêu cầu, ở định dạng SDK này đọc được."
+  },
+  "readPagedManifest": {
+    "summary": "Manifest dưới `root`, các trang và tệp đi kèm của chúng được đọc song song qua `read` — trong trình duyệt là `fetchVerified`, chứng minh từng tệp bằng kích thước và dấu vân tay đặt tên cho nó: các trường của gốc, của trang đầu và các primitive của mỗi trang lưới theo thứ tự (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Từ chối một định dạng bộ nhớ đệm mà thời gian chạy này không đọc."

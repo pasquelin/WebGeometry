@@ -2,16 +2,14 @@ import {
   assertCacheIdentity,
   assertCachePointer,
   assertCacheReady,
-  assertManifestBinary,
-  decodeManifestBinary,
+  assertCacheRoot,
   EngineError,
-  isBinaryManifest,
   DEFAULT_SCOPE,
+  readPagedManifest,
   type AssetScope,
   type ClusterManifest,
-  type SlimClusterManifest,
 } from '../../../sdk-core/src/index.ts';
-import { checked } from '../cluster/pages.ts';
+import { checked, fetchVerified } from '../cluster/pages.ts';
 import { unmetered, type ByteMeter } from '../cluster/byteMeter.ts';
 
 async function jsonResource(
@@ -75,15 +73,14 @@ function located<T>(
     );
   }
 }
-/** What the manifest cost to obtain. Reported as a diagnostic so a campaign can measure it. */
+/** What the manifest cost to obtain: `json*` its root, `binary*` its pages and their column files,
+ *  read and decoded. Reported as a diagnostic so a campaign can measure it. */
 interface ManifestTiming {
-  format: 'json' | 'binary';
   jsonBytes: number;
   binaryBytes: number;
   pointerMs: number;
   jsonMs: number;
   binaryMs: number;
-  decodeMs: number;
   totalMs: number;
 }
 export interface LoadedManifest {
@@ -112,10 +109,10 @@ function declaredFiles(value: Record<string, unknown>, metadataUrl: string) {
  * the host names one — a pointer or a cache of another scope is refused by name —; left
  * undefined, the scope the pointer declares is the one read, and the cache is held to it.
  *
- * A cache compiled with a binary sidecar hands over a small JSON and a column file: the columns are
- * mapped, never parsed, so the cost of reading a manifest stops growing with the cluster count. A
- * cache without one is read exactly as before, so older caches stay loadable. `meter` counts each
- * file read here as it arrives; the load that holds it plans the files it reads next.
+ * The cache's `clusters.json` is a root of fixed size, checked before anything else is fetched;
+ * its pages and their column files are read side by side, each verified against its slot, and the
+ * columns mapped, never parsed (`readPagedManifest`). `meter` counts each file read here as it
+ * arrives; the load that holds it plans the files it reads next.
  */
 export async function loadClusterManifest(
   manifestUrl: string,
@@ -137,34 +134,18 @@ export async function loadClusterManifest(
   const metadataResource = await jsonResource(metadataUrl, signal, meter),
     value = metadataResource.value;
   const jsonMs = performance.now() - jsonStart;
-  // Readiness, scope and format are settled before the columns are worth a request. A pointer
+  // Readiness, scope and format are settled before the pages are worth a request. A pointer
   // that declares no scope leaves the cache's own to be read.
   const scope = declared ?? (value.scope as AssetScope);
-  located(() => assertCacheReady(value, scope), metadataResource.details);
-  let metadata: ClusterManifest,
-    binaryBytes = 0,
-    binaryMs = 0,
-    decodeMs = 0,
-    format: 'json' | 'binary' = 'json';
-  if (isBinaryManifest(value)) {
-    format = 'binary';
-    assertManifestBinary(value.binary);
-    const binaryUrl = new URL((value.binary as { url: string }).url, metadataUrl).href;
-    const binaryStart = performance.now();
-    const buffer = await meter.read(await checked(binaryUrl, signal), binaryUrl).arrayBuffer();
-    binaryMs = performance.now() - binaryStart;
-    binaryBytes = buffer.byteLength;
-    const declared = (value.binary as { bytes: number }).bytes;
-    if (buffer.byteLength !== declared)
-      throw new EngineError(
-        'INVALID_CACHE',
-        `${binaryUrl}: ${buffer.byteLength} bytes received, ${declared} declared`,
-        { url: binaryUrl, bytes: buffer.byteLength, expected: declared },
-      );
-    const decodeStart = performance.now();
-    metadata = decodeManifestBinary(value as unknown as SlimClusterManifest, buffer);
-    decodeMs = performance.now() - decodeStart;
-  } else metadata = value as unknown as ClusterManifest;
+  located(() => assertCacheRoot(value, scope), metadataResource.details);
+  const binaryStart = performance.now();
+  let binaryBytes = 0;
+  const metadata = await readPagedManifest(value, async (page) => {
+    const read = await fetchVerified(new URL(page.url, metadataUrl).href, page, signal, meter);
+    binaryBytes += read.byteLength;
+    return new Uint8Array(read);
+  });
+  located(() => assertCacheReady(metadata, scope), metadataResource.details);
   assertCacheIdentity(metadata);
   const base = new URL('.', metadataUrl).href;
   return {
@@ -172,15 +153,13 @@ export async function loadClusterManifest(
     metadata,
     metadataUrl,
     base,
-    declared: declaredFiles(value, metadataUrl),
+    declared: declaredFiles(metadata as unknown as Record<string, unknown>, metadataUrl),
     timing: {
-      format,
       jsonBytes: metadataResource.bytes,
       binaryBytes,
       pointerMs,
       jsonMs,
-      binaryMs,
-      decodeMs,
+      binaryMs: performance.now() - binaryStart,
       totalMs: performance.now() - started,
     },
   };

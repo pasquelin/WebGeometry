@@ -3,6 +3,8 @@
 //! several textures share one image.
 use super::reuse::{compile_with_events, textured};
 use super::*;
+use crate::compiler_manifest_pages::{sidecar_file, MANIFEST_PAGES};
+use crate::compiler_tables::partition::pages::{read_slot, write_page};
 
 // Behaviour: a folder whose compile could not write a level file — the report
 // notes it, the entry carries no baked level — is not proven: the reuse would
@@ -11,21 +13,29 @@ use super::*;
 fn an_unfinished_bake_is_not_reused() {
     let (root, options) = textured();
     let (first, _) = compile_with_events(&options);
-    let manifest_path = options
-        .key_directory(first["key"].as_str().unwrap())
-        .join("clusters.json");
+    let directory = options.key_directory(first["key"].as_str().unwrap());
+    let (manifest_path, pages) = (directory.join(MANIFEST_FILE), &MANIFEST_PAGES);
     let mut manifest = read_json(&manifest_path);
-    manifest["texturePreviews"]["notes"][texture_preview::LEVEL_WRITE_FAILED] = json!(1);
+    let head = read_slot(pages, &directory, &manifest["head"], "root");
+    let (_, mut head) = head.unwrap().unwrap();
+    head["texturePreviews"]["notes"][texture_preview::LEVEL_WRITE_FAILED] = json!(1);
+    let tampered = json!(write_page(pages, &directory, &head, &[]).expect("head"));
+    manifest["head"] = tampered.clone();
     fs::write(&manifest_path, serde_json::to_vec(&manifest).unwrap()).expect("tamper");
     let (second, events) = compile_with_events(&options);
     assert!(second["reused"].is_null(), "not reused");
+    let swept = read_slot(pages, &directory, &tampered, "").is_err();
+    assert!(
+        swept,
+        "the rebuild removes the refused head, which prune would keep"
+    );
     assert_eq!(
         events[0]["reason"],
         "a texture level failed to write when the folder was compiled"
     );
+    let notes = &paged(&directory).manifest["texturePreviews"]["notes"];
     assert!(
-        read_json(&manifest_path)["texturePreviews"]["notes"][texture_preview::LEVEL_WRITE_FAILED]
-            .is_null(),
+        notes[texture_preview::LEVEL_WRITE_FAILED].is_null(),
         "rebuilt whole"
     );
     // The same state read from the sidecar words: fewer levels baked than the tail starts at.
@@ -84,13 +94,8 @@ fn shared_image_levels_are_counted_once() {
         .push(second);
     write_gltf(&options, &gltf, None);
     let (first, _) = compile_with_events(&options);
-    let sidecar = fs::read(
-        options
-            .key_directory(first["key"].as_str().unwrap())
-            .join(MANIFEST_BINARY_FILE),
-    )
-    .expect("sidecar");
-    let entries = manifest_binary::texture_levels(&sidecar).expect("levels");
+    let sidecar = paged(&options.key_directory(first["key"].as_str().unwrap())).sidecars;
+    let entries = manifest_binary::texture_levels(&sidecar[0]).expect("levels");
     assert_eq!(entries.len(), 2, "two textures read the image");
     assert!(entries.iter().all(|e| e.baked == 1), "one level file each");
     assert!(
@@ -111,15 +116,15 @@ fn corrupted_entry_is_rejected_and_rebuilt() {
     let (first, _) = compile_with_events(&options);
     let directory = options.key_directory(first["key"].as_str().unwrap());
     let native = options.cache.join("native");
-    let sidecar = fs::read(directory.join(MANIFEST_BINARY_FILE)).expect("sidecar");
-    let object = manifest_binary::digests(&sidecar)
+    let sidecars = paged(&directory).sidecars;
+    let object = manifest_binary::digests(&sidecars[1])
         .expect("digests")
         .remove(0);
     let manifest_binary::BakedLevels {
         sha256: level_sha,
         kind,
         ..
-    } = manifest_binary::texture_levels(&sidecar)
+    } = manifest_binary::texture_levels(&sidecars[0])
         .expect("levels")
         .remove(0);
     let level = native.join(texture_preview::level_path(
@@ -135,8 +140,8 @@ fn corrupted_entry_is_rejected_and_rebuilt() {
             Some(b"corrupt"),
         ),
         (
-            "sidecar does not match",
-            directory.join(MANIFEST_BINARY_FILE),
+            "is not the sidecar its page names",
+            directory.join(sidecar_file(&hash(&sidecars[1]))),
             Some(b"corrupt"),
         ),
         (

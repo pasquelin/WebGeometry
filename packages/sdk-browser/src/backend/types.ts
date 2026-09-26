@@ -170,6 +170,8 @@ export interface BackendContext {
   /** The world's guides, drawn over the image, and its particle pools, stepped once per image. */
   guides?: import('../guides/guideSet.ts').GuideSet;
   particles?: readonly import('../../../sdk-core/src/fluids/particles.ts').ParticlePool[];
+  /** Hears once why the engine refused the `particles`; the session goes on without them. */
+  particlesRefused?: (reason: string) => void;
   /** Contract lights, owned by the host and shared by every engine of the session. */
   sceneLights?: SceneLightStore;
   /** Imported light ids, in cache order: the host sets or removes them (`importedLights()`). */

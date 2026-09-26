@@ -87,10 +87,10 @@ export function writeFallbackBlendUniforms(
     }
     uniformPacked.set(viewProj, base);
     uniformPacked.set(item.matrix.elements, base + 16);
-    uniformPacked[base + 32] = item.rgba[0];
-    uniformPacked[base + 33] = item.rgba[1];
-    uniformPacked[base + 34] = item.rgba[2];
-    uniformPacked[base + 35] = item.rgba[3];
+    uniformPacked[base + 32] = surface!.baseColor[0];
+    uniformPacked[base + 33] = surface!.baseColor[1];
+    uniformPacked[base + 34] = surface!.baseColor[2];
+    uniformPacked[base + 35] = surface!.opacity;
     packedInts[base + 36] = list[at + 1];
     packedInts[base + 37] = list[at + 2];
     packedInts[base + 38] = run.diagnostic === 'wireframe' ? 1 : 0;

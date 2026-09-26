@@ -48,9 +48,9 @@ test('WebGPU: one timed pass writes the step words and the staged records, once'
   assert.deepEqual([...new Uint32Array(words, 16, 3)], [0, 3, 1000], 'first slot, count, capacity');
   assert.deepEqual([...written(records)], [...pool.staging.subarray(0, 24)]);
   assert.equal(particles.run([pool], encoder), 0, 'nothing staged, no time: no pass');
-  assert.equal(gpu.buffers.length, 3, 'state, staging and step made once');
+  assert.equal(gpu.buffers.length, 4, 'state, staging, step and draw words made once');
   particles.run([], encoder);
-  assert.equal(gpu.destroyed.length, 3, 'a pool the world let go of gives its buffers back');
+  assert.equal(gpu.destroyed.length, 4, 'a pool the world let go of gives its buffers back');
 });
 
 test('WebGPU: a step that cannot compile is heard, and its pools stop asking frames', async () => {

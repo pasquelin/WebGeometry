@@ -1,4 +1,5 @@
 import type { BlendGpuItem } from './state.ts';
+import { refreshSurface } from '../../page/surface.ts';
 import { layerSlot, sampledFlag, type MaterialLayers } from '../row/pageRowMaterial.ts';
 import { writeSpriteWords } from '../../visibility/shader/spriteWgsl.ts';
 
@@ -25,18 +26,19 @@ export function writeBlendItemRecord(
   tables: BlendAtlasTables,
 ) {
   const base = index * BLEND_ITEM_WORDS,
-    mat = item.surface;
-  const layer = layerSlot(tables.mapLayer, item.map),
+    // Read as the host holds it now: a surface rewritten in place is refilled here (#335).
+    mat = refreshSurface(item.surface);
+  const layer = layerSlot(tables.mapLayer, mat.map),
     emissive = layerSlot(tables.mapLayer, mat.emissiveMap),
     rough = layerSlot(tables.dataLayer, mat.roughnessMap),
     metal = layerSlot(tables.dataLayer, mat.metalnessMap),
     normal = layerSlot(tables.dataLayer, mat.normalMap),
     ao = layerSlot(tables.dataLayer, mat.aoMap);
   floats.set(item.matrix.elements, base);
-  floats[base + 16] = item.rgba[0];
-  floats[base + 17] = item.rgba[1];
-  floats[base + 18] = item.rgba[2];
-  floats[base + 19] = item.rgba[3];
+  floats[base + 16] = mat.baseColor[0];
+  floats[base + 17] = mat.baseColor[1];
+  floats[base + 18] = mat.baseColor[2];
+  floats[base + 19] = mat.opacity;
   // Where the instance reads what it draws, it takes it from the expanded list; the record now
   // carries only what belongs to the item — its indices, first vertex, flags, maps.
   ints[base + 20] = item.count;

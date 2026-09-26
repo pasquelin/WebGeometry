@@ -14,6 +14,11 @@ export type Side = 'front' | 'back' | 'double';
  *  `blend` composes. A blended surface is never turned into a masked one inside the engine. */
 export type AlphaMode = 'opaque' | 'mask' | 'blend';
 
+/** The alpha mode a surface is drawn in, from its blend flag and cutoff: the one rule a host
+ *  surface and the engine's material agree on. */
+export const alphaModeOf = (surface: { transparent: boolean; alphaTest: number }): AlphaMode =>
+  surface.transparent ? 'blend' : surface.alphaTest > 0 ? 'mask' : 'opaque';
+
 /** One linear RGB colour, `[0, 1]` per channel. */
 export type LinearRgb = readonly [number, number, number];
 

@@ -43,14 +43,14 @@ function facadeScenes() {
     .map((name) => name.slice(0, -'-derived'.length));
 }
 
-function openScene(scene: string) {
+async function openScene(scene: string) {
   const full = join(sceneDerived(scene), 'native/full');
   assert.ok(
     existsSync(join(full, 'manifest.json')),
     `no cache for ${scene}: run \`node bench/runner/assets.ts --only ${scene}\`` +
       ' (a facade is written first by `node bench/runner/scenes/facade.ts --seed <n>`)',
   );
-  return readCacheManifest(full).manifest;
+  return (await readCacheManifest(full)).manifest;
 }
 
 const MIRROR = 'normal-tangent-mirror-test';
@@ -67,10 +67,10 @@ function provenScenes() {
   return { cut: ['sponza', facades[facades.length - 1]], mirror: MIRROR };
 }
 
-test('every scene the bench names opens from its compiled cache', () => {
+test('every scene the bench names opens from its compiled cache', async () => {
   const { cut, mirror } = provenScenes();
   for (const scene of [...cut, mirror]) {
-    const manifest = openScene(scene);
+    const manifest = await openScene(scene);
     assert.equal(manifest.status, 'ready', `${scene}: cache not ready`);
     assert.ok(manifest.primitives.length > 0, `${scene}: no primitive`);
     assert.ok(
@@ -80,9 +80,9 @@ test('every scene the bench names opens from its compiled cache', () => {
   }
 });
 
-test('a primitive with more than one cluster coarsens above level 0', () => {
+test('a primitive with more than one cluster coarsens above level 0', async () => {
   for (const scene of provenScenes().cut) {
-    const manifest = openScene(scene);
+    const manifest = await openScene(scene);
     let climbing = 0;
     for (const primitive of manifest.primitives) {
       const dag = primitive.dag as DagLevels | null | undefined;
@@ -104,8 +104,8 @@ test('a primitive with more than one cluster coarsens above level 0', () => {
   }
 });
 
-test('mirrored texture coordinates cost the simplification nothing', () => {
-  const manifest = openScene(MIRROR);
+test('mirrored texture coordinates cost the simplification nothing', async () => {
+  const manifest = await openScene(MIRROR);
   assert.equal(manifest.primitives.length, 1, 'the mirror scene is one primitive');
   const [primitive] = manifest.primitives;
   const dag = primitive.dag as DagLevels | null | undefined;

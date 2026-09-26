@@ -3,11 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { readCacheManifest } from '../bench/runner/cacheManifest.ts';
 import { writeObservatory } from './docs/observatory/write.ts';
-
-interface ObservatoryManifestPointer {
-  url: string;
-}
 
 interface ObservatoryDagLevel {
   triangles: number;
@@ -112,13 +110,8 @@ test('the original observatory reproduces its source and retains distinct materi
       new Set(gltf.materials.map((m) => m.pbrMetallicRoughness.baseColorFactor.join())).size,
       6,
     );
-    const base = new URL('cache/native/full/', directory);
-    const pointer = JSON.parse(
-      await readFile(new URL('manifest.json', base), 'utf8'),
-    ) as ObservatoryManifestPointer;
-    const manifest = JSON.parse(
-      await readFile(new URL(pointer.url, base), 'utf8'),
-    ) as ObservatoryManifest;
+    const full = fileURLToPath(new URL('cache/native/full/', directory));
+    const manifest = (await readCacheManifest(full)).manifest as unknown as ObservatoryManifest;
     assert.equal(manifest.sourceTriangles, triangles);
     assert.equal(manifest.simplification, true);
     assert.equal(manifest.primitives.length, materialIds.size);

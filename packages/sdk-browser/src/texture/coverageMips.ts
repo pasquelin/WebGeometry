@@ -1,15 +1,16 @@
 import { sharedGpuDevice } from '../gpu/core/sessionHandle.ts';
-import { COVERAGE_PICK_WGSL, COVERAGE_SCALE_WGSL } from './coverageRule.ts';
+import { COVERAGE_CUT_WGSL, COVERAGE_PICK_WGSL, COVERAGE_SCALE_WGSL } from './coverageRule.ts';
 import { levelSize } from './tiles.ts';
 
 /** Bytes of one level's 256 bins. */
 export const LEVEL_BIN_BYTES = 1024;
 
 /**
- * The counts of the coverage rule (docs/FORMAT.md, "Coverage-preserving alpha"): `count` files each
- * texel's alpha byte — level 0's own, a level's median from the one above — in its level's 256
- * bins, through a workgroup's own 256; `choose` then picks that level's `t`, one thread, and leaves
- * it in bin 0, which it never reads (`t >= 1`). `level`: the source's extent, `C`, `t`, then level
+ * The counts of the coverage rule (docs/FORMAT.md, "Coverage-preserving alpha"): `count` files the
+ * four filtered samples of each texel's square (`cutBin`) — its alpha bytes level 0's own, a
+ * level's medians from the one above — in its level's 256 bins, through a workgroup's own 256;
+ * `choose` then picks that level's `t`, one thread, and leaves it in bin 0, which it never reads
+ * (`t >= 1`). `level`: the source's extent, `C`, `t`, then level
  * 0's extent and the level.
  */
 export const COVERAGE_WGSL = `
@@ -20,19 +21,22 @@ export const COVERAGE_WGSL = `
  fn binOf(t:u32)->u32{return atomicLoad(&cover[level.base.z*256u+t]);}
  ${COVERAGE_SCALE_WGSL}
  ${COVERAGE_PICK_WGSL}
+ ${COVERAGE_CUT_WGSL}
  fn sizeOf(k:u32)->vec2u{return max(level.base.xy>>vec2u(k),vec2u(1u));}
+ fn alphaAt(q:vec2u)->u32{
+  let k=level.base.z;let p=vec2i(min(q,sizeOf(k)-vec2u(1u)));
+  if(k==0u){return toByte(textureLoad(source,p,0).w);}
+  let s=p*2;let hi=vec2i(level.extent.xy)-vec2i(1);
+  return median(vec4f(textureLoad(source,min(s,hi),0).w,textureLoad(source,min(s+vec2i(1,0),hi),0).w,
+   textureLoad(source,min(s+vec2i(0,1),hi),0).w,textureLoad(source,min(s+vec2i(1,1),hi),0).w));
+ }
  var<workgroup> tally:array<atomic<u32>,256>;
  @compute @workgroup_size(8,8) fn count(@builtin(global_invocation_id) id:vec3u,@builtin(local_invocation_index) i:u32){
   let k=level.base.z;
   if(all(id.xy<sizeOf(k))){
-   let p=vec2i(id.xy)*2;let hi=vec2i(level.extent.xy)-vec2i(1);
-   var a:u32;
-   if(k==0u){a=toByte(textureLoad(source,vec2i(id.xy),0).w);}
-   else{
-    a=median(vec4f(textureLoad(source,min(p,hi),0).w,textureLoad(source,min(p+vec2i(1,0),hi),0).w,
-     textureLoad(source,min(p+vec2i(0,1),hi),0).w,textureLoad(source,min(p+vec2i(1,1),hi),0).w));
-   }
-   atomicAdd(&tally[a],1u);
+   let q=id.xy;
+   let a=vec4u(alphaAt(q),alphaAt(q+vec2u(1u,0u)),alphaAt(q+vec2u(0u,1u)),alphaAt(q+vec2u(1u,1u)));
+   for(var s=0u;s<4u;s++){atomicAdd(&tally[cutBin(a,s,level.extent.z)],1u);}
   }
   // Foliage lands nearly every texel in two bins: the workgroup counts apart, then adds its own
   // bins once each, not one device atomic per texel on the same two words.

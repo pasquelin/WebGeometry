@@ -1,11 +1,5 @@
 import type { DagViewUniforms, PackedDag } from './types.ts';
-import {
-  REQUEST_AHEAD,
-  REQUEST_PRIORITY_MAX,
-  requestPage,
-  requestPriority,
-  requestRank,
-} from './request.ts';
+import { firstAheadRequest, requestPage } from './request.ts';
 import {
   OUT_COUNT,
   OUT_FLAGS,
@@ -37,9 +31,6 @@ export type DagOutputScratch = {
   result: SelectionResult;
   drawable: number[];
   ahead: number[];
-  /** Counting-sort buckets, one per priority step. Fixed size, allocated once: ranking never
-   *  returns anything to the garbage collector, whatever the sample size. */
-  seaux: Uint32Array;
 };
 export const createDagOutputScratch = (): DagOutputScratch => ({
   result: {
@@ -52,7 +43,6 @@ export const createDagOutputScratch = (): DagOutputScratch => ({
   },
   drawable: [],
   ahead: [],
-  seaux: new Uint32Array(REQUEST_PRIORITY_MAX + 1),
 });
 
 /** The view ahead of a moving camera (`shader/aheadWgsl.ts`): block 1 repeats the camera's with the
@@ -134,42 +124,18 @@ export function parseDagOutput(
   );
   // Arrays sized in advance: reading a frame does not grow an empty array element by element,
   // and a typed-array iterator is never unrolled.
-  const { result, drawable, seaux } = scratch,
+  const { result, drawable } = scratch,
     pageIds = result.pageIds;
-  // Each rank is a REQUEST: the page and its priority in one word (`request.ts`). The list
-  // is returned SORTED, decreasing priority — that is the order the host uploads in, and what
-  // the WebGL2 path has always done (`orderPendingUrls`).
-  //
-  // COUNTING SORT, not comparison. Priority is already quantized to ten bits: one thousand
-  // twenty-four buckets cover it entirely, and two walks suffice — one to count, one to place.
-  // No comparison, no callback, no intermediate buffer: the list is read from the sample and
-  // written straight into `pageIds`, where a rank sort needed three ordinary arrays grown by
-  // `.length =` and n·log n closure calls on 262 144 ranks at the cap.
-  //
-  // It is STABLE, and that is what makes it substitutable: at equal priority the order stays
-  // that of the sample, exactly what the comparison sort it replaces returned.
-  seaux.fill(0);
-  for (let i = 0; i < count; i++) seaux[requestRank(requestPriority(ints[head + i]))]++;
-  // Prefix sum run from the HIGHEST priority to the lowest: the list comes out decreasing
-  // without having to reverse it.
-  let place = 0;
-  for (let p = REQUEST_PRIORITY_MAX; p >= 0; p--) {
-    const tenus = seaux[p];
-    seaux[p] = place;
-    place += tenus;
-  }
-  // The view ahead's requests rank after every visible one: they go straight to their own list,
-  // which starts where the highest rank ahead does.
-  const ahead = scratch.ahead,
-    visible = seaux[REQUEST_AHEAD - 1];
+  // Each rank is a REQUEST: the page and its priority in one word (`request.ts`). The GPU wrote
+  // them SORTED, highest `requestRank` first (`shader/snapshotWgsl.ts`): every visible request, then
+  // the view ahead's. The host reads them in that order and ranks nothing: it only finds where the
+  // view ahead's start.
+  const ahead = scratch.ahead;
+  const visible = firstAheadRequest(ints, head, head + count) - head;
   pageIds.length = visible;
   ahead.length = count - visible;
-  for (let i = 0; i < count; i++) {
-    const word = ints[head + i],
-      at = seaux[requestRank(requestPriority(word))]++;
-    if (at < visible) pageIds[at] = requestPage(word);
-    else ahead[at - visible] = requestPage(word);
-  }
+  for (let i = 0; i < visible; i++) pageIds[i] = requestPage(ints[head + i]);
+  for (let i = visible; i < count; i++) ahead[i - visible] = requestPage(ints[head + i]);
   result.aheadPageIds = ahead;
   result.frustumRejected = ints[OUT_FRUSTUM_REJECTED] ?? 0;
   result.lodLevel = ints[OUT_LOD_LEVEL] ?? 0;

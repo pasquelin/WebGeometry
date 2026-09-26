@@ -941,7 +941,11 @@
     "banner": "拖动以环顾四周。勾选“驾驶汽车”接管汽车：W 或 ↑ 加速，S 或 ↓ 刹车，A D 或 ← → 转向。“再次投下”让木箱和球再次落下。",
     "words": {
       "credit": "山谷为本示例用代码建模，CC0 — 见 assets/examples/CREDITS.md",
-      "refused": "此后端拒绝"
+      "refused": "此后端拒绝",
+      "close": "特写",
+      "far": "远景",
+      "pan": "快速平移",
+      "still": "静止"
     },
     "controls": {
       "drive": "驾驶汽车",

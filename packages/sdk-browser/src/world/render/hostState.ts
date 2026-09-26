@@ -95,6 +95,7 @@ export function createExplorerHostState(
           guides: options.guides,
           pixelRatio: () => pixelRatioOf(options),
           particles: options.particles,
+          particlesRefused: options.particlesRefused,
         }),
         compositor: createComparisonCompositor(gl),
       }

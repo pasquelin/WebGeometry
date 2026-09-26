@@ -17,6 +17,8 @@ export const ENGINE_ERROR_MEANINGS: Readonly<Record<string, string>> = {
   PAGE_BUDGET:
     'The pages the view needs do not fit the memory budget, or this path has no budgets.',
   INVALID_SCENE_LIGHT: 'A light is malformed, doubled, unknown, or has nowhere to go.',
+  INVALID_MATERIAL:
+    'A material change is unknown, out of range, would move it to another draw class, or would tile a map it shares.',
   INVALID_SCENE_ENVIRONMENT: "The scene's exposure or surroundings are not valid numbers.",
   INVALID_TRANSFORM:
     "A node's placement is not a usable matrix, or a node would be its own ancestor.",

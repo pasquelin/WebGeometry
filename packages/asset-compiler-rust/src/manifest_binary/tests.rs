@@ -1,11 +1,17 @@
 use super::*;
 /// The object templates every test of the sidecar splits with.
 pub(super) const TEMPLATES: Templates = Templates {
-    binary: "clusters.bin",
     page: "../../objects/{sha}.bin",
     geometry: "../../objects/{sha}.bin",
     bundle: "../../objects/{sha}.bin",
 };
+/// Splits a finished manifest into the small JSON and the columns, as `columns` does.
+pub(super) fn split(m: &Value, t: &Templates, pv: &[TexturePreview]) -> Result<(Value, Vec<u8>)> {
+    let mut top = m.as_object().cloned().unwrap_or_default();
+    let primitives = top.remove("primitives").unwrap_or_default();
+    let primitives = primitives.as_array().map_or(&[][..], Vec::as_slice);
+    columns(&top, primitives, t, pv)
+}
 /// The bytes of column `index` of a finished sidecar.
 pub(super) fn column(bytes: &[u8], index: usize) -> &[u8] {
     let at = (HEADER_WORDS + index * 2) * 4;

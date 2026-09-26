@@ -2,7 +2,7 @@
 //!
 //! A cache describes tens of thousands of clusters with a dozen numbers each. Written as JSON the
 //! browser has to tokenize tens of megabytes before the first frame; written as typed-array columns
-//! it is a single `fetch` and a handful of views. `split` cuts a finished manifest in two: the
+//! it is a single `fetch` and a handful of views. `columns` cuts one page of a manifest in two: the
 //! small JSON a reader parses, and the columns it maps.
 //!
 //! Layout, little-endian, mirrored byte for byte by `packages/sdk-core/src/manifest/binary.ts`:
@@ -32,13 +32,17 @@ mod primitive;
 mod tests;
 pub use digests::{digests, texture_digests, texture_levels, BakedLevels};
 use format::*;
+#[cfg(test)]
+use tests::split;
 
 /// Every version changes what a column means, so a reader refuses any version but its own; the
 /// history sits beside the reader (`sdk-core/src/manifest/binaryFormat.ts`). Version 8 adds the
 /// page dependencies of the streaming bundles, a count per bundle then the flat closed lists: a
 /// reader of version 7 would install a bundle before the bundles holding its parents. Version 9
 /// adds each page's normal cone (`src/normal_cone.rs`), a column a reader of version 8 lacks.
-pub const MANIFEST_BINARY_VERSION: u32 = 9;
+/// Version 10 holds one manifest page's columns (`compiler_manifest_pages.rs`), the head's the
+/// previews alone.
+pub const MANIFEST_BINARY_VERSION: u32 = 10;
 /// 'W','G','M','B' read as a little-endian u32.
 pub const MANIFEST_BINARY_MAGIC: u32 = 0x424d_4757;
 const HEADER_WORDS: usize = 4;
@@ -114,25 +118,20 @@ const PAGE_COLUMN_WIDTHS: [(usize, usize); 11] = [
 
 /// Object naming templates of a cache. `{sha}` stands for the 64 hexadecimal digest characters.
 pub struct Templates<'a> {
-    pub binary: &'a str,
     pub page: &'a str,
     pub geometry: &'a str,
     pub bundle: &'a str,
 }
 
-/// Splits a finished manifest into the small JSON and the columns. The returned descriptor carries
-/// an empty `sha256`: only the caller, holding the finished bytes, can hash them.
-pub fn split(
-    manifest: &Value,
+/// The small JSON — `top`, the slim `primitives` and the descriptor — and the columns of
+/// `primitives` and `previews`. The descriptor carries an empty `sha256`: only the caller, holding
+/// the finished bytes, can hash them.
+pub fn columns(
+    top: &Map<String, Value>,
+    primitives: &[Value],
     templates: &Templates,
     previews: &[TexturePreview],
 ) -> Result<(Value, Vec<u8>)> {
-    let root = object(manifest, "manifest")?;
-    let primitives = array(
-        root.get("primitives")
-            .ok_or_else(|| bad("manifest.primitives is absent"))?,
-        "manifest.primitives",
-    )?;
     let mut columns: Vec<Column> = (0..COLUMNS).map(|_| Column::default()).collect();
     // Page columns have a fixed width: a page always writes the same number of
     // bytes, so the total is known before the first write.
@@ -188,9 +187,9 @@ pub fn split(
         let start = offsets[index] as usize;
         bytes[start..start + columns[index].bytes.len()].copy_from_slice(&columns[index].bytes);
     }
-    let mut slim = root.clone();
+    let mut slim = top.clone();
     slim.insert("primitives".into(), Value::Array(slim_primitives));
-    slim.insert("binary".into(),json!({"version":MANIFEST_BINARY_VERSION,"url":templates.binary,"sha256":"","bytes":bytes.len(),
+    slim.insert("binary".into(),json!({"version":MANIFEST_BINARY_VERSION,"sha256":"","bytes":bytes.len(),
   "pageUrl":templates.page,"geometryUrl":templates.geometry,"bundleUrl":templates.bundle,"texturePreviews":previews.len(),
   "texturePreviewBytes":preview_bytes,"texturePreviewBc7Bytes":bc7_bytes,"texturePreviewAstcBytes":astc_bytes}));
     Ok((Value::Object(slim), bytes))

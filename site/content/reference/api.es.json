@@ -141,8 +141,14 @@
     "description": "Devuelve la URL del manifiesto de la caché que nombra el puntero, para resolver respecto a la URL del puntero. Un host no tiene que leer estos campos por sí mismo; esa es la comprobación que hace el lector."
   },
   "assertCacheReady": {
-    "summary": "Lo que un host puede comprobar solo con el manifiesto de la caché, tanto si sus clústeres están escritos en él como en un archivo binario aparte: la caché está lista, tiene el alcance solicitado, un formato que lee este SDK, y declara la geometría que eligió.",
-    "description": "Devuelve este número de triángulos, para que una sonda de disponibilidad no tenga que leer nada más ni conocer ningún nombre de campo. La identidad de los clústeres en sí es asunto de `assertCacheIdentity`: lee las páginas, así que se ejecuta sobre un manifiesto decodificado, que una sonda no descarga a propósito."
+    "summary": "Lo que un host puede comprobar en un manifiesto de caché leído por sus páginas (`readPagedManifest`): su raíz (`assertCacheRoot`) y la geometría que eligió.",
+    "description": "Devuelve ese número de triángulos, para que una sonda de disponibilidad no tenga que conocer ningún nombre de campo. La identidad de los clústeres es cosa de `assertCacheIdentity`: lee las páginas, así que se ejecuta sobre un manifiesto decodificado."
+  },
+  "assertCacheRoot": {
+    "summary": "Lo que un host puede comprobar en la raíz de un manifiesto de caché (`clusters.json`) antes de cualquiera de sus páginas: la caché está lista, con el ámbito pedido y en un formato que este SDK lee."
+  },
+  "readPagedManifest": {
+    "summary": "El manifiesto bajo `root`, sus páginas y sus archivos anexos leídos en paralelo mediante `read` — en un navegador `fetchVerified`, que prueba cada uno por el tamaño y la huella que lo nombran: los campos de la raíz, los de la cabecera y las primitivas de cada página de malla en orden (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Rechaza un formato de caché que este motor no lee."
@@ -1574,6 +1580,10 @@
       "UNKNOWN_SCENE_LIGHT": "Una luz está mal formada, duplicada, desconocida, o no tiene dónde ir.",
       "SCENE_LIGHTS_UNAVAILABLE": "Una luz está mal formada, duplicada, desconocida, o no tiene dónde ir.",
       "INVALID_SCENE_ENVIRONMENT": "La exposición o el entorno de la escena no son números válidos.",
+      "INVALID_MATERIAL": "Un cambio de material es desconocido, está fuera de rango, lo movería a otra clase de dibujo o repetiría un mapa que comparte.",
+      "UNKNOWN_MATERIAL": "Un cambio de material es desconocido, está fuera de rango, lo movería a otra clase de dibujo o repetiría un mapa que comparte.",
+      "MATERIAL_CLASS_CHANGE": "Un cambio de material es desconocido, está fuera de rango, lo movería a otra clase de dibujo o repetiría un mapa que comparte.",
+      "MATERIAL_TEXTURE_SHARED": "Un cambio de material es desconocido, está fuera de rango, lo movería a otra clase de dibujo o repetiría un mapa que comparte.",
       "INVALID_TRANSFORM": "La colocación de un nodo no es una matriz utilizable, o un nodo sería su propio ancestro.",
       "NON_FINITE_TRANSFORM": "La colocación de un nodo no es una matriz utilizable, o un nodo sería su propio ancestro.",
       "SINGULAR_PARENT_TRANSFORM": "La colocación de un nodo no es una matriz utilizable, o un nodo sería su propio ancestro.",

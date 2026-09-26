@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { readCacheManifest } from '../bench/runner/cacheManifest.ts';
 import { writeGarden } from './docs/garden-source.ts';
 const root = resolve(import.meta.dirname, '..');
 
@@ -14,11 +15,6 @@ interface GardenGltf {
 
 interface CachePointer {
   url: string;
-  formatVersion: string;
-}
-
-interface CacheManifest {
-  sourceTriangles: number;
   formatVersion: string;
 }
 
@@ -41,7 +37,7 @@ test('the published original garden matches its deterministic source generator',
     assert.equal(gltf.nodes.length, 11);
     const base = join(root, 'tests/fixtures/scenes/kinetic-garden/cache/native/full');
     const pointer = JSON.parse(await readFile(join(base, 'manifest.json'), 'utf8')) as CachePointer;
-    const manifest = JSON.parse(await readFile(join(base, pointer.url), 'utf8')) as CacheManifest;
+    const { manifest } = await readCacheManifest(base);
     assert.equal(manifest.sourceTriangles, triangles);
     assert.equal(manifest.formatVersion, pointer.formatVersion);
   } finally {

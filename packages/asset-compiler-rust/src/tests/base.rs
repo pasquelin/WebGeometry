@@ -47,6 +47,10 @@ pub(super) fn fixture_named(gltf_name: &str, bin_name: &str) -> (PathBuf, Option
 pub(super) fn read_json(path: &Path) -> Value {
     serde_json::from_slice(&fs::read(path).expect("read")).expect("json")
 }
+/// The manifest of the key folder `directory`, read from its root through its pages.
+pub(super) fn paged(directory: &Path) -> crate::compiler_manifest_pages::Paged {
+    crate::compiler_manifest_pages::read_manifest_at(directory).expect("the manifest's pages")
+}
 /// The fixture's glTF as JSON, for a test that alters it before writing it back.
 pub(super) fn read_gltf(options: &Options) -> Value {
     read_json(&options.source.join("mesh.gltf"))

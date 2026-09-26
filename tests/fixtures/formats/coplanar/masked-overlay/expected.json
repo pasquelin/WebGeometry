@@ -1,8 +1,8 @@
 {
   "case": "An opaque surface and, exactly on top of it, an alpha-masked surface (alphaMode MASK).",
   "rule": "A mask cuts its own holes per pixel: the stage does not classify it. One surface only is collected, no layer is assigned, and the draw order stays what it was.",
-  "formatVersion": 7,
-  "manifestBinaryVersion": 9,
+  "formatVersion": 9,
+  "manifestBinaryVersion": 10,
   "coplanar": {
     "stage": "coplanar-depth-layers-v1",
     "surfaces": 1,

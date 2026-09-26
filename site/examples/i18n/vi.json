@@ -941,7 +941,11 @@
     "banner": "Kéo để nhìn quanh. Chọn Lái xe để lấy xe: W hoặc ↑ tăng tốc, S hoặc ↓ phanh, A D hoặc ← → lái. Thả lại làm thùng và bóng rơi xuống lần nữa.",
     "words": {
       "credit": "Thung lũng được dựng bằng mã cho ví dụ này, CC0 — xem assets/examples/CREDITS.md",
-      "refused": "Bị từ chối trên backend này"
+      "refused": "Bị từ chối trên backend này",
+      "close": "Cận cảnh",
+      "far": "Toàn cảnh xa",
+      "pan": "Lia nhanh",
+      "still": "Đứng yên"
     },
     "controls": {
       "drive": "Lái xe",

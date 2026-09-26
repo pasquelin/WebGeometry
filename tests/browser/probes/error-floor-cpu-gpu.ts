@@ -27,6 +27,7 @@ import {
   scenePages,
   sceneRoots,
 } from '../../../packages/sdk-browser/src/gpu/dag/cutFrontierScene.fixture.ts';
+import { requestPriority } from '../../../packages/sdk-browser/src/gpu/dag/request.ts';
 import { selectionGpu } from './selectionKernelGpu.ts';
 import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
 import type { PackedDag } from '../../../packages/sdk-browser/src/gpu/dag/types.ts';
@@ -116,10 +117,9 @@ const lignes = cas.map((c) => {
     // who the host uploads first, and an order that was not that one would serve nothing.
     // Compared on the priority sequence, not the pages: two pages of the same step are
     // interchangeable on both sides, and the step is what ranking reads.
-    // The GPU writes its requests in atomic-counter order, i.e. in none: reread is what
-    // sorts (`parseDagOutput`). What is compared here is therefore the PRIORITY SEQUENCE
-    // once sorted, on both sides.
-    prioritesGpu: lu ? lu.demandes.map((mot) => mot >>> 22).sort((a, b) => b - a) : null,
+    // The GPU sorts its requests itself (`dagSortRequests`) and the host reads them as they
+    // come: the PRIORITY SEQUENCE is compared as the GPU wrote it.
+    prioritesGpu: lu ? lu.demandes.map(requestPriority) : null,
     prioritesOracle: c.oracle.requestPriorities,
   };
 });

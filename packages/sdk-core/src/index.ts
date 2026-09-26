@@ -30,6 +30,7 @@ export {
   previewLevelSize,
   previewPixelBytes,
 } from './manifest/binary.ts';
+export { readPagedManifest } from './manifest/paged.ts';
 export {
   textureLevelFormat,
   textureLevelUrl,

@@ -12,9 +12,9 @@
  *
  * Its offsets in `work` are those from before: each queue carries a counter AND a group
  * count, since it was read indirectly, and everything that follows is shifted by that. What
- * surrounds the descent — prepare, candidates, mask, compaction — is the shipped kernels, so the
- * oracle follows their layout and their stages: the cut rule decides in the mask, with no
- * escalation round before it (#486).
+ * surrounds the descent — prepare, candidates, mask, compaction, request sort — is the shipped
+ * kernels, so the oracle follows their layout and their stages: the cut rule decides in the mask,
+ * with no escalation round before it (#486).
  */
 import { SELECTION_WORKGROUP } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
 import { namedBufferEntries } from '../../../packages/sdk-browser/src/gpu/core/computeBindings.ts';
@@ -24,6 +24,10 @@ import {
   VIEW_WORD_ROWS,
 } from '../../../packages/sdk-browser/src/gpu/dag/shader/viewsWgsl.ts';
 import { primitiveFrameWords } from '../../../packages/sdk-browser/src/gpu/dag/worlds.ts';
+import {
+  selectionListCap,
+  stagedOutputBytes,
+} from '../../../packages/sdk-browser/src/gpu/dag/layout.ts';
 
 /** What `ressourcesAvant` reads of the bench's packed scene: the same fields the shipped
  *  `createDagResources` reads, before the batch renamed and reshaped a few of them. */
@@ -48,6 +52,7 @@ const NOYAUX_AVANT = [
   'dagMask',
   'dagDrawPrefix',
   'dagDrawScatter',
+  'dagSortRequests',
 ];
 
 /** Buffers, steps and offsets of the previous cut, mounted on the bench's `packed`. */
@@ -56,7 +61,6 @@ export function ressourcesAvant(
   module: GPUShaderModule,
   layout: GPUBindGroupLayout,
   packed: PackedAvant,
-  readbackBytes: number,
 ) {
   const pageCount = packed.pageCount,
     worldCount = Math.max(1, packed.worldCount);
@@ -81,7 +85,9 @@ export function ressourcesAvant(
       buffer: tampon(DAG_UNIFORM_BYTES, null, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST),
     },
     flags: { buffer: tampon(Math.max(16, (packed.nodeCount * 2 + pageCount * 4) * 4)) },
-    out: { buffer: tampon(readbackBytes) },
+    // The shipped `dagWanted` stages the camera's requests behind the drawn list, where the
+    // shipped `dagSortRequests` reads them (`shader/snapshotWgsl.ts`).
+    out: { buffer: tampon(stagedOutputBytes(selectionListCap(pageCount))) },
     work: { buffer: tampon(Math.max(8, (base + 10 + VIEW_WORD_ROWS + 1) * 4)) },
     worlds: { buffer: tampon(64, packed.worlds) },
     frames: { buffer: tampon(16, frameData) },
@@ -164,5 +170,7 @@ export function encodeAvant(
   vif.setPipeline(noyaux.dagDrawPrefix);
   vif.dispatchWorkgroups(1);
   surListe(noyaux.dagDrawScatter);
+  vif.setPipeline(noyaux.dagSortRequests);
+  vif.dispatchWorkgroups(1);
   vif.end();
 }

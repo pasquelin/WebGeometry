@@ -173,10 +173,10 @@ Verification command, from the repository root:
 cargo build --release --locked --manifest-path packages/asset-compiler-rust/Cargo.toml
 ./packages/asset-compiler-rust/target/release/trillion3d-compiler \
   tests/fixtures/formats/coplanar/<name>/<name>.gltf <CACHE>/<name> full 1000000 /assets
-jq '.coplanar' <CACHE>/<name>/native/full/<key>/clusters.json
+jq '.coplanar' <CACHE>/<name>/native/full/<key>/manifest-page-<head>.json
 ```
 
-`depthLayerPerPage` is read in column 20 of `clusters.bin` (one `u32` per cluster, in the order
+`depthLayerPerPage` is read in column 20 of the mesh page's column file (one `u32` per cluster, in the order
 of primitives then pages), or in the `depthLayer` field of each page before the manifest
 cut.
 
@@ -273,7 +273,7 @@ would fall even earlier.
 
 The image contract this binary publishes, the progressive-preview report — a `skipped` that
 names `image-float-unsupported`, and no preview — and the scene: format version, binary sidecar
-version, sha256 of `clusters.bin`, primitives and triangles. `case` and `rule` are
+version, sha256 of the mesh page's column file, primitives and triangles. `case` and `rule` are
 prose only, the test strips them before comparing.
 
 ### Provenance and licence
@@ -402,7 +402,7 @@ identical pixels and isolated values, so both kinds of packet are exercised.
 
 The image contract this binary publishes, the progressive-preview report — a `skipped` that
 names `image-float-unsupported`, and no preview — and the scene: format version, binary sidecar
-version, sha256 of `clusters.bin`, primitives and triangles. `case` and `rule` are
+version, sha256 of the mesh page's column file, primitives and triangles. `case` and `rule` are
 prose only, the test strips them before comparing.
 
 ### Provenance and licence
@@ -797,7 +797,7 @@ in the clear do not make a minimal fixture, and the `tests/assets/` folder is sh
 **Correction fixture — progressive colour-texture previews.**
 
 A tiny glTF scene that pins the compiler's `texturePreviews` section end to end:
-real glTF → `compile()` → cache → `texturePreview*` columns of `clusters.bin`. The in-memory
+real glTF → `compile()` → cache → `texturePreview*` columns of the head page's column file. The in-memory
 unit tests of `../../../../packages/asset-compiler-rust/src/texture_preview/tests/` pin the math on images built in
 memory; this one pins the bytes an engine will actually read, PNG decoder and JPEG decoder
 included.
@@ -1170,7 +1170,7 @@ What each choice puts under watch:
 
 The selected driver, the `unitypackage` → inner driver chain published in the report, the three rejection
 codes, and the scene — format version, files read with their fingerprint, Unity driver counts,
-binary sidecar version, sha256 of `clusters.bin`, primitive, node and
+binary sidecar version, sha256 of the mesh page's column file, primitive, node and
 triangle counts. The compilation key does not appear in it: a converted scene's manifest carries its
 import duration, so that key changes from one run to the next without the scene moving. It is `files` that
 stands in for identity, and it is on it that equality of the two compilations rests. `case` and `rule`
@@ -1298,7 +1298,7 @@ What each choice puts under watch:
 
 The selected driver, the `usdz` → `usd` chain published in the report, the two rejection codes, the
 triangle count of the two-layer package, and the scene
-— format version, binary sidecar version, sha256 of `clusters.bin`, primitive, node
+— format version, binary sidecar version, sha256 of the mesh page's column file, primitive, node
 and triangle counts. The cache key does not appear in it: it holds the fingerprint of the whole
 compiler implementation, so an unrelated change would move it; equality with the
 bare layer is the real subject, and it is checked on the intermediate scene and the sidecar. `case` and
@@ -1399,7 +1399,7 @@ What each choice puts under watch:
 ### `expected.json`
 
 The selected driver, the `zip` → inner driver chain published in the report, the three rejection codes, and
-the scene — format version, binary sidecar version, sha256 of `clusters.bin`, primitive, node
+the scene — format version, binary sidecar version, sha256 of the mesh page's column file, primitive, node
 and triangle counts. The cache key does not appear in it: it holds the fingerprint of
 the whole compiler implementation, so an unrelated change would move it. It serves
 the equality of the two compilations, which is the real subject. `case` and `rule` are prose only, the

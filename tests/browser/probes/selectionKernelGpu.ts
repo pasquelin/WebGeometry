@@ -1,6 +1,6 @@
 // The DAG selection WGSL kernel actually run in Chromium WebGPU: buffers packed
 // by `packDagSelection`, uniforms from `writeDagUniforms`, passes `dagPrepare` through `dagMask`
-// in engine order (non-resident cut), then a readback of the GPU output.
+// then `dagSortRequests` in engine order (non-resident cut), then a readback of the GPU output.
 import { DAG_SELECTION_SHADER } from '../../../packages/sdk-browser/src/gpu/dag/shader/shader.ts';
 import {
   DAG_BINDING,
@@ -44,7 +44,8 @@ async function executer({
   // three queues `levelStep` fills in turn (see `packages/sdk-browser/src/gpu/dag/shader/levelWgsl.ts`).
   const levelPipelines = [etape('dagLevel0'), etape('dagLevel1'), etape('dagLevel2')];
   const wantedPipeline = etape('dagWanted');
-  const maskPipeline = etape('dagMask');
+  const maskPipeline = etape('dagMask'),
+    sortPipeline = etape('dagSortRequests');
   const STORAGE = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC;
   const tampon = (taille: number, octetsSource?: number[], usage: number = STORAGE): GPUBuffer => {
     const buffer = device.createBuffer({
@@ -57,7 +58,9 @@ async function executer({
   const groupes = (n: number): number => Math.max(1, Math.ceil(n / workgroup));
   const resultats: Resultat[] = [];
   for (const c of cas) {
-    const sortieOctets = entete * 4 + c.pageCount * 4;
+    // Requests wait behind the drawn list (`stagedRequestsWord`); the copy reads them sorted.
+    const sortieOctets = entete * 4 + c.pageCount * 4,
+      octetsAttente = (2 * entete + 3 * c.pageCount) * 4;
     const blockCount = groupes(c.pageCount);
     // The `work` layout is the one the engine lays down, computed on the Node side and
     // carried with the case: the page has no module to import, and the bench cannot derive another.
@@ -68,7 +71,7 @@ async function executer({
       nodes: { buffer: tampon(64, c.nodes) },
       views: { buffer: tampon(256, c.uniforms, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST) },
       flags: { buffer: tampon(Math.max(16, c.flagsWords * 4)) },
-      out: { buffer: tampon(sortieOctets) },
+      out: { buffer: tampon(octetsAttente) },
       work: { buffer: tampon(Math.max(8, travail.words * 4)) },
       worlds: { buffer: tampon(64, c.worlds) },
       frames: { buffer: tampon(16, c.frames) },
@@ -118,6 +121,8 @@ async function executer({
     fin.dispatchWorkgroups(groupes(c.pageCount));
     fin.setPipeline(maskPipeline);
     fin.dispatchWorkgroups(groupes(c.pageCount));
+    fin.setPipeline(sortPipeline);
+    fin.dispatchWorkgroups(1);
     fin.end();
     encoder.copyBufferToBuffer(buffers.out.buffer, 0, lecture, 0, sortieOctets);
     encoder.copyBufferToBuffer(buffers.work.buffer, 0, compteurs, 0, octetsTravail);
@@ -142,8 +147,7 @@ async function executer({
     const count = Math.min(ints[0], c.pageCount);
     resultats.push({
       name: c.name,
-      // Request words in the ORDER THE GPU WROTE THEM: that is what ranking rereads.
-      // `pages` stays sorted, for proofs that compare sets.
+      // Request words as the GPU sorted them; `pages` by page, for proofs that compare sets.
       demandes: Array.from(ints.subarray(entete, entete + count)),
       pages: Array.from(ints.subarray(entete, entete + count))
         .map((mot) => mot & (bitsPage - 1))

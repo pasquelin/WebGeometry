@@ -10,7 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDagOutput } from './uniforms.ts';
 import { SELECTION_HEADER_WORDS } from './layout.ts';
-import { REQUEST_AHEAD, REQUEST_STEP_MAX, packRequest } from './request.ts';
+import { REQUEST_AHEAD, packRequest } from './request.ts';
 import { referenceParseDagOutput } from '../../../../../bench/oracles/browser/residency.ts';
 import type { SelectionResult } from '../core/selection.ts';
 
@@ -88,51 +88,21 @@ test('a readback that fits under the cap is never declared truncated', () => {
   assert.equal(lire(neuf)!.truncated, false);
 });
 
-test('the readback is returned sorted: the costliest request first', () => {
-  // Each rank is a request word, page and priority mixed (`request.ts`). The GPU writes them
-  // in the order of an atomic counter, hence in none; it is the reread that sorts.
+test('the host reads the requests in the order the GPU wrote them, and ranks nothing', () => {
+  // Each rank is a request word, page and priority mixed (`request.ts`). The GPU wrote them sorted
+  // (`shader/snapshotWgsl.ts`); the reader keeps that order, even one it would not have chosen.
   const demandes = [
     packRequest(70, 12),
     packRequest(11, 400),
-    packRequest(8, REQUEST_AHEAD | 500),
     packRequest(42, 300),
-    packRequest(5, 400),
-    packRequest(7, REQUEST_AHEAD | 3),
-    packRequest(9, 0),
+    packRequest(8, REQUEST_AHEAD | 3),
+    packRequest(7, REQUEST_AHEAD | 500),
   ];
   const { neuf } = paire([demandes.length, 0, 0, 0], demandes);
   const releve = lire(neuf)!;
-  // Decreasing priority; at equal priority, emission order is kept — it is indifferent, as it is
-  // on the WebGL2 path, which does not break ties between two equal errors either.
-  assert.deepEqual(releve.pageIds, [11, 5, 42, 70, 9]);
-  // The view ahead's requests leave for their own list, after every visible one (`request.ts`).
+  assert.deepEqual(releve.pageIds, [70, 11, 42]);
+  // The view ahead's requests, after every visible one, leave for their own list (`request.ts`).
   assert.deepEqual(releve.aheadPageIds, [8, 7]);
-});
-
-test('the sort stays stable on a massive readback where almost everything is tied', () => {
-  // The sort is a COUNTING SORT over the one thousand and twenty-four priority steps. A bucket
-  // sort breaks where a comparison sort does not: at both ends of the range, and when almost every
-  // rank falls in the same bucket. This readback pushes both at once.
-  const PAS = [0, 1, REQUEST_STEP_MAX - 1, REQUEST_STEP_MAX];
-  const demandes: number[] = [];
-  for (let i = 0; i < 4000; i++) demandes.push(packRequest(i, PAS[i % PAS.length]));
-  const { neuf } = paire([demandes.length, 0, 0, 0], demandes);
-  const pageIds = lire(neuf)!.pageIds;
-  assert.equal(pageIds.length, demandes.length);
-  // Decreasing priority from end to end, and AT EQUAL PRIORITY the emission order intact: pages of
-  // the same step come out increasing, since that is the order they were emitted in.
-  let precedente = REQUEST_STEP_MAX + 1,
-    dernierePage = -1;
-  for (const page of pageIds) {
-    const priority = PAS[page % PAS.length];
-    assert.ok(priority <= precedente, `page ${page}: priority ${priority} after ${precedente}`);
-    // The comparison is ONLY between two pages of the same step; at a step change it is not done,
-    // and `dernierePage` restarts from the next page.
-    if (priority === precedente)
-      assert.ok(page > dernierePage, `page ${page} after ${dernierePage}`);
-    precedente = priority;
-    dernierePage = page;
-  }
 });
 
 test('triangle totals are reread as the GPU posted them, the one drawn counter under both names', () => {

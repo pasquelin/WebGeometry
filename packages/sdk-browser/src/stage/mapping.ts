@@ -11,6 +11,7 @@ import { SHADOW_TRANSMITTANCE_PASS } from '../gpu/shadow/transmittance.ts';
 import { LIGHT_CUT_PASS } from '../gpu/dag/encode.ts';
 import { MATERIAL_DEPTH_PASS, MATERIAL_SURFACES_PASS } from '../webgpu/core/materialPasses.ts';
 import { PARTICLES_PASS } from '../particles/webgpuParticles.ts';
+import { PARTICLE_DRAW_PASS } from '../particles/webgpuParticleDraw.ts';
 import type { StageAdd } from './profiler.ts';
 
 /**
@@ -66,6 +67,7 @@ const PASSES: Readonly<Record<string, PassRow>> = Object.freeze({
   'Trillion3D water surfaces': ['transparents', 'other'],
   'Trillion3D water composite': ['transparents', 'other'],
   'Trillion3D transparent compaction': ['transparents', 'other'],
+  [PARTICLE_DRAW_PASS]: ['transparents', 'other'],
   [SHADOW_PASS]: ['shadows', 'other', 'raster'],
   [SHADOW_LAYER_PASS]: ['shadows', 'other', 'raster'],
   [SHADOW_TRANSMITTANCE_PASS]: ['shadows', 'other', 'raster'],

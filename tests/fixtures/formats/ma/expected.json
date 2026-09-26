@@ -69,7 +69,7 @@
       "sha256": "6ced376eef428e96d67723159586a4623238f71179babd8c8e6dee0745427ddd"
     }
   ],
-  "formatVersion": 8,
+  "formatVersion": 10,
   "images": [
     {
       "mimeType": "image/png",
@@ -174,7 +174,7 @@
     "version": "ma-mel-subset-1-gltf-8"
   },
   "selectedNodes": 2,
-  "sidecarSha256": "283f1568907f73b884fc90f68a053cc84534ebb851c0a75ef381175d3cf445b9",
+  "sidecarSha256": "9e1ae39b7b9b7f5d990122eb2e780d3917c382a6aaeb15c6787c3301c76a3429",
   "sourceTriangles": 8,
   "textures": [
     {
