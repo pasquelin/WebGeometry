@@ -19,8 +19,7 @@ import {
 import { createWebglEffects, type WebglEffectOutput } from '../../effects/webglEffects.ts';
 import type { Blending } from '../../../../sdk-core/src/world/constants/index.ts';
 import type { ParticlePool } from '../../../../sdk-core/src/fluids/particles.ts';
-import { createWebglParticles } from '../../particles/webglParticles.ts';
-import { anyMoving } from '../../particles/poolStates.ts';
+import { refuseAll } from '../../particles/poolStates.ts';
 
 const NONE: readonly EffectPass[] = [];
 
@@ -33,6 +32,9 @@ export type ComposedChain = {
   refused?: (blending: Blending) => void;
 };
 
+/** Why WebGL2 refuses particle pools, whatever the context grants: it draws none yet (#844). */
+const PARTICLE_REFUSAL = 'PARTICLES_UNSUPPORTED: WebGL2 draws no particle yet';
+
 /**
  * Composes one engine's frame on the host surface or on a render target — the one place that
  * knows how an engine's image reaches either. It binds the destination, then copies the surface
@@ -43,20 +45,21 @@ export type ComposedChain = {
  * (`../../effects/webglEffects.ts`); the copy kept is the chain's image, and a chain changed
  * since it was kept is drawn again. The page's `guides` are drawn over the image the destination
  * got, the chain's included, before that copy is kept, at the host's `pixelRatio`; a change to
- * them spares no redraw. The world's `particles` step on every image drawn here, and an image
- * they moved in is drawn, never the kept copy (`../../particles/webglParticles.ts`).
+ * them spares no redraw. WebGL2 draws no particle yet (#844): the world's `particles` are refused
+ * by name, `particlesRefused` hearing why once, and the frame goes on without them.
  * Nothing here belongs to a rendering library.
  */
 export function createFrameComposer(
   gl: WebGL2RenderingContext,
   camera: HostCamera,
-  layers: { effects?: ComposedChain; particles?: readonly ParticlePool[] } & (
-    { guides?: undefined } | { guides: GuideSet; pixelRatio: () => number }
-  ) = {},
+  layers: {
+    effects?: ComposedChain;
+    particles?: readonly ParticlePool[];
+    particlesRefused?: (reason: string) => void;
+  } & ({ guides?: undefined } | { guides: GuideSet; pixelRatio: () => number }) = {},
 ) {
   const { effects: composed, particles = [] } = layers;
   const heldFrame = createHeldFrame(gl);
-  let stepped: ReturnType<typeof createWebglParticles> | undefined;
   const guideDraw = createWebglGuideDraw(gl);
   let guidesDrawn = layers.guides?.revision ?? 0;
   const present = createBackendPresenter(gl);
@@ -123,16 +126,13 @@ export function createFrameComposer(
   ) => {
     const { width, height } = bindWebglTarget(gl, target);
     if (present(backend)) return;
-    const moved = anyMoving(particles);
-    // Made by the first pool, then run with none left too: it frees a released pool's targets.
-    if (particles.length) stepped ??= createWebglParticles(gl);
-    if (stepped?.run(particles)) bindWebglTarget(gl, target);
+    // A refusal never fails the session: the pools are refused, heard once, the frame drawn.
+    if (refuseAll(particles)) layers.particlesRefused?.(PARTICLE_REFUSAL);
     const revision = composed?.chain.revision ?? 0;
     const guidesHeld = !layers.guides || layers.guides.revision === guidesDrawn;
     if (
       reuse &&
       guidesHeld &&
-      !moved &&
       backend.frameHeld === true &&
       !target &&
       heldFrame.holds(width, height) &&
@@ -179,7 +179,6 @@ export function createFrameComposer(
     heldFrame.dispose();
     effects?.dispose();
     guideDraw.dispose();
-    stepped?.dispose();
   };
   return compose;
 }

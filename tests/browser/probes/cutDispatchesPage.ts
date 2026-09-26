@@ -62,7 +62,6 @@ export async function executer({
     module,
     livre.layout,
     packed as unknown as Parameters<typeof ressourcesAvant>[3],
-    livre.readbackBytes,
   );
 
   const uni = new Float32Array(SELECTION_UNIFORM_BYTES / 4);

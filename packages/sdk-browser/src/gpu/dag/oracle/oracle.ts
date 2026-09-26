@@ -5,13 +5,24 @@ import type { SelectionResult } from '../../core/selection.ts';
 import type { DagViewUniforms } from '../types.ts';
 import { dagViewFrames } from './math.ts';
 import { AHEAD_LEAF, dagOracleDescent } from './descent.ts';
-import { quantizeRequestPriority } from '../request.ts';
+import {
+  firstAheadRequest,
+  packRequest,
+  quantizeRequestPriority,
+  requestPage,
+  requestPriority,
+  sortRequestWords,
+} from '../request.ts';
 import { createDagOraclePredicates } from './predicates.ts';
 import type { CutRuleAt } from './predicates.ts';
 
 /** The cut rule's residency, one entry per page: the bit sets its host uploads, read back
  *  (`../readiness.fixture.ts`). */
 export type DagCutResidency = { ready: ArrayLike<number>; childReady: ArrayLike<number> };
+
+/** What the oracle returns: the cut, and the request words in the order `dagWanted` stages them,
+ *  before the GPU sorts them. */
+export type DagOracleResult = SelectionResult & { requestWords: number[] };
 
 /**
  * Node oracle for the kernel, in the same shape the shader uses. Not called by the renderer.
@@ -32,7 +43,7 @@ export function evaluateDagSelectionKernel(
   resident?: DagCutResidency,
   cacheCone = false,
   rule?: CutRuleAt,
-) {
+): DagOracleResult {
   if (
     resident &&
     (resident.ready.length !== packed.pageCount || resident.childReady.length !== packed.pageCount)
@@ -73,14 +84,13 @@ export function evaluateDagSelectionKernel(
   /** The error the page's replacement removes, or its own when nothing replaces it (`dagWanted`). */
   const replaced = (view: ReturnType<typeof predicates>, i: number) =>
     view.bandPixels(i, bandError(records, i, 1) < 0 ? 0 : 1);
-  const aheadIds: number[] = [],
-    aheadPriorities: number[] = [];
+  /** The request words in the order `dagWanted` stages them, both tiers mixed. */
+  const requestWords: number[] = [];
   /** `wantAhead`: a page the camera does not request, requested ahead when that view selects it. */
   const wantAhead = (i: number) => {
     if (!aheadView || !aheadView.visible(i)) return;
     if (!aheadView.draws(i, pixelError, true, true)) return;
-    aheadPriorities.push(quantizeRequestPriority(replaced(aheadView, i), true));
-    aheadIds.push(i);
+    requestWords.push(packRequest(i, quantizeRequestPriority(replaced(aheadView, i), true)));
   };
   const coneCache = cacheCone ? new Map<number, boolean>() : undefined;
   const cone = (i: number, w: number): boolean => {
@@ -91,9 +101,6 @@ export function evaluateDagSelectionKernel(
     coneCache.set(i, rejected);
     return rejected;
   };
-  const pageIds: number[] = [];
-  /** Priority of each request, at the same rank as `pageIds`: mirror of `quantizePriority`. */
-  const priorites: number[] = [];
   // Totals the GPU holds, replayed where `dagMask` notes them (`../shader/totalsWgsl.ts`).
   const totaux = { drawn: 0, transparent: 0 };
   const note = (i: number) => {
@@ -116,8 +123,7 @@ export function evaluateDagSelectionKernel(
     }
     const level = clusterLevel(flagsOf(records, i));
     if (level > lodLevel) lodLevel = level;
-    priorites.push(quantizeRequestPriority(replaced(camera, i)));
-    pageIds.push(i);
+    requestWords.push(packRequest(i, quantizeRequestPriority(replaced(camera, i))));
   }
   // `dagMask`: the cut rule on every live cluster — visible, not rejected by its cone. Without
   // residency every cluster and every finer group is held, and the drawn cut is the kept one.
@@ -131,20 +137,20 @@ export function evaluateDagSelectionKernel(
     note(i);
     drawablePageIds.push(i);
   }
-  // The readout is returned SORTED, decreasing priority, as `parseDagOutput` returns it from the GPU:
-  // every priority here is of the visible tier, so its raw order is `requestRank`'s.
-  const byPriority = (p: number[]) => p.map((_, i) => i).sort((a, b) => p[b] - p[a]);
-  const rangs = byPriority(priorites),
-    aheadRanks = byPriority(aheadPriorities);
+  // The readout is returned as `dagSortRequests` writes it: highest `requestRank` first, every
+  // visible request before the view ahead's (`../request.ts`).
+  const sorted = [...sortRequestWords(requestWords)],
+    visibleWords = sorted.slice(0, firstAheadRequest(sorted));
   return {
-    pageIds: rangs.map((r) => pageIds[r]),
-    aheadPageIds: aheadRanks.map((r) => aheadIds[r]),
-    requestPriorities: rangs.map((r) => priorites[r]),
+    pageIds: visibleWords.map(requestPage),
+    aheadPageIds: sorted.slice(visibleWords.length).map(requestPage),
+    requestPriorities: visibleWords.map(requestPriority),
+    requestWords,
     frustumRejected,
     lodLevel,
     drawablePageIds,
     selectedTriangles: totaux.drawn,
     transparentTriangles: totaux.transparent,
     drawnTriangles: totaux.drawn,
-  } as SelectionResult;
+  } as DagOracleResult;
 }

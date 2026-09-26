@@ -106,6 +106,9 @@ a completely GPU-autonomous engine.
 the current and the predicted one, each side opened by the angle the camera turns over the horizon.
 It is one descent: what the camera rejects is tried against the view ahead, never drawn, only
 requested, in a lower request tier ranked after every visible request, at most half the readback.
+The cut sorts its requests by that rank on the GPU, visible tier first and the larger replacement
+error first within a tier (`dagSortRequests`, `gpu/dag/shader/snapshotWgsl.ts`); the host reads
+them in that order and ranks nothing.
 The host serves those pages through the one residency queue as a lower tier after the camera's and
 the light cuts' (`webgpu/residency/lowerTier.ts`): never pinned, never evicting a camera page, and
 replaced by an empty list once the camera stops. A still camera sends no view ahead and cuts as
@@ -781,8 +784,13 @@ writes a pose buffer and an event buffer. No emscripten glue is kept; the engine
   page's share; the worker's per-step time is reported apart, in `world.physics.stats.stepMs`
   (the module's step alone, the clock `scripts/bench-physics.ts` reads in Node).
   Its GPU column is the particle step (`Trillion3D particles`, `particles/webgpuParticles.ts`).
-  On WebGL2 the same pools step in a 32-bit float ping-pong pass (`particles/webglParticles.ts`);
-  a context without `EXT_color_buffer_float` refuses them (`PARTICLES_UNSUPPORTED`).
+  Each pool is then one instanced disc draw over the lit image after the transparents
+  (`particles/webgpuParticleDraw.ts`), unsorted: `additive` in any order, `premultiplied` far to
+  near by origin, soft within `softness` of the opaque depth.
+  WebGL2 draws no particle yet (#844; its 32-bit float step, `particles/webglParticles.ts`,
+  waits for it): the frame composer refuses the pools by name (`PARTICLES_UNSUPPORTED`), heard
+  once as the world notice `particles-refused`, and the session draws on without them. WebGPU
+  without the visibility buffer refuses them on the same notice.
 - **Threads.** On a cross-origin isolated page the page loads `joltPhysicsThreads.wasm` (atomics,
   bulk memory, shared memory) and Jolt's own thread pool steps it: each pool thread starts in C
   through `pthread_create`, which the loader (`physics/joltThreads.ts`) answers with a worker that

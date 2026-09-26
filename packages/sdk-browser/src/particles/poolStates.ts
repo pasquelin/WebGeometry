@@ -4,6 +4,12 @@ import type { ParticlePool } from '../../../sdk-core/src/fluids/particles.ts';
 export const usedSlots = (pool: ParticlePool) => Math.min(pool.capacity, pool.emitted);
 
 const moving = (pool: ParticlePool) => pool.moving;
+/** Refuses every pool; true if one was not refused yet, so each refusal is told once. */
+export function refuseAll(pools: readonly ParticlePool[]) {
+  let fresh = false;
+  for (const pool of pools) if (!pool.refused) fresh = pool.refused = true;
+  return fresh;
+}
 /** True while one of `pools` moves: the image changes, and is not held. */
 export const anyMoving = (pools?: readonly ParticlePool[]) => !!pools?.some(moving);
 
@@ -31,6 +37,8 @@ export function createPoolStates<State>(
       if (!state) made.set(pool, (state = make(pool)));
       return state;
     },
+    /** A pool's state if it was made: a pool that never moved has none, and nothing to draw. */
+    peek: (pool: ParticlePool) => made.get(pool),
     /** Frees the state of every pool not among `pools`, the world's on this image. */
     keep(pools: readonly ParticlePool[]) {
       let held = 0;

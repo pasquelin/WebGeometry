@@ -54,5 +54,15 @@ test('every light view of a frame shares one traversal: the same commands as one
   );
   const noyaux = lancements.map((l) => l.noyau);
   assert.ok(!noyaux.includes('dagClearDrawn') && !noyaux.includes('dagDrawPrefix'));
+  assert.ok(!noyaux.includes('dagSortRequests'), 'a light cut sorts its requests on the host');
   assert.ok(noyaux.indexOf('dagViewOffsets') < noyaux.indexOf('dagMask'));
+});
+
+test('the camera cut sorts its requests once, last, in one workgroup of the live pass', () => {
+  for (const residentCut of [true, false]) {
+    const { encoder, lancements } = encodeurTemoin();
+    encodeDagKernels(encoder as unknown as GPUCommandEncoder, ressources(residentCut));
+    assert.deepEqual(lancements.at(-1), { noyau: 'dagSortRequests', groupes: 1 });
+    assert.equal(lancements.filter((l) => l.noyau === 'dagSortRequests').length, 1);
+  }
 });

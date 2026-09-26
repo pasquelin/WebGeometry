@@ -12,7 +12,7 @@ import {
 } from '../../blend/fallback.ts';
 import { encodeTransparentInstances } from '../../transparent/draw.ts';
 import { encodeWaterPass } from '../../water/pass.ts';
-import { encodeParticles } from '../../../particles/webgpuParticles.ts';
+import { drawParticles, encodeParticles } from '../../../particles/webgpuParticles.ts';
 import { blendLightResources } from '../../blend/lighting.ts';
 import { voidStaleBlendGroups } from '../../blend/identity.ts';
 import { viewProj } from '../helpers.ts';
@@ -173,6 +173,7 @@ export function encodeSurfaceLighting(
   run.gpuDrawCalls++;
   encodeShadowReadback(rt, encoder);
   encodeBlend(rt, device, encoder, uniformBase);
+  drawParticles(rt, encoder);
   // Temporal accumulation reads the lit and blended image, and yields what composition reads — the
   // lit image itself when this image does not accumulate. The effect chain follows: its passes
   // read that image and hand composition the last.
