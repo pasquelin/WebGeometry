@@ -37,6 +37,22 @@
         sun,
         light.hemisphere({ intensity: 1, color: '#ffffff', groundColor: '#555a66' }),
       );
+      // The hall's own wall stands at its back; three of the same plaster close its 10 m floor, so
+      // neither you nor a ball walks off its open sides. Each: centre x, y, z, then width, height,
+      // depth (scripts/docs-examples-walker.test.ts walks the character against these).
+      const hallWalls = [
+        [0, 2, 4.85, 10, 4, 0.3],
+        [-4.85, 2, 0, 0.3, 4, 9.4],
+        [4.85, 2, 0, 0.3, 4, 9.4],
+      ];
+      const plaster = material.meshStandard({ color: '#dad7d1', roughness: 0.9 });
+      for (const [x, y, z, width, height, depth] of hallWalls) {
+        const wall = object.mesh(geometry.box(width, height, depth), plaster);
+        wall.position.set(x, y, z);
+        wall.castShadow = wall.receiveShadow = true;
+        wall.physics = 'static';
+        world.scene.add(wall);
+      }
       world.camera.position.set(2.5, world.controls.eyeHeight, 0);
       world.camera.lookAt(0, 1, 0);
 

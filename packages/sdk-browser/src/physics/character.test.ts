@@ -13,7 +13,7 @@ import {
   type CharacterInput,
 } from '../../../sdk-core/src/collision/characterSettings.ts';
 import { createCharacterDriver } from './characterDriver.ts';
-import { body, startModule, type Module } from './module.fixture.ts';
+import { body, standCharacter, startModule, type Module } from './module.fixture.ts';
 
 const STILL: CharacterInput = { wishX: 0, wishZ: 0, sprint: false };
 const EAST: CharacterInput = { wishX: 1, wishZ: 0, sprint: false };
@@ -35,15 +35,7 @@ async function world(blocks: ReturnType<typeof block>[], feet = [0, 0, 0], frict
   writer.gravity([0, -9.81, 0]);
   writer.add({ ...block(0, 0, [0, -0.5, 0], [50, 0.5, 50]), friction });
   for (const b of blocks) writer.add(b);
-  const driver = createCharacterDriver();
-  const made = driver.configure({ ...HUMAN_BODY }, feet)!;
-  const words = writer.take();
-  const all = new Uint32Array(words.length + made.length);
-  all.set(words);
-  all.set(made, words.length);
-  jolt.step(all, 0);
-  driver.read(jolt.character(), 0);
-  return { jolt, driver };
+  return { jolt, driver: standCharacter(jolt, writer.take(), feet) };
 }
 
 /** Steps as the worker does for `seconds`, the character driven by `input`; returns its feet. */

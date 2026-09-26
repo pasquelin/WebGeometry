@@ -8,14 +8,19 @@ import {
   MISS,
   type PhysicsBudget,
 } from '../../../sdk-core/src/physics/index.ts';
+import { HUMAN_BODY } from '../../../sdk-core/src/collision/characterSettings.ts';
 import type { Ray } from '../../../sdk-core/src/world/math/volumes.ts';
 import type { Object3D } from '../../../sdk-core/src/world/object/object3d.ts';
 import type { createPhysicsBodies } from './bodies.ts';
+import { createCharacterDriver } from './characterDriver.ts';
 import { openJolt, startJolt } from './joltModule.ts';
 import { physicsRaycast, type PhysicsRaycastOptions } from './raycast.ts';
 import type { PhysicsSession } from './session.ts';
 import { engineIdOf } from './simulatedIds.ts';
 import type { JoltThreadStart, SpawnJoltThread } from './joltThreads.ts';
+
+/** Each committed module file, compiled once for every test of the run. */
+const compiled = new Map<string, Promise<WebAssembly.Module>>();
 
 /** A committed module started for the tests: 64 bodies and 64 MB unless told otherwise. */
 export async function startModule(
@@ -23,9 +28,11 @@ export async function startModule(
   pool: { count: number; spawn: SpawnJoltThread } | null = null,
 ) {
   const file = pool ? './joltPhysicsThreads.wasm' : './joltPhysics.wasm';
-  const bytes = await readFile(new URL(file, import.meta.url));
+  if (!compiled.has(file))
+    compiled.set(file, readFile(new URL(file, import.meta.url)).then(WebAssembly.compile));
+  const module = await compiled.get(file)!;
   const full = { ...DEFAULT_PHYSICS_BUDGET, bodies: 64, memoryBytes: 64 << 20, ...budget };
-  const opened = await openJolt(bytes, full.memoryBytes, pool);
+  const opened = await openJolt(module, full.memoryBytes, pool);
   const jolt = startJolt(opened, full, pool?.count ?? 1);
   /** A diagnostic count the module keeps since it started: the joints some work has visited. */
   const count = (name: string) => () => (opened.exports[name] as () => number)();
@@ -102,4 +109,17 @@ export function moduleRaycast(jolt: Module, bodies: ReturnType<typeof createPhys
   };
   return (ray: Ray, options: PhysicsRaycastOptions) =>
     physicsRaycast(session as unknown as PhysicsSession, ray, options, 1000);
+}
+
+/** The human character made standing at `feet` in `jolt`, in the one step that adds the bodies
+ *  `words` writes: its driver, read once. */
+export function standCharacter(jolt: Module, words: Uint32Array, feet: number[]) {
+  const driver = createCharacterDriver();
+  const made = driver.configure({ ...HUMAN_BODY }, feet)!;
+  const all = new Uint32Array(words.length + made.length);
+  all.set(words);
+  all.set(made, words.length);
+  jolt.step(all, 0);
+  driver.read(jolt.character(), 0);
+  return driver;
 }
