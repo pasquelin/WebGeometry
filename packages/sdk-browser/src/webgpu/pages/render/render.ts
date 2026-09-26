@@ -50,11 +50,8 @@ export function renderWebgpuPages(rt: WebgpuPagesRuntime, camera: HostCamera, as
   // sampling or a placement moved rewrites the texture's header, a resource change that releases a
   // held image. A filter rule switched on or off moves the resolve class of the pages that wear
   // the texture (`FLAG_SAMPLED`): their rows and the transparent records are written again.
-  // A surface rewritten in place (`refreshMaterials`) rewrites them too, once for the image.
-  const sampling = !!vis.textures?.followSampling();
-  if (sampling) rows.tableEpoch++;
-  if (sampling || blendState.surfacesMoved) {
-    blendState.surfacesMoved = false;
+  if (vis.textures?.followSampling()) {
+    rows.tableEpoch++;
     refreshBlendScene(rt, gpuDevice);
   }
   followLiveTextures(rt);

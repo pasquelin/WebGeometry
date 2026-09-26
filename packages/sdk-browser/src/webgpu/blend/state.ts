@@ -68,9 +68,6 @@ export function createWebgpuBlendState() {
   const visibleBlend: BlendGpuItem[] = [];
   const state = {
     blendGpu,
-    /** A surface an item wears was rewritten in place (`refreshMaterials`): the next image writes
-     *  the item records again (`../pages/render/render.ts`). */
-    surfacesMoved: false,
     pagedBlendGpu,
     visibleBlend,
     /** Normalised frustum planes of the frame, against which an item is rejected. */

@@ -15,9 +15,9 @@ import type { WebgpuPagesRuntime } from '../runtime.ts';
 export function refreshWebgpuMaterials(rt: WebgpuPagesRuntime, values = true) {
   if (values) {
     rt.layout.rows.tableEpoch++;
+    // The scene revision moved: the next image writes the transparent records again, once
+    // (`../render/render.ts`, `refreshBlendScene`), each off its refreshed surface.
     rt.run.gate.sceneMoved();
-    // The transparent records are written by the image, not the setting: ten sets, one write.
-    rt.blendState.surfacesMoved = true;
   }
   const textures = rt.vis.textures;
   if (!textures) return true;
