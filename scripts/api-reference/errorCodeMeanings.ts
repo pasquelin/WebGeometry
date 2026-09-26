@@ -36,7 +36,7 @@ export const ENGINE_ERROR_MEANINGS: Readonly<Record<string, string>> = {
   UNSUPPORTED_SCENE_FORMAT:
     'A saved scene is of another format or version, or holds what a saved scene cannot store.',
   PHYSICS_BUDGET:
-    "The physics was asked past one of its envelopes (`world.budget.physics`: bodies, triangles, decorative bodies, memory, body pairs and contacts per step), or a dynamic body was not a direct child of the scene (`PHYSICS_NESTED`), or the physics module failed or refused a body's shape (`PHYSICS_FAILED`): on `world.physics.error`.",
+    "The physics was asked past one of its envelopes (`world.budget.physics`: bodies, decorative bodies, memory, body pairs and contacts per step), or a dynamic body was not a direct child of the scene (`PHYSICS_NESTED`), or the physics module failed or refused a body's shape (`PHYSICS_FAILED`): on `world.physics.error`.",
   PHYSICS_FORMAT:
     "A compiled model's cooked physics (`physics.json`) is of another format, or was cooked by another Jolt than the engine's (`PHYSICS_FORMAT`): compile it again. An exact raycast was asked with the physics off (`PHYSICS_OFF`).",
   NO_VEHICLE:

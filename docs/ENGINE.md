@@ -753,7 +753,9 @@ writes a pose buffer and an event buffer. No emscripten glue is kept; the engine
 
 - **Cooked shapes.** `RESTORE` carries a shape's Jolt binary state (`src/blob.h`, the stream the
   compiler's cook writes) under a handle, an `ADD` of kind `cooked` names the handle, and `RELEASE`
-  drops it: the body keeps the shape. `physics/tiles.ts` streams a compiled model's tiles this way,
+  drops it: the body keeps the shape. `physics/tiles.ts` streams a compiled model's tiles this way
+  (around the moving bodies, then the eye; nearest first within the collision share, `LOADS` a
+  frame, a resident tile kept half as far again),
   `physics/raycast.ts` asks `jolt_cast` (a batch of rays and shape sweeps, between two ticks) for
   `world.raycast(at, { exact: true })`.
 - **Worker.** `physics/physicsWorker.ts` steps at a fixed 60 Hz, at most four catch-up steps a
@@ -790,8 +792,9 @@ writes a pose buffer and an event buffer. No emscripten glue is kept; the engine
 - **Distance and view.** The page sends its eye, facing, view cone and range (`camera.far`) only
   when they change. In the module, a dynamic body beyond the range is deactivated with its
   velocities kept; a body out of the cone or hidden sends no pose until it is seen again.
-- **Budgets.** Bodies, static triangles and decorative bodies are counted on the page; memory is
-  enforced by the module's memory maximum; body pairs, contact constraints and events size the
+- **Budgets.** Bodies, static collision bytes (tiles as cooked, a triangle mesh at
+  `TRIANGLE_BYTES` a triangle, within half the module's memory: `collisionBytesOf`) and decorative
+  bodies are counted on the page; memory is enforced by the module's memory maximum; body pairs, contact constraints and events size the
   module's own buffers.
 - **Timing.** The `physics` stage of `WEBGPU_STAGES` / `WEBGL_STAGES` (host step `physicsMs`) is the
   page's share; the worker's per-step time is reported apart, in `world.physics.stats.stepMs`

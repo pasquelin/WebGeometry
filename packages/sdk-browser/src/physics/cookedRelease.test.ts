@@ -47,7 +47,7 @@ test('a model back while its physics.json or a tile is on its way holds one set 
     scene.add(model);
     tiles.scan(scene);
   };
-  const held = () => [bodies.count.bodies, bodies.count.triangles];
+  const held = () => [bodies.count.bodies, bodies.count.collisionBytes];
   // Two openings on their way; the earlier lands first, and its tile would load before the later.
   back();
   back();

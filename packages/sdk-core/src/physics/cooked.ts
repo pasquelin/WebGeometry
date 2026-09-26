@@ -18,7 +18,7 @@ export interface CookedTile {
   url: string;
   sha256: string;
   bytes: number;
-  /** Triangles the shape holds: what it counts against `budget.physics.triangles`. */
+  /** Triangles the shape holds. */
   triangles: number;
   /** Its box in the primitive's frame: min x, y, z, max x, y, z. */
   bounds: [number, number, number, number, number, number];

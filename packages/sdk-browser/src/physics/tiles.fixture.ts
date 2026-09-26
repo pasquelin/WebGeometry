@@ -16,7 +16,7 @@ export const landed = () => new Promise(setImmediate);
 
 /** A two-triangle tile at `x` along its collider. */
 export const tile = (x = 0) => ({
-  ...{ url: `t${x}.bin`, sha256: 'a'.repeat(64), bytes: 1, triangles: 2 },
+  ...{ url: `t${x}.bin`, sha256: 'a'.repeat(64), bytes: 2, triangles: 2 },
   bounds: [x, 0, -1, x + 2, 1, 1],
 });
 /** Collider `collider` placed by its own node, ten metres apart, with the matter it declares. */

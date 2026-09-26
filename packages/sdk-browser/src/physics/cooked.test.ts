@@ -41,13 +41,13 @@ test('a tile cooked by native Jolt is restored in the module, collides, and answ
   assert.equal(castDown(jolt, 3)[0], 0xffffffff, 'past the ramp, nothing');
 });
 
-/** A model whose `physics.json` is `file`, streamed in around the origin within `triangles`: its
- *  streamer, the bodies it added, the errors raised and the files fetched. */
-async function streamed(file: object, triangles = DEFAULT_PHYSICS_BUDGET.triangles) {
+/** A model whose `physics.json` is `file`, streamed in around the origin within `memoryBytes`:
+ *  its streamer, the bodies it added, the errors raised and the files fetched. */
+async function streamed(file: object, memoryBytes = DEFAULT_PHYSICS_BUDGET.memoryBytes) {
   const { tiles, model, writer, bodies, errors, fetched } = await streamedModel(
     file,
     await golden(),
-    { triangles },
+    { memoryBytes },
   );
   const added: BodyRecord[] = [];
   const add = writer.add.bind(writer);
@@ -74,24 +74,31 @@ async function streamed(file: object, triangles = DEFAULT_PHYSICS_BUDGET.triangl
 
 const down = new Ray(new Vector3(1, 5, 0), new Vector3(0, -1, 0));
 
-test('tiles past budget.physics.triangles are refused by name, the nearest loaded', async () => {
+test('tiles past the collision share wait, never refused: the nearest in, the farthest out for them', async () => {
   const collider = { kind: 'mesh', tiles: [tile(0), tile(10), tile(20)] };
-  const { errors, fetched, bodies, hit, session, model, added } = await streamed(
+  // A share of 4 bytes: two of the three two-byte tiles.
+  const { tiles, errors, fetched, bodies, hit, session, model, added } = await streamed(
     cooked([collider], [place(0)]),
-    4,
+    8,
   );
-  assert.deepEqual(
-    errors.map((e) => e.code),
-    ['PHYSICS_BUDGET'],
-  );
+  assert.deepEqual(errors, [], 'nothing refused');
   assert.deepEqual(fetched.slice(1).sort(), ['t0.bin', 't10.bin'], 'the two nearest');
-  assert.equal(bodies.count.triangles, 4);
+  assert.equal(bodies.count.collisionBytes, 4);
   new Float32Array(hit.buffer).set([0.25, 1, 0.5, 0, 0, 1, 0], 1);
   hit[0] = added[0].id;
   const found = await physicsRaycast(session, down, { exact: true }, 8);
   assert.equal(found?.object, model, 'a tile hit names its model');
   assert.equal(found?.distance, 2);
   await assert.rejects(physicsRaycast(null, down, { exact: true }, 8), { code: 'PHYSICS_OFF' });
+  // The eye at the far end: the tile left behind leaves for the one that waited.
+  tiles.update([22, 0, 0], 1000);
+  await landed();
+  assert.deepEqual(fetched.slice(1).sort(), ['t0.bin', 't10.bin', 't20.bin']);
+  assert.deepEqual([bodies.count.collisionBytes, errors], [4, []]);
+  // Back at the origin, the tile asked again is the one that left: the farthest.
+  tiles.update([0, 0, 0], 1000);
+  await landed();
+  assert.deepEqual(fetched.slice(4), ['t0.bin']);
 });
 
 const collider = (material: number | null) => ({ kind: 'mesh', material, tiles: [tile()] });

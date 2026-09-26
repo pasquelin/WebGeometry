@@ -10,6 +10,7 @@ import {
   type CommandWriter,
   type CookedBody,
   type CookedPhysics,
+  TRIANGLE_BYTES,
 } from '../../../sdk-core/src/physics/index.ts';
 import type { createPhysicsBodies } from './bodies.ts';
 import type { SlotOwner } from './bodySlots.ts';
@@ -61,7 +62,7 @@ export function createCookedBodies(
     const { position, quaternion, scale } = tilePose({ model, instance: body });
     const resolved = declaredShape(body, scale);
     const made: CookedMadeBody = { body, bytes, scale: [scale.x, scale.y, scale.z], id: -1 };
-    made.id = bodies.claim(resolved.triangles, 0, { model, body: made });
+    made.id = bodies.claim(resolved.triangles * TRIANGLE_BYTES, 0, { model, body: made });
     const handle = made.id & BODY_INDEX;
     const matter = physicsMatterOf(body);
     const moving = dynamic(body);
