@@ -4453,7 +4453,7 @@
     "description": "Les six premiers sont les refus du décodage de page, repris mot pour mot de `geometryPage.ts` : un appelant les distingue comme avant. `PAGE_DECODE_FAILED` porte tout autre refus de la bibliothèque de décompression. `PAGE_DECODE_CANCELLED` répond à une annulation, `PAGE_DECODE_WORKER` à un exécutant disparu — seul ce dernier permet le repli."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Contrat de décodage des pages hors du fil principal, version 5 : la géométrie décodée voyage en un seul bloc avec son erreur de quantification, et l’emplacement de l’arène enregistre cette erreur dans le mot 8 ; `cut` change des triangles dessinés en pages, qui reviennent en octets avec leurs descripteurs.",
+    "summary": "Contrat de décodage des pages hors du fil principal, version 6 : la géométrie décodée voyage en un seul bloc avec son erreur de quantification, et l’emplacement de l’arène enregistre cette erreur dans le mot 8 ; `cut` change des triangles dessinés en pages, qui reviennent en octets avec leurs descripteurs, et, depuis la version 6, avec leur cône de normales, les triangles rangés disant si leurs pages en gardent un.",
     "description": "Le fil appelant envoie une `PageDecodeRequest`, l’exécutant renvoie une `PageDecodeAnswer` qui porte le même `id`. Rien ici ne touche la plateforme : pas de `Worker`, pas de récupération, pas d’horloge — l’adaptateur du navigateur porte tout cela, ce fichier ne porte que la forme du message, la liste fermée des échecs et la limite du réservoir. Propriété des tampons : `source` est **transférée** avec la demande, donc l’expéditeur ne la possède plus. Une réponse `verify` la rend, transférée à son tour ; une réponse `decode` rend à la place les tampons décodés, transférés aussi. Un exécutant qui ne transfère rien (le repli synchrone) renvoie exactement les mêmes valeurs : le contrat ne dit pas comment voyage le travail, seulement ce qu’il renvoie."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -4556,7 +4556,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify` : l’empreinte SHA-256 d’une page.",
-    "description": "`decode` : ses indices et ses attributs par sommet. `cut` : les triangles dessinés, rangés en cinq longueurs puis cinq tableaux de quatre octets, coupés en pages."
+    "description": "`decode` : ses indices et ses attributs par sommet. `cut` : les triangles dessinés, rangés en cinq longueurs, si leurs pages gardent un cône, puis cinq tableaux de quatre octets, coupés en pages."
   },
   "PageDecodeRequest": {
     "summary": "Un message qui demande à un travailleur de vérifier, décompresser ou découper une page.",

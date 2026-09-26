@@ -4445,7 +4445,7 @@
     "description": "Die ersten sechs sind die Ablehnungen der Seitendekodierung, Wort für Wort aus `geometryPage.ts` übernommen: ein Aufrufer unterscheidet sie wie zuvor. `PAGE_DECODE_FAILED` trägt jede andere Ablehnung der Dekompressionsbibliothek. `PAGE_DECODE_CANCELLED` antwortet auf einen Abbruch, `PAGE_DECODE_WORKER` auf einen verschwundenen Ausführenden — nur letzterer erlaubt den Rückfall."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Vertrag zur Dekodierung von Seiten außerhalb des Hauptstrangs, Version 5: die dekodierte Geometrie reist in einem einzigen Block mit ihrem Quantisierungsfehler, und der Arena-Platz zeichnet diesen Fehler im Wort 8 auf; `cut` wandelt gezeichnete Dreiecke in Seiten um, die als Bytes mit ihren Deskriptoren zurückkommen.",
+    "summary": "Vertrag zur Dekodierung von Seiten außerhalb des Hauptstrangs, Version 6: die dekodierte Geometrie reist in einem einzigen Block mit ihrem Quantisierungsfehler, und der Arena-Platz zeichnet diesen Fehler im Wort 8 auf; `cut` wandelt gezeichnete Dreiecke in Seiten um, die als Bytes mit ihren Deskriptoren zurückkommen, und seit Version 6 mit ihrem Normalenkegel, die gepackten Dreiecke tragen, ob ihre Seiten einen behalten.",
     "description": "Der aufrufende Strang sendet eine `PageDecodeRequest`, der Ausführende gibt eine `PageDecodeAnswer` mit derselben `id` zurück. Nichts hier berührt die Plattform: kein `Worker`, kein Abruf, keine Uhr — der Browser-Adapter trägt all das, diese Datei trägt nur die Form der Nachricht, die geschlossene Liste der Fehlschläge und die Grenze des Reservoirs. Eigentum der Puffer: `source` wird mit der Anfrage **übertragen**, sodass der Absender sie nicht mehr besitzt. Eine `verify`-Antwort gibt sie zurück, ihrerseits übertragen; eine `decode`-Antwort gibt stattdessen die dekodierten Puffer zurück, ebenfalls übertragen. Ein Ausführender, der nichts überträgt (der synchrone Rückfall), gibt genau dieselben Werte zurück: der Vertrag sagt nicht, wie die Arbeit reist, nur was sie zurückgibt."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -4548,7 +4548,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: der SHA-256-Fingerabdruck einer Seite.",
-    "description": "`decode`: ihre Indizes und ihre Attribute pro Scheitelpunkt. `cut`: die gezeichneten Dreiecke, angeordnet in fünf Längen dann fünf Vier-Byte-Arrays, in Seiten geschnitten."
+    "description": "`decode`: ihre Indizes und ihre Attribute pro Scheitelpunkt. `cut`: die gezeichneten Dreiecke, angeordnet in fünf Längen, ob ihre Seiten einen Kegel behalten, dann fünf Vier-Byte-Arrays, in Seiten geschnitten."
   },
   "PageDecodeRequest": {
     "summary": "Eine Nachricht, die einen Worker bittet, eine Seite zu prüfen, zu dekomprimieren oder zu schneiden.",

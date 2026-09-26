@@ -2245,7 +2245,7 @@
     "description": "Enam yang pertama adalah penolakan uraian-halaman, diambil kata demi kata dari `geometryPage.ts`: seorang pemanggil membedakannya seperti sebelumnya. `PAGE_DECODE_FAILED` membawa penolakan lain apa pun dari pustaka dekompresi. `PAGE_DECODE_CANCELLED` menjawab sebuah pembatalan, `PAGE_DECODE_WORKER` sebuah eksekutor yang lenyap — hanya yang itu yang mengizinkan fallback."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Kontrak uraian-halaman di luar thread utama, versi 5: geometri yang diurai bepergian sebagai satu blok dengan galat kuantisasinya, dan slot arena mencatat galat itu di kata 8; `cut` mengubah segitiga yang digambar menjadi halaman, yang kembali sebagai byte dengan deskriptornya.",
+    "summary": "Kontrak uraian-halaman di luar thread utama, versi 6: geometri yang diurai bepergian sebagai satu blok dengan galat kuantisasinya, dan slot arena mencatat galat itu di kata 8; `cut` mengubah segitiga yang digambar menjadi halaman, yang kembali sebagai byte dengan deskriptornya, dan, sejak versi 6, dengan kerucut normalnya, segitiga yang dikemas menyatakan apakah halamannya menyimpan satu.",
     "description": "Thread pemanggil mengirim `PageDecodeRequest`, eksekutor mengembalikan `PageDecodeAnswer` yang membawa `id` yang sama. Tidak ada yang menyentuh platform di sini: tidak ada `Worker`, tidak ada fetch, tidak ada jam — adaptor peramban membawa semua itu, berkas ini hanya membawa bentuk pesan, daftar tertutup kegagalan dan batas pool. Kepemilikan buffer: `source` **ditransfer** dengan permintaan, jadi pengirim tidak lagi memilikinya. Sebuah respons `verify` mengembalikannya, ditransfer gilirannya; sebuah respons `decode` mengembalikan buffer yang diurai sebagai gantinya, juga ditransfer. Seorang eksekutor yang tidak mentransfer apa pun (fallback sinkron) mengembalikan persis nilai yang sama: kontrak tidak mengatakan bagaimana pekerjaannya bepergian, hanya apa yang dikembalikannya."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -2440,7 +2440,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: digest SHA-256 sebuah halaman.",
-    "description": "`decode`: indeks dan atribut per-vertex-nya. `cut`: segitiga yang digambar, dikemas sebagai lima panjang lalu lima larik empat-byte, dipotong menjadi halaman."
+    "description": "`decode`: indeks dan atribut per-vertex-nya. `cut`: segitiga yang digambar, dikemas sebagai lima panjang, apakah halamannya menyimpan kerucut, lalu lima larik empat-byte, dipotong menjadi halaman."
   },
   "PageDecodeRequest": {
     "summary": "Sebuah pesan meminta seorang worker memeriksa, membongkar atau memotong sebuah halaman.",

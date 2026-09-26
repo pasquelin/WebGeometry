@@ -17,12 +17,18 @@ export async function clusterCones(
 ): Promise<NormalCone[] | null> {
   const wasm = await prepareSdkWasm();
   if (!wasm || typeof wasm.cone_clusters !== 'function' || ranges.length === 0) return null;
-  const arena = reserveArena(wasm, [
-    { type: 'f32', longueur: positions.length },
-    { type: 'u32', longueur: indices.length },
-    { type: 'u32', longueur: ranges.length * 2 },
-    { type: 'f64', longueur: ranges.length * 4 },
-  ]);
+  let arena;
+  try {
+    arena = reserveArena(wasm, [
+      { type: 'f32', longueur: positions.length },
+      { type: 'u32', longueur: indices.length },
+      { type: 'u32', longueur: ranges.length * 2 },
+      { type: 'f64', longueur: ranges.length * 4 },
+    ]);
+  } catch {
+    // Memory that cannot grow traps in the allocator: the same refusal as a null reservation.
+    return null;
+  }
   if (!arena) return null;
   try {
     const [p, i, r, out] = arena.blocs();
@@ -48,6 +54,10 @@ export async function clusterCones(
       axis: [cones[k * 4], cones[k * 4 + 1], cones[k * 4 + 2]],
       angle: cones[k * 4 + 3],
     }));
+  } catch {
+    // A module that traps (its memory cannot grow for the builder) refuses like one that says
+    // no: the cut keeps its pages without a cone rather than fail and lose the mesh.
+    return null;
   } finally {
     arena.libere();
   }

@@ -4445,7 +4445,7 @@
     "description": "I primi sei sono i rifiuti della decodifica di pagina, ripresi parola per parola da `geometryPage.ts`: un chiamante li distingue come prima. `PAGE_DECODE_FAILED` porta qualsiasi altro rifiuto della libreria di decompressione. `PAGE_DECODE_CANCELLED` risponde a un annullamento, `PAGE_DECODE_WORKER` a un esecutore scomparso — solo quest'ultimo permette il ripiego."
   },
   "PAGE_DECODE_PROTOCOL": {
-    "summary": "Contratto di decodifica delle pagine fuori dal thread principale, versione 5: la geometria decodificata viaggia in un unico blocco con il suo errore di quantizzazione, e lo slot dell'arena registra questo errore nella parola 8; `cut` trasforma triangoli disegnati in pagine, che tornano in byte con i loro descrittori.",
+    "summary": "Contratto di decodifica delle pagine fuori dal thread principale, versione 6: la geometria decodificata viaggia in un unico blocco con il suo errore di quantizzazione, e lo slot dell'arena registra questo errore nella parola 8; `cut` trasforma triangoli disegnati in pagine, che tornano in byte con i loro descrittori, e, dalla versione 6, con il loro cono delle normali, i triangoli impacchettati indicano se le loro pagine ne tengono uno.",
     "description": "Il thread chiamante invia una `PageDecodeRequest`, l'esecutore restituisce una `PageDecodeAnswer` che porta lo stesso `id`. Nulla qui tocca la piattaforma: nessun `Worker`, nessun recupero, nessun orologio — l'adattatore del browser porta tutto questo, questo file porta solo la forma del messaggio, l'elenco chiuso dei fallimenti e il limite della riserva. Proprietà dei buffer: `source` viene **trasferito** con la richiesta, quindi il mittente non ne è più il proprietario. Una risposta `verify` lo restituisce, a sua volta trasferito; una risposta `decode` restituisce invece i buffer decodificati, anch'essi trasferiti. Un esecutore che non trasferisce nulla (il ripiego sincrono) restituisce esattamente gli stessi valori: il contratto non dice come viaggia il lavoro, solo cosa restituisce."
   },
   "PAGE_INTEGRATION_FAILURES": {
@@ -4548,7 +4548,7 @@
   },
   "PageDecodeOp": {
     "summary": "`verify`: l'impronta SHA-256 di una pagina.",
-    "description": "`decode`: i suoi indici e i suoi attributi per vertice. `cut`: i triangoli disegnati, disposti in cinque lunghezze poi cinque array di quattro byte, tagliati in pagine."
+    "description": "`decode`: i suoi indici e i suoi attributi per vertice. `cut`: i triangoli disegnati, disposti in cinque lunghezze, se le loro pagine tengono un cono, poi cinque array di quattro byte, tagliati in pagine."
   },
   "PageDecodeRequest": {
     "summary": "Un messaggio che chiede a un worker di verificare, decomprimere o tagliare una pagina.",
