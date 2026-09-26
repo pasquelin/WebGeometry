@@ -18,14 +18,16 @@ import type { WebgpuLightState } from '../pages/state/lights.ts';
 const FLOOR_SIDE = shadowPoolShape(shadowPoolSize(1, 1)).side;
 
 /** The shadow pool `budgetBytes` holds for a screen that asks `wanted` pages: the fewest layers
- *  that hold what fits, of the largest side that fits, never below the floor. */
+ *  that hold what fits, of the largest side that fits, never below the floor. Short of `wanted`
+ *  at the memory budget's atlas bytes (`SHADOW_ATLAS_BYTES`), the budget holds it, not the device. */
 export const shadowPoolFor = (wanted: number) => (budgetBytes: number) => {
   const pages = Math.min(wanted, Math.floor(budgetBytes / shadowAtlasBytes(1)));
   const { side: full, layers } = shadowPoolShape(pages),
     fits = Math.floor(Math.sqrt(budgetBytes / shadowAtlasBytes(1, layers)));
   const side = Math.max(Math.min(FLOOR_SIDE, shadowPoolShape(wanted).side), Math.min(full, fits));
+  const held = budgetBytes >= SHADOW_ATLAS_BYTES ? 'ceiling' : 'device-limit';
   const clamp: PoolClamp =
-    side <= FLOOR_SIDE ? 'minimum' : side * side * layers < wanted ? 'device-limit' : null;
+    side <= FLOOR_SIDE ? 'minimum' : side * side * layers < wanted ? held : null;
   return { budgetBytes, side, layers, allocatedBytes: shadowAtlasBytes(side, layers), clamp };
 };
 
@@ -64,17 +66,13 @@ export function sizeShadowPool(rt: WebgpuPagesRuntime) {
   const viewport = [...rt.setup.viewport],
     wanted = shadowPoolSize(viewport[0], viewport[1], casters),
     shape = shadowPoolShape(wanted),
-    asked = Math.min(shadowAtlasBytes(shape.side, shape.layers), SHADOW_ATLAS_BYTES),
-    ceiled = asked < shadowAtlasBytes(shape.side, shape.layers);
-  // The budget's ceiling, not the device, holds a pool drawn at `asked` short of `wanted`.
-  const draw = (budgetBytes: number) => {
-    const pool = shadowPoolFor(wanted)(budgetBytes);
-    return ceiled && budgetBytes === asked && pool.clamp === 'device-limit'
-      ? { ...pool, clamp: 'ceiling' as PoolClamp }
-      : pool;
-  };
-  const granting = grantedShadowPool(device, asked, draw, diag.engineDiagnostic, (pool) =>
-    atlas.makePool(pool.side, pool.layers),
+    asked = Math.min(shadowAtlasBytes(shape.side, shape.layers), SHADOW_ATLAS_BYTES);
+  const granting = grantedShadowPool(
+    device,
+    asked,
+    shadowPoolFor(wanted),
+    diag.engineDiagnostic,
+    (pool) => atlas.makePool(pool.side, pool.layers),
   );
   const done = granting.then(
     (granted) => {

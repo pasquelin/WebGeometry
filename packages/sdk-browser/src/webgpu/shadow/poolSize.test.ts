@@ -6,6 +6,7 @@ import {
 } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { createWebgpuLightState } from '../pages/state/lights.ts';
 import { shadowPoolFor, sizeShadowPool } from './poolSize.ts';
+import { SHADOW_ATLAS_BYTES } from '../../residency/memoryBudget.ts';
 import { shadowAtlasBytes } from '../../gpu/shadow/atlas.ts';
 import { SUN } from '../../../../sdk-core/src/scene/light-shadow/lightShadow.fixture.ts';
 import { asWebgpuDevice } from '../../../../../tests/kit/gpu/webgpuDevice.ts';
@@ -153,6 +154,7 @@ test('the shadow pool rule never draws above the screen nor below the smallest o
   assert.equal(draw(shadowAtlasBytes(64)).side, 51);
   assert.equal(draw(shadowAtlasBytes(20)).clamp, 'device-limit');
   assert.equal(shadowPoolFor(20160)(shadowAtlasBytes(51, 2)).layers, 2, 'no layer past the grant');
+  assert.equal(shadowPoolFor(20160)(SHADOW_ATLAS_BYTES).clamp, 'ceiling', 'the budget holds it');
   const floor = draw(1);
   assert.equal(floor.side, shadowPoolShape(pages(1, 1)).side);
   assert.equal(floor.clamp, 'minimum');
