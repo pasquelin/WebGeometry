@@ -120,28 +120,22 @@ test('an engine that draws nothing on the host surface is refused by name', () =
   assert.throws(() => compose(backend, null), /HOST_DRAW_UNSUPPORTED:mute/);
 });
 
-test('WebGL2 steps the pools ahead of the engine, which draws an image they moved in', () => {
-  const { gl, calls, names } = createTestContext({ answers: { getExtension: () => ({}) } });
-  const pool = new ParticlePool({ capacity: 8 });
-  const compose = createFrameComposer(gl, camera, { particles: [pool] });
-  const { backend, outputs } = engine({ held: true });
-  compose(backend, null);
-  compose(backend, null);
-  assert.equal(outputs.length, 1, 'an idle pool: the kept frame is put back');
-  pool.emit(0, 0, 0, 0, 1, 0, 2);
-  compose(backend, null);
-  assert.equal(outputs.length, 2, 'a moving one: the engine draws');
-  const drawn = names().lastIndexOf('drawArrays');
-  assert.ok(drawn >= 0 && drawn < names().lastIndexOf('clear'), 'the step first');
-  const bound = calls.slice(drawn).find((call) => call.name === 'viewport')?.args;
-  assert.deepEqual(bound, [0, 0, 8, 4], 'then the page, bound again');
-});
-
-test('WebGL2 without a 32-bit float target refuses the pools by name, never draws without them', () => {
-  const { gl } = createTestContext({ answers: { getExtension: () => null } });
-  const particles = [new ParticlePool({ capacity: 8 })];
-  const compose = createFrameComposer(gl, camera, { particles });
-  const { backend, outputs } = engine();
-  assert.throws(() => compose(backend, null), /^Error: PARTICLES_UNSUPPORTED/);
-  assert.deepEqual([outputs.length, particles[0].moving], [0, false], 'refused, it asks no frame');
+test('WebGL2 refuses the pools by name from the first frame, heard once, and draws on', () => {
+  // With 32-bit float targets or without, the same refusal: the draw is #844.
+  for (const granted of [{}, null]) {
+    const { gl, names } = createTestContext({ answers: { getExtension: () => granted } });
+    const [pool, heard] = [new ParticlePool({ capacity: 8 }), [] as string[]];
+    const particlesRefused = (reason: string) => void heard.push(reason);
+    const compose = createFrameComposer(gl, camera, { particles: [pool], particlesRefused });
+    const { backend, outputs } = engine();
+    pool.emit(0, 0, 0, 0, 1, 0, 2);
+    [0, 1].forEach(() => compose(backend, null)); // the first frame throws nothing
+    assert.deepEqual(
+      [outputs.length, pool.refused, pool.emit(0, 0, 0, 0, 1, 0, 2)],
+      [2, true, false],
+    );
+    assert.equal(heard.length, 1, 'heard once');
+    assert.match(heard[0], /^PARTICLES_UNSUPPORTED: WebGL2 draws no particle yet/);
+    assert.ok(!names().includes('drawArraysInstanced'), 'never drawn as anything else');
+  }
 });
