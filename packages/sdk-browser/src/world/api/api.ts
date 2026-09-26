@@ -8,6 +8,7 @@ import { createExplorerSelectionApi } from './selectionApi.ts';
 import { createExplorerViewportApi } from './viewportApi.ts';
 import { createExplorerTelemetryApi } from './telemetryApi.ts';
 import { createExplorerLightApi } from './lightApi.ts';
+import { createExplorerMaterialApi } from './materialApi.ts';
 
 type Inputs = ExplorerRuntimeSurface & {
   capabilities: ExplorerProbe['capabilities'];
@@ -145,6 +146,12 @@ export function createExplorerApi(inputs: Inputs) {
       backends,
       active: () => state.active,
       onDiagnostic: context.onDiagnostic,
+    }),
+    ...createExplorerMaterialApi({
+      check,
+      source: context.source,
+      backends,
+      active: () => state.active,
     }),
     ...createExplorerTelemetryApi(profiler, () => state.active),
   };

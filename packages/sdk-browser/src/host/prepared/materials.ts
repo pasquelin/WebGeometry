@@ -51,7 +51,18 @@ function extensionParams(
   }
 }
 
-async function build(entry: TableMaterial, variant: SurfaceVariant, slot: Slot) {
+/** The table rank each prepared surface was built from: the scene's own material id, which a
+ *  page lists and sets by (`../../world/api/materialApi.ts`); a surface built elsewhere has none. */
+const tableRanks = new WeakMap<GraphSurface, number>();
+export const tableRankOf = (surface: GraphSurface) => tableRanks.get(surface);
+
+async function build(
+  materials: readonly TableMaterial[],
+  rank: number,
+  variant: SurfaceVariant,
+  slot: Slot,
+) {
+  const entry = materials[rank];
   const params: Params = { color: linearColour(entry.baseColor), opacity: entry.opacity };
   const pending: Promise<void>[] = [];
   const assign = (name: string, from: TableTextureSlot | null, colour = false) => {
@@ -94,6 +105,7 @@ async function build(entry: TableMaterial, variant: SurfaceVariant, slot: Slot) 
     entry.kind === 'unlit' ? 'basic' : entry.kind === 'physical' ? 'physical' : 'standard';
   const material = new GraphSurface(family, params);
   if (entry.name) material.name = entry.name;
+  tableRanks.set(material, rank);
   return material;
 }
 
@@ -107,7 +119,7 @@ export function preparedMaterials(materials: readonly TableMaterial[], slot: Slo
     const key = `${rank}:${variant.vertexColors}:${variant.flatShading}`;
     let material = built.get(key);
     if (!material) {
-      material = build(materials[rank], variant, slot);
+      material = build(materials, rank, variant, slot);
       built.set(key, material);
     }
     return material;
