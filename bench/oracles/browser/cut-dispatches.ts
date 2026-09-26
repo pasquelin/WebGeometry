@@ -65,7 +65,7 @@ export function ressourcesAvant(
     worldCount = Math.max(1, packed.worldCount);
   const blockCount = Math.ceil(pageCount / SELECTION_WORKGROUP);
   // The frozen counters run from `base` to `base + 9`, whose last word is the shipped first per-view
-  // word: only a light cut reads it, and the oracle is a camera cut.
+  // word: `dagPrepare` zeroes it as `resetCounters` does, and only a light cut counts in it.
   const travail = dagWorkLayout(blockCount),
     base = travail.base;
   const STORAGE = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC;
