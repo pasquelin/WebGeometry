@@ -92,7 +92,7 @@ export function encodeShadowAtlas(
         at = (i - region) / count;
       const start = regions.startOf(region);
       if (layer !== (start === REGION_STATIC) || regions.layer(region) !== at) continue;
-      const visible = tested && start === REGION_RESTORE;
+      const visible = tested && slotOf[region] !== HIZ_UNTESTED;
       const group = shadowRegionGroup(rt, device, region, visible);
       if (!group) continue;
       if (open !== at) pass = layerPass(encoder, pass, passes[(open = at)]);
@@ -158,7 +158,7 @@ export function encodeTransmittance(
       at = (i - region) / count;
     const start = regions.startOf(region);
     if (start === REGION_STATIC || regions.layer(region) !== at) continue;
-    const visible = tested && start === REGION_RESTORE;
+    const visible = tested && slotOf[region] !== HIZ_UNTESTED;
     const group = shadowRegionGroup(rt, device, region, visible);
     if (!group) continue;
     if (open !== at) {
