@@ -9,11 +9,13 @@ import { shadowPoolFor, sizeShadowPool } from './poolSize.ts';
 import { shadowAtlasBytes } from '../../gpu/shadow/atlas.ts';
 import { SUN } from '../../../../sdk-core/src/scene/light-shadow/lightShadow.fixture.ts';
 import { asWebgpuDevice } from '../../../../../tests/kit/gpu/webgpuDevice.ts';
+import { installGpuGlobals } from '../../../../../tests/kit/gpu/globals.ts';
 import type { WebgpuPagesRuntime } from '../pages/runtime.ts';
 
 /** A session whose device refuses, as out of memory, every texture past `limit` bytes; its atlas
  *  records the side it was sized at, and what the frame was told. */
 function session(viewport: [number, number], limit = Infinity) {
+  installGpuGlobals();
   const lights = createWebgpuLightState(shadowPoolShape(pages(300, 150)).side);
   lights.plan.setPageInvalidation(false);
   const sized: number[] = [],
@@ -22,6 +24,7 @@ function session(viewport: [number, number], limit = Infinity) {
     uncaptured = 0,
     changed = 0;
   const gpu = asWebgpuDevice({
+    createBuffer: () => ({ destroy() {} }),
     createTexture: ({ size }: { size: number[] }) => {
       if (size[0] * size[1] * 4 > limit) gpu.raise('Out of memory');
       return { destroy() {}, createView: () => ({}) };

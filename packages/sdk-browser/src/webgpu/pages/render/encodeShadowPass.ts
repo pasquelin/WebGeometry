@@ -63,8 +63,8 @@ function encodeOcclusion(rt: WebgpuPagesRuntime, encoder: GPUCommandEncoder, cou
  * Shadow depth pass of one batch, pages `[from, to)` of the frame's list in `count` regions: first
  * their face uniforms, then the casters of each light view drawn, selected from the light and
  * culled per region (`encodeShadowCasters`); then the static layer's pages drawn in full, if any;
- * then the moving casters of each restored page tested against its static layer; then one render
- * pass over the pool, where each region starts from its page cleared to far or restored from the
+ * then the moving casters of each restored page tested against its static layer; then a render
+ * pass per layer of the pool, where each region of that layer starts from its page cleared to far or restored from the
  * static layer, and draws its casters.
  *
  * **The viewport is the physical page, the matrix the virtual page's own projection.** The page
@@ -93,7 +93,6 @@ export function encodeShadowAtlas(
   cull.counts.sample(encoder, cull.indirect, count, run.frame);
   lights.shadowDraws += count;
   const drawsBefore = run.gpuDrawCalls;
-  // One render pass a layer of the target, over the regions whose page lies in that layer.
   const draw = (targets: GPUTextureView[], label: string, layer: boolean, tested: boolean) => {
     let pass!: GPURenderPassEncoder;
     for (let i = 0; i < count * targets.length; i++) {

@@ -1,9 +1,13 @@
 import type { ShadowRequestReport } from '../../../../sdk-core/src/scene/light-shadow/requests.ts';
 import { SHADOW_REQUEST_BITS } from '../../lighting/direct/shadowWgsl.ts';
+import { shadowRequestCap } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 
 /** Readback slots in flight at most: a frame whose three predecessors are still mapping asks
  *  again the next frame, which reads the same image. */
 const SLOTS = 3;
+/** Bytes of the request buffer of a pool of `pages`: the count, the list, one bit per table entry. */
+export const shadowRequestBytes = (pages: number) =>
+  (1 + shadowRequestCap(pages) + SHADOW_REQUEST_BITS) * 4;
 
 type Slot = {
   buffer: GPUBuffer;
@@ -19,11 +23,16 @@ type Slot = {
  * before the resolve of every image that lights — a held image lights nothing and asks for
  * nothing. Each copy carries the frame, the table layout and the plan stamp it was read under, so
  * the scheduler reads it against the right windows and knows whether it proves a settled state.
- * Its list is as long as `requestBuffer`'s, the count and the entries before the bits.
+ * The request buffer is made with the pool, its list as long as `shadowRequestCap` of its `pages`.
  */
-export function createShadowPageRequests(device: GPUDevice, requestBuffer: GPUBuffer) {
-  const listBytes = requestBuffer.size - SHADOW_REQUEST_BITS * 4,
-    cap = listBytes / 4 - 1;
+export function createShadowPageRequests(device: GPUDevice, pages: number) {
+  const cap = shadowRequestCap(pages),
+    listBytes = (1 + cap) * 4;
+  const requestBuffer = device.createBuffer({
+    label: 'Trillion3D shadow requests v1',
+    size: shadowRequestBytes(pages),
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+  });
   const slots: Slot[] = [];
   for (let i = 0; i < SLOTS; i++)
     slots.push({
@@ -44,6 +53,8 @@ export function createShadowPageRequests(device: GPUDevice, requestBuffer: GPUBu
     });
   let inFlight = 0;
   return {
+    /** What the shading records its requests in (`../../lighting/direct/shadowWgsl.ts`). */
+    buffer: requestBuffer,
     /** Copies waiting for their image to be read back: an image may not hold before they land. */
     get inFlight() {
       return inFlight;
@@ -99,6 +110,7 @@ export function createShadowPageRequests(device: GPUDevice, requestBuffer: GPUBu
       };
     },
     dispose() {
+      requestBuffer.destroy();
       for (const slot of slots) slot.buffer.destroy();
     },
   };

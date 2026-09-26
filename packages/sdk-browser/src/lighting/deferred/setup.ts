@@ -18,7 +18,6 @@ import { SHADOW_TRANSMITTANCE_FORMAT } from '../../gpu/shadow/transmittance.ts';
  * stays lit exactly as before that ray existed.
  */
 const PLACEHOLDER_PROXY_BYTES = PROXY_HEADER_BYTES + 16;
-
 /**
  * Bindings of the deferred pass. The unlit view stops at the surfaces and the uniform;
  * the contract program adds the declared lights, their per-tile lists, their shadow slices

@@ -37,9 +37,8 @@ export const PCF_REACH = Math.max(
   ...POISSON_16.map(([x, y]) => Math.hypot(Math.abs(x) + 1, Math.abs(y) + 1)),
 );
 
-/** Words of the request buffer past its list: the count first, then the entries the shading asked
- *  for — as many as the pool's `shadowRequestCap` —, then one bit per table entry: a page is listed
- *  once however many pixels read it. The list's length is the buffer's, read at run time. */
+/** Words of the request buffer after the count and a list as long as the pool's (`shadowRequestCap`,
+ *  read at run time): one bit per table entry — a page is listed once however many pixels read it. */
 export const SHADOW_REQUEST_BITS = SHADOW_TABLE_ENTRIES / 32;
 
 /**
@@ -62,8 +61,7 @@ const requestWgsl = (binding: number | null) =>
     ? 'fn requestShadowPage(e:u32){}'
     : `@group(0) @binding(${binding}) var<storage,read_write> shadowRequests:array<atomic<u32>>;
 fn requestShadowPage(e:u32){
- let cap=arrayLength(&shadowRequests)-${1 + SHADOW_REQUEST_BITS}u;
- let word=1u+cap+(e>>5u);let bit=1u<<(e&31u);
+ let cap=arrayLength(&shadowRequests)-${1 + SHADOW_REQUEST_BITS}u;let word=1u+cap+(e>>5u);let bit=1u<<(e&31u);
  if((atomicLoad(&shadowRequests[word])&bit)!=0u){return;}
  if((atomicOr(&shadowRequests[word],bit)&bit)!=0u){return;}
  let at=atomicAdd(&shadowRequests[0],1u);

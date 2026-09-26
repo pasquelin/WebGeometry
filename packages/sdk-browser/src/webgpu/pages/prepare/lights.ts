@@ -2,7 +2,6 @@ import { LIGHT_SETTINGS } from '../../../../../sdk-core/src/index.ts';
 import { createGpuLightTiles } from '../../../lighting/tiles/tiles.ts';
 import { createGpuShadowAtlas } from '../../../gpu/shadow/atlas.ts';
 import { createGpuShadowCull } from '../../../gpu/shadow/cull.ts';
-import { createShadowPageRequests } from '../../shadow/pageRequests.ts';
 import { grantCapability } from '../io/drops.ts';
 import type { WebgpuPagesRuntime } from '../runtime.ts';
 import { isCancelled } from '../../../backend/common.ts';
@@ -43,7 +42,6 @@ export async function prepareDirectLights(rt: WebgpuPagesRuntime, device: GPUDev
   try {
     lights.shadows = await createGpuShadowAtlas(device, vis.visBindGroupLayout);
     lights.cull = await createGpuShadowCull(device, casterSlots);
-    lights.pageRequests = createShadowPageRequests(device, lights.shadows.requestBuffer);
   } catch (error) {
     if (isCancelled(rt.signal)) throw error;
     lights.shadows?.dispose();

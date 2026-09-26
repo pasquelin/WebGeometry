@@ -1,6 +1,7 @@
 import { DEFAULT_GEOMETRY_POOL_BUDGET } from './pools.ts';
 import { DEFAULT_TEXTURE_POOL_BUDGET } from '../webgpu/residency/memoryBudgets.ts';
-import { shadowAtlasBytes, shadowBufferBytes } from '../gpu/shadow/atlas.ts';
+import { SHADOW_BUFFER_BYTES, shadowAtlasBytes } from '../gpu/shadow/atlas.ts';
+import { shadowRequestBytes } from '../webgpu/shadow/pageRequests.ts';
 import { shadowTransmittanceBytes } from '../gpu/shadow/transmittance.ts';
 import { SHADOW_BATCH_GPU_BYTES, SHADOW_BATCH_HOST_BYTES } from '../gpu/shadow/batchBudget.ts';
 import {
@@ -25,7 +26,8 @@ export const SHADOW_POOL_PAGES = side * side * layers;
 export const SHADOW_POOL_BYTES =
   2 * shadowAtlasBytes(side, layers) +
   shadowTransmittanceBytes(side, layers) +
-  shadowBufferBytes(SHADOW_POOL_PAGES) +
+  SHADOW_BUFFER_BYTES +
+  shadowRequestBytes(SHADOW_POOL_PAGES) +
   SHADOW_BATCH_GPU_BYTES;
 /** The shadows' host memory at that pool: the table's words and change flags, the pool's page
  *  records and eviction bits, the frame's list, as the three allocate them, and the batches' flag

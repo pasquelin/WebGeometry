@@ -95,10 +95,7 @@ export function sizeShadowPool(rt: WebgpuPagesRuntime) {
         lights.regions = createShadowRegionList(side);
       }
       atlas.sizePool(side, layers, granted.made);
-      if (lights.pageRequests) {
-        lights.pageRequests.dispose();
-        lights.pageRequests = createShadowPageRequests(device, atlas.requestBuffer);
-      }
+      lights.pageRequests = createShadowPageRequests(device, side * side * layers);
       diag.engineDiagnostic('shadow-pool', 'Shadow pool sized from the first frame', {
         version: 1,
         viewport,

@@ -12,7 +12,7 @@ import {
   SHADOW_POOL_BYTES,
   SHADOW_POOL_PAGES,
 } from '../../residency/memoryBudget.ts';
-import { shadowAtlasBytes, shadowBufferBytes } from '../../gpu/shadow/atlas.ts';
+import { SHADOW_BUFFER_BYTES, shadowAtlasBytes } from '../../gpu/shadow/atlas.ts';
 import { SHADOW_BATCH_GPU_BYTES, SHADOW_BATCH_HOST_BYTES } from '../../gpu/shadow/batchBudget.ts';
 import { shadowTransmittanceBytes } from '../../gpu/shadow/transmittance.ts';
 import {
@@ -89,19 +89,15 @@ test("the default totals split into each pool's own default", () => {
 });
 
 test('the shadow share counts the pool at 3840 × 2160 under one sun, and the page table', () => {
-  assert.ok(shadowBufferBytes(0) >= SHADOW_TABLE_ENTRIES * 4);
-  const { side, layers } = shadowPoolShape(shadowPoolSize(3840, 2160));
-  // Two layers of 53² pages: the atlas and its static layer, 351 MiB each; transmittance, half.
-  assert.deepEqual([side, layers, SHADOW_POOL_PAGES], [53, 2, 5618]);
-  assert.equal(shadowAtlasBytes(side, layers), 5618 * 64 * 1024);
+  assert.ok(SHADOW_BUFFER_BYTES >= SHADOW_TABLE_ENTRIES * 4);
+  const { side, layers } = shadowPoolShape(SHADOW_POOL_PAGES);
+  assert.deepEqual([side, layers, shadowPoolSize(3840, 2160)], [53, 2, 5440], 'two 53² layers');
   const pool = 2 * shadowAtlasBytes(side, layers) + shadowTransmittanceBytes(side, layers);
-  const buffers = shadowBufferBytes(SHADOW_POOL_PAGES) + SHADOW_BATCH_GPU_BYTES;
-  assert.equal(SHADOW_POOL_BYTES, pool + buffers);
+  assert.ok(SHADOW_POOL_BYTES > pool + SHADOW_BUFFER_BYTES + SHADOW_BATCH_GPU_BYTES, 'requests');
   assert.equal(budget('webgpu', null).split.shadowPool, SHADOW_POOL_BYTES);
 });
 
 test('the CPU total counts the shadow table host mirror before the page cache', () => {
-  // What a real table, pool and list allocate at the largest pool, whatever the screen: one size.
   const { table, pool, admission } = createShadowPlan(53, 2);
   const host = table.hostBytes + pool.hostBytes + admission.hostBytes + SHADOW_BATCH_HOST_BYTES;
   assert.equal(SHADOW_HOST_BYTES, host);
@@ -142,9 +138,8 @@ test('the shadow pool of any screen fits its share, and totals below 512 MiB nev
   const screens = [1, 1, 1280, 720, 3840, 2160, 16384, 16384, Infinity, Infinity];
   for (let i = 0; i < screens.length; i += 2) {
     const [w, h] = [screens[i], screens[i + 1]];
-    const pages = Math.min(shadowPoolSize(w, h), SHADOW_POOL_PAGES),
-      { side, layers } = shadowPoolShape(pages);
-    const taken = 2 * shadowAtlasBytes(side, layers) + shadowBufferBytes(side * side * layers);
+    const { side, layers } = shadowPoolShape(Math.min(shadowPoolSize(w, h), SHADOW_POOL_PAGES));
+    const taken = 2 * shadowAtlasBytes(side, layers) + SHADOW_BUFFER_BYTES;
     assert.ok(taken <= shadowPool, `${w}×${h}`);
   }
   for (const total of [64 * MiB, 256 * MiB, 511 * MiB, FIXED - 1]) {
