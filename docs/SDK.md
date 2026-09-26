@@ -1362,11 +1362,12 @@ bend }` simulates the mesh's vertices one by one on Jolt's soft bodies. A cloth 
   static world only, are simulated only in range and in view, and leave the simulation once asleep:
   their mesh stays where it came to rest (set `physics` again to simulate it anew), and their
   joints break (`j.broken`, `'break'`).
-- **Budgets.** `world.budget.physics`, read when the physics starts: bodies, static triangles,
-  decorative bodies, memory (a hard ceiling: the module's memory cannot grow past it), body pairs
+- **Budgets.** `world.budget.physics`, read when the physics starts: bodies, decorative bodies,
+  memory (a hard ceiling: the module's memory cannot grow past it; half of it holds the static
+  collision, a static triangle mesh past it refused naming `memoryBytes`), body pairs
   and contacts per step, contact events per step, and threads (Jolt's thread pool, the worker's
   included, when the page is cross-origin isolated; never more than the logical cores minus the
-  page's own; one elsewhere). The defaults are `DEFAULT_PHYSICS_BUDGET`. A request past one is
+  page's own; one elsewhere). The defaults are `DEFAULT_PHYSICS_BUDGET`; a key that is no budget (the removed `triangles`) is refused by name, `PHYSICS_BUDGET` from `createWorld`, a `TypeError` when added to `world.budget.physics`. A request past one is
   refused with `PHYSICS_BUDGET` on `world.physics.error`; a step that finds more pairs or contacts
   than its budget says so the same way, and an `enter` past the events budget is counted in
   `stats.droppedEvents` (its `leave` is then never sent). `softVertices` bounds the vertices of
@@ -1376,9 +1377,10 @@ bend }` simulates the mesh's vertices one by one on Jolt's soft bodies. A cloth 
   own clock: the two are never added.
 - **Compiled models.** A model loaded with `scene.load()` collides with its own triangles once the
   physics is on: the compiler cooked them (`physics.json`, [FORMAT.md](FORMAT.md)) and the physics
-  streams its tiles in, restored from Jolt's binary state, around the eye up to `camera.far` and
-  around every moving body, nearest first, within `budget.physics.triangles`; past it, the nearest
-  stay and `PHYSICS_BUDGET` names the triangles asked. A file of another format or cooked by
+  streams its tiles in, restored from Jolt's binary state, around every moving body and around the
+  eye up to `camera.far`, nearest first, within half of `budget.physics.memoryBytes`, and releases
+  them as they move away (a tile stays until half as far again as it came in). A scene is never
+  refused for its size: a tile that does not fit waits, the farthest leaving for it. A file of another format or cooked by
   another Jolt is refused (`PHYSICS_FORMAT`); a model compiled before the cook collides nowhere.
   A tile or a soft body's settings the server refuses is `RESOURCE_HTTP_ERROR` on
   `world.physics.error` ([Files over HTTP](#files-over-http)); a model that leaves the scene lets

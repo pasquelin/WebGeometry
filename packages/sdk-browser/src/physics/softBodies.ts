@@ -68,7 +68,7 @@ export function addSoftBody(
   mesh: Bodied,
   pose: Pose,
   size: { x: number; y: number; z: number },
-  claim: (triangles: number, softVertices: number) => number,
+  claim: (collisionBytes: number, softVertices: number) => number,
   maps: (Uint32Array | null)[],
   flags: number,
 ) {

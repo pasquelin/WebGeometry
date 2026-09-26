@@ -89,8 +89,8 @@ export function worldBudget(
     rebalance();
   };
   return {
-    /** The physics envelopes (bodies, triangles, decorative bodies, memory), read once when the
-     *  physics starts; exceeding one raises `PHYSICS_BUDGET`. */
+    /** The physics envelopes (bodies, decorative bodies, memory), read once when the physics
+     *  starts; exceeding one raises `PHYSICS_BUDGET`. */
     physics,
     /** Bytes of GPU memory the world may hold, all pools together; set it to redraw every pool
      *  by the split rule (`split`). A total under the three fixed shares — the shadow pool, the
