@@ -1,4 +1,4 @@
-import { LIGHT_KIND, LIGHT_SETTINGS, type ShadowViewpoint } from '../light/contracts.ts';
+import { LIGHT_KIND, type ShadowViewpoint } from '../light/contracts.ts';
 import { createShadowNeeds } from './needs.ts';
 import type { ShadowPool } from './pool.ts';
 import type { ShadowRecords } from './records.ts';
@@ -14,6 +14,7 @@ import {
   lampFacesOf,
   sunCoarseness,
   sunEntry,
+  shadowRequestCap,
   sunFloorLevel,
 } from './virtual.ts';
 
@@ -30,8 +31,6 @@ export interface ShadowRequestReport {
   /** The entries asked for, the first `count` of them at most. */
   entries: Uint32Array;
 }
-
-const CAP: number = LIGHT_SETTINGS.shadowRequestCap;
 
 /**
  * Reads a request report back: every page the shading asked for is either touched — mapped, it
@@ -61,7 +60,8 @@ export function createShadowRequests(
   records: ShadowRecords,
   sun: SunLevels,
 ) {
-  const needs = createShadowNeeds(table, pool, 2 * CAP), // each entry named, and its floor
+  const cap = shadowRequestCap(pool.pages),
+    needs = createShadowNeeds(table, pool, 2 * cap), // each entry named, and its floor
     scratch = new Int32Array(4),
     /** What the entry being read names: its view, then its page. */
     at = new Int32Array(3);
@@ -127,13 +127,13 @@ export function createShadowRequests(
      * True when the last report read changed nothing and asks for nothing the pool could still
      * take. A refusal is such a request: a page is refused only when every page of the pool is
      * one the report named. So is an entry past the list, once the named ones fill the pool —
-     * the list holds at least as many entries as the pool holds pages (`shadowPoolSide`).
+     * the list holds at least as many entries as the pool holds pages (`shadowRequestCap`).
      */
     get complete() {
       return !counts.allocated && (!counts.unlisted || pool.heldBy(counts.latest));
     },
     consume(report: ShadowRequestReport, nowMs: number, frame: number) {
-      counts.requested = Math.min(report.count, CAP);
+      counts.requested = Math.min(report.count, cap);
       counts.unlisted = report.count - counts.requested;
       counts.allocated = 0;
       counts.refused = 0;

@@ -26,9 +26,9 @@ export type ShadowPlan = ReturnType<typeof createShadowPlan>;
  *
  * All arrays are allocated once; `plan()` allocates nothing.
  */
-export function createShadowPlan(poolSide: number) {
-  const table = createShadowTable(poolSide * poolSide),
-    pool = createShadowPool(poolSide),
+export function createShadowPlan(poolSide: number, layers = 1) {
+  const pool = createShadowPool(poolSide, layers),
+    table = createShadowTable(pool.pages),
     sun = createSunLevels(),
     records = createShadowRecords(table, pool, sun),
     requests = createShadowRequests(table, pool, records, sun),

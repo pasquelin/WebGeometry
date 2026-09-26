@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSceneLightStore } from '../light/store.ts';
 import { createShadowPlan } from './plan.ts';
-import { shadowPoolSide } from './virtual.ts';
+import { shadowPoolPages, shadowPoolShape } from './virtual.ts';
 import { SUN, VIEW, cycle, planFrame, sunPages } from './lightShadow.fixture.ts';
 
 /** The example's chase camera, 7.5 m behind the car and 2.4 m up, at 960 × 600. */
@@ -24,7 +24,7 @@ const ROOTS = [tank[0], car[0], bike[0], ...tank.slice(1), ...bike.slice(1), ...
 /** The example's sun, every page the chase view reads around the car drawn: finer near it. */
 function settled() {
   const store = createSceneLightStore(),
-    plan = createShadowPlan(shadowPoolSide(960, 600));
+    plan = createShadowPlan(shadowPoolShape(shadowPoolPages(960, 600)).side);
   const toward = [-40, -70, -25].map((a) => a / Math.hypot(40, 70, 25));
   store.add({ ...SUN, direction: toward as [number, number, number] });
   let read: number[] = [];

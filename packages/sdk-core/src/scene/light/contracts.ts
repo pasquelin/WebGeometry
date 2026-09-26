@@ -85,10 +85,8 @@ export const LIGHT_SETTINGS = {
    * invalidation. A moving object only stales the pages its projected box covers.
    */
   shadowPage: 128,
-  /** Side of a lamp face's finest mip, in texels: 32 × 32 pages of 128 (the pool: `shadowPoolSide`). */
+  /** Side of a lamp face's finest mip, in texels: 32 × 32 pages of 128 (the pool: `shadowPoolPages`). */
   lampFaceSize: 4096,
-  /** Virtual pages the shading may request per frame; the rest ask again the next frame. */
-  shadowRequestCap: 4096,
   /** PCF taps per pixel and per shadow light (X2). */
   pcfTaps: 16,
   /** Width of the softened edge of a spot cone, in cosine units: against staircasing. */

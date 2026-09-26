@@ -6,9 +6,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSceneLightStore } from '../light/store.ts';
 import { createShadowPlan } from './plan.ts';
-import { LIGHT_SETTINGS, type SceneLight } from '../light/contracts.ts';
+import type { SceneLight } from '../light/contracts.ts';
 import { SUN, cycle, lampPages, planFrame, report, sunPages } from './lightShadow.fixture.ts';
-import { PAGE_MAPPED } from './virtual.ts';
+import { PAGE_MAPPED, shadowRequestCap } from './virtual.ts';
 
 const EVERYWHERE_MIN = [-1e30, -1e30, -1e30],
   EVERYWHERE_MAX = [1e30, 1e30, 1e30];
@@ -112,7 +112,7 @@ test('a report past its list holds only once the pages it listed fill the pool',
   const { store, plan, fine } = smallPool();
   // One page read, then entries of no light up to the list's end, and more past it.
   const filler = Array.from(
-    { length: LIGHT_SETTINGS.shadowRequestCap - 1 },
+    { length: shadowRequestCap(plan.pool.pages) - 1 },
     (_, i) => (1 << 19) + i,
   );
   const truncated = (frame: number, listed: number[]) =>
@@ -120,8 +120,8 @@ test('a report past its list holds only once the pages it listed fill the pool',
       frame,
       layoutEpoch: plan.table.layoutEpoch,
       stamp: plan.stamp(store),
-      count: LIGHT_SETTINGS.shadowRequestCap + 100,
-      entries: Uint32Array.from([...listed, ...filler].slice(0, LIGHT_SETTINGS.shadowRequestCap)),
+      count: shadowRequestCap(plan.pool.pages) + 100,
+      entries: Uint32Array.from([...listed, ...filler].slice(0, shadowRequestCap(plan.pool.pages))),
     });
   for (let frame = 1; frame < 4; frame++) {
     truncated(frame, fine.slice(0, 1));

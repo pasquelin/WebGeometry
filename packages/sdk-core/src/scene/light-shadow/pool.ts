@@ -14,9 +14,9 @@ export const DRAW_ALL = 0,
   DRAW_FULL = 1,
   DRAW_DYNAMIC = 2;
 
-/** Host bytes a `side × side` pool allocates, per page 10·4 + 3 + 2·8, one bit per table entry. */
-export function shadowPoolHostBytes(side: number) {
-  return side * side * (10 * 4 + 3 + 2 * 8) + SHADOW_TABLE_ENTRIES / 8;
+/** Host bytes a pool of `pages` allocates, per page 10·4 + 3 + 2·8, one bit per table entry. */
+export function shadowPoolHostBytes(pages: number) {
+  return pages * (10 * 4 + 3 + 2 * 8) + SHADOW_TABLE_ENTRIES / 8;
 }
 
 /**
@@ -27,8 +27,8 @@ export function shadowPoolHostBytes(side: number) {
  * A page is taken from the free list, else from the least recently requested page the latest
  * report did not name. Only mapped pages go stale: the scheduler walks this table alone.
  */
-export function createShadowPool(side: number) {
-  const pages = side * side;
+export function createShadowPool(side: number, layers = 1) {
+  const pages = side * side * layers;
   const owner = new Int32Array(pages).fill(-1),
     slice = new Int32Array(pages),
     /** Sun: level. Lamp: `face · 16 + mip`. */
@@ -92,8 +92,9 @@ export function createShadowPool(side: number) {
     since,
     sinceFrame,
     readFrame,
-    /** Physical pages per side of the atlas, and in all. */
+    /** Physical pages per side of a layer, its layers (`shadowPoolShape`), and pages in all. */
     side,
+    layers,
     pages,
     /** Bytes of every host array the pool holds: what `shadowPoolHostBytes` declares. */
     hostBytes: [
