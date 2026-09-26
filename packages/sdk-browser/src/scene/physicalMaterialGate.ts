@@ -8,8 +8,8 @@
 import type { HostShadedMaterial } from '../host/shadedMaterial.ts';
 
 /** The physical material as this gate reads it: what `../host/shadedMaterial.ts` already declares of
- *  a shaded surface, plus the extension slots only a refusal ever looks at. Declared here and not
- *  there because nothing else in the engine reads them — they exist to be named in a refusal. */
+ *  a shaded surface, plus the extension slots only this gate ever looks at. Declared here and not
+ *  there because nothing else in the engine reads them — they exist to be named in a notice. */
 type PhysicalLike = HostShadedMaterial & {
   readonly transmissionMap?: unknown;
   readonly thicknessMap?: unknown;

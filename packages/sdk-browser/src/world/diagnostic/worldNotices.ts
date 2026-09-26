@@ -121,8 +121,8 @@ export function noticeEffectRefusal(notices: Pick<WorldNotices, 'once'>) {
 /**
  * The WebGL2 program's word (`MaterialDegraded`) that it draws a surface without physical
  * `features` it cannot draw (`physicalFeaturesLost`): said once per surface and feature, as
- * `material-degraded`, and the frame goes on. WebGPU draws them and never says it. Heard on
- * every frame that draws the surface: past the first, a known feature builds nothing.
+ * `material-degraded`, and the frame goes on. Heard once per version of a drawn surface
+ * (`readDegraded`): a known feature is never said again.
  */
 export function noticeMaterialDegraded(notices: Pick<WorldNotices, 'say'>) {
   const said = new WeakMap<object, Set<string>>();
@@ -138,7 +138,7 @@ export function noticeMaterialDegraded(notices: Pick<WorldNotices, 'say'>) {
       notices.say(
         'material-degraded',
         `${material.family} material "${material.name}" drawn on WebGL2 without ${feature}, ` +
-          `which WebGL2 cannot draw; WebGPU draws it`,
+          `which WebGL2 cannot draw`,
         { material: material.name, feature },
       );
     }

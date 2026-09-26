@@ -23,6 +23,26 @@ export function readDegraded(hear: MaterialDegraded): ReadDegraded {
   };
 }
 
+const validateMeshes = (
+  meshes: readonly (ClusterDrawMesh | WholeMesh)[],
+  seen: Map<Material, HostAttributes>,
+  transmissive: boolean,
+  degraded: ReadDegraded | undefined,
+) => {
+  for (const mesh of meshes) {
+    const { material } = mesh,
+      attributes = mesh.geometry.attributes;
+    if (Array.isArray(material)) refuse('material arrays are unsupported');
+    const previous = seen.get(material);
+    if (previous === attributes) continue;
+    const reason = clusterMaterialReason(material, attributes, transmissive);
+    if (reason) refuse(reason);
+    if (previous) continue;
+    seen.set(material, attributes);
+    degraded?.(material);
+  }
+};
+
 /**
  * Refuses every mesh of the frame before any of them is submitted: no partial image. Only the
  * copies of the transmission pass may transmit; a page or a plain copy that does is refused. A
@@ -39,24 +59,10 @@ export function validateClusterMeshes(
   seen: Map<Material, HostAttributes>,
   degraded?: ReadDegraded,
 ) {
-  const validate = (drawn: readonly (ClusterDrawMesh | WholeMesh)[], transmissive: boolean) => {
-    for (const mesh of drawn) {
-      const { material } = mesh,
-        attributes = mesh.geometry.attributes;
-      if (Array.isArray(material)) refuse('material arrays are unsupported');
-      const previous = seen.get(material);
-      if (previous === attributes) continue;
-      const reason = clusterMaterialReason(material, attributes, transmissive);
-      if (reason) refuse(reason);
-      if (previous) continue;
-      seen.set(material, attributes);
-      degraded?.(material);
-    }
-  };
   seen.clear();
-  validate(meshes, false);
-  validate(wholeMeshes, false);
-  validate(copies.plain, false);
-  validate(copies.blended, false);
-  validate(copies.transmissive, true);
+  validateMeshes(meshes, seen, false, degraded);
+  validateMeshes(wholeMeshes, seen, false, degraded);
+  validateMeshes(copies.plain, seen, false, degraded);
+  validateMeshes(copies.blended, seen, false, degraded);
+  validateMeshes(copies.transmissive, seen, true, degraded);
 }
