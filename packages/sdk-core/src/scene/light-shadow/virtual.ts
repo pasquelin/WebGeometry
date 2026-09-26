@@ -95,11 +95,12 @@ const LAYER_SIDE = Math.floor(8192 / SHADOW_PAGE);
 export const LAYER_PAGES = LAYER_SIDE * LAYER_SIDE;
 /** Layers the page index addresses (`PAGE_INDEX_MASK`): 16 of 4 096 pages. */
 export const MAX_LAYERS = (PAGE_INDEX_MASK + 1) / LAYER_PAGES;
-/** The fewest whole layers that hold `pages`, each the smallest square that shares them out. Page
- *  `p` lies in layer `⌊p / side²⌋`: one layer is the one square the pool always was. */
-export function shadowPoolShape(pages: number) {
+/** The fewest whole layers of at most `layerSide²` pages — the device's texture side, the portable
+ *  one by default — that hold `pages`, each the smallest square that shares them out. Page `p`
+ *  lies in layer `⌊p / side²⌋`: one layer is the one square the pool always was. */
+export function shadowPoolShape(pages: number, layerSide = LAYER_SIDE) {
   const wanted = Math.min(Math.max(1, Math.ceil(pages)), MAX_LAYERS * LAYER_PAGES);
-  const layers = Math.ceil(wanted / LAYER_PAGES);
+  const layers = Math.ceil(wanted / layerSide ** 2);
   return { side: Math.ceil(Math.sqrt(wanted / layers)), layers };
 }
 /** Pages a layer side of the pool one shadowed light over a `width × height` screen asks. */

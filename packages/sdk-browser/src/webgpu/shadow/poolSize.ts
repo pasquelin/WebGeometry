@@ -1,5 +1,6 @@
 import { createShadowPlan } from '../../../../sdk-core/src/index.ts';
 import {
+  SHADOW_PAGE,
   shadowPoolSide,
   shadowPoolSize,
   shadowPoolShape,
@@ -21,11 +22,12 @@ const FLOOR_SIDE = shadowPoolSide(1, 1);
 /** The shadow pool `budgetBytes` holds for a screen that asks `wanted` pages: the fewest layers
  *  that hold what fits, of the largest side that fits, never below the floor. Short of `wanted`
  *  at the memory budget's atlas bytes (`SHADOW_ATLAS_BYTES`), the budget holds it, not the device. */
-export const shadowPoolFor = (wanted: number) => (budgetBytes: number) => {
+export const shadowPoolFor = (wanted: number, layerSide?: number) => (budgetBytes: number) => {
   const pages = Math.min(wanted, Math.floor(budgetBytes / shadowAtlasBytes(1)));
-  const { side: full, layers } = shadowPoolShape(pages),
+  const { side: full, layers } = shadowPoolShape(pages, layerSide),
     fits = Math.floor(Math.sqrt(budgetBytes / shadowAtlasBytes(1, layers)));
-  const side = Math.max(Math.min(FLOOR_SIDE, shadowPoolShape(wanted).side), Math.min(full, fits));
+  const floor = Math.min(FLOOR_SIDE, shadowPoolShape(wanted, layerSide).side),
+    side = Math.max(floor, Math.min(full, fits));
   const held = budgetBytes >= SHADOW_ATLAS_BYTES ? 'ceiling' : 'device-limit';
   const clamp: PoolClamp =
     side <= FLOOR_SIDE ? 'minimum' : side * side * layers < wanted ? held : null;
@@ -66,12 +68,14 @@ export function sizeShadowPool(rt: WebgpuPagesRuntime) {
   if (!casters) return;
   const viewport = [...rt.setup.viewport],
     wanted = shadowPoolSize(viewport[0], viewport[1], casters),
-    shape = shadowPoolShape(wanted),
+    // One layer as wide as the device draws: a pool that fits it is one pass a batch, as before.
+    layerSide = Math.floor(device.limits.maxTextureDimension2D / SHADOW_PAGE),
+    shape = shadowPoolShape(wanted, layerSide),
     asked = Math.min(shadowAtlasBytes(shape.side, shape.layers), SHADOW_ATLAS_BYTES);
   const granting = grantedShadowPool(
     device,
     asked,
-    shadowPoolFor(wanted),
+    shadowPoolFor(wanted, layerSide),
     diag.engineDiagnostic,
     (pool) => atlas.makePool(pool.side, pool.layers),
   );

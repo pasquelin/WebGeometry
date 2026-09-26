@@ -26,6 +26,7 @@ function session(viewport: [number, number], limit = Infinity) {
     changed = 0;
   const gpu = asWebgpuDevice({
     createBuffer: () => ({ destroy() {} }),
+    limits: { maxTextureDimension2D: 8192 },
     createTexture: ({ size }: { size: number[] }) => {
       if (size[0] * size[1] * 4 > limit) gpu.raise('Out of memory');
       return { destroy() {}, createView: () => ({}) };
@@ -154,6 +155,8 @@ test('the shadow pool rule never draws above the screen nor below the smallest o
   assert.equal(draw(shadowAtlasBytes(64)).side, 51);
   assert.equal(draw(shadowAtlasBytes(20)).clamp, 'device-limit');
   assert.equal(shadowPoolFor(20160)(shadowAtlasBytes(51, 2)).layers, 2, 'no layer past the grant');
+  const wide = shadowPoolFor(5040, 16384 / 128)(Infinity);
+  assert.deepEqual([wide.side, wide.layers], [71, 1], 'a device 16 384 texels wide: one layer');
   assert.equal(shadowPoolFor(20160)(SHADOW_ATLAS_BYTES).clamp, 'ceiling', 'the budget holds it');
   const floor = draw(1);
   assert.equal(floor.side, shadowPoolShape(pages(1, 1)).side);

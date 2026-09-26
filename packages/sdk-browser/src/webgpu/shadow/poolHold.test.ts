@@ -27,6 +27,7 @@ function frames(limit = Infinity) {
   let texture: object | undefined;
   const gpu = asWebgpuDevice({
     createBuffer: () => ({ destroy() {} }),
+    limits: { maxTextureDimension2D: 8192 },
     createTexture: ({ size }: { size: number[] }) => {
       if (size[0] * size[1] * 4 > limit) gpu.raise('Out of memory');
       return { destroy() {}, createView: () => ({}) };
