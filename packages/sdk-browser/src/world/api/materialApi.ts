@@ -59,7 +59,8 @@ export function createExplorerMaterialApi(inputs: Inputs) {
   const scene = () => (held ??= index());
   const required = (id: string) => {
     const rank = Number(id);
-    const worn = scene().surfaces.get(rank);
+    // An id is the rank as listed: '', ' 1' or '1.0' would name a rank by accident.
+    const worn = String(rank) === id ? scene().surfaces.get(rank) : undefined;
     if (!worn) throw new EngineError('UNKNOWN_MATERIAL', `the scene has no material ${id}`, { id });
     return { rank, worn };
   };
@@ -124,7 +125,10 @@ export function createExplorerMaterialApi(inputs: Inputs) {
           { id },
         );
       for (const surface of worn) write(surface, patch);
-      return backends.every((backend) => backend.refreshMaterials?.(true) !== false);
+      // An engine that cannot reread its surfaces has not taken the change (`setClearColor`).
+      return backends.every(
+        (backend) => !!backend.refreshMaterials && backend.refreshMaterials(true) !== false,
+      );
     },
   };
 }

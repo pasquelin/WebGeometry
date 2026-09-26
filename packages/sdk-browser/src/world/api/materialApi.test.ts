@@ -109,7 +109,8 @@ test('the scene materials are listed by table rank, each a detached copy', async
   assert.deepEqual(api.material('0'), before);
   assert.deepEqual(api.importedMaterials()[0], before);
   assert.equal((floor[0].color as G.Color).r, 0.5);
-  assert.throws(() => api.material('9'), refusal('UNKNOWN_MATERIAL'));
+  for (const id of ['9', '', ' 1', '1.0'])
+    assert.throws(() => api.material(id), refusal('UNKNOWN_MATERIAL'));
 });
 
 test('setMaterial writes each listed value into every surface of the material, live', async () => {
