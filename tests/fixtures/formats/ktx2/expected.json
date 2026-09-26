@@ -353,10 +353,10 @@
       "psnrDb": 48.0
     },
     "skipped": {},
-    "version": 4
+    "version": 5
   },
   "rule": "Each colour texture carries the lossless tail of its mip chain, from the first level whose neither side exceeds 64 through 1×1, in RGBA8 sRGB with straight alpha. The KTX2 container adds no loss: what the driver yields is the reconstruction the codec specification defines, and nothing else.",
   "textures": {
-    "url": "../../textures/v4/{sha}/{kind}-{level}.{format}"
+    "url": "../../textures/v5/{sha}/{kind}-{level}.{format}"
   }
 }

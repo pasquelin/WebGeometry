@@ -941,7 +941,11 @@
     "banner": "Glissez pour regarder autour. Cochez Conduire la voiture pour la prendre : W ou ↑ accélère, S ou ↓ freine, A D ou ← → braquent. Relâcher fait retomber les caisses et les balles.",
     "words": {
       "credit": "Vallée modélisée en code pour cet exemple, CC0 — voir assets/examples/CREDITS.md",
-      "refused": "Refusé sur ce moteur de rendu"
+      "refused": "Refusé sur ce moteur de rendu",
+      "close": "Gros plan",
+      "far": "Vue lointaine",
+      "pan": "Panoramique rapide",
+      "still": "Immobile"
     },
     "controls": {
       "drive": "Conduire la voiture",

@@ -941,7 +941,11 @@
     "banner": "드래그해서 둘러보세요. 차를 타려면 운전을 켜세요: W 또는 ↑ 가속, S 또는 ↓ 브레이크, A D 또는 ← → 조향. 다시 떨어뜨리기로 상자와 공이 다시 떨어집니다.",
     "words": {
       "credit": "이 예제를 위해 코드로 만든 계곡, CC0 — assets/examples/CREDITS.md 참고",
-      "refused": "이 백엔드에서 거부됨"
+      "refused": "이 백엔드에서 거부됨",
+      "close": "클로즈업",
+      "far": "원경",
+      "pan": "빠른 패닝",
+      "still": "정지"
     },
     "controls": {
       "drive": "차 운전",

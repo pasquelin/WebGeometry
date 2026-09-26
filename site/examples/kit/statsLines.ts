@@ -79,6 +79,10 @@ export function statLines(sample: StatsSample): [string, string][] {
   return [...lines, ...shadowLines(sample)];
 }
 
+/** Frames a second from the times frames were drawn, in ms: `null` from fewer than two. */
+export const rate = (times: readonly number[]) =>
+  times.length < 2 ? null : ((times.length - 1) * 1000) / (times[times.length - 1] - times[0]);
+
 /** Triangles of the visible meshes built in the scene: indexed, or three vertices each. Points
  *  and lines draw no triangle. */
 export function sceneTriangles(scene: SceneNode): number {
@@ -130,7 +134,7 @@ export function watchStats(
     // The rate is read from the intervals between the frames of the last second; with fewer
     // than two, the image stands still and the corner keeps the rate it last read.
     const held = drawn.length < 2;
-    if (!held) fps = ((drawn.length - 1) * 1000) / (drawn[drawn.length - 1] - drawn[0]);
+    if (!held) fps = rate(drawn);
     const sample: StatsSample = {
       ...last,
       fps,

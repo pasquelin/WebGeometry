@@ -161,9 +161,9 @@
             [200, 160, 120, 0],
             [200, 160, 120, 0],
             [200, 160, 120, 0],
-            [200, 160, 120, 255]
+            [200, 160, 120, 251]
           ],
-          "sha256": "f21b3143809a5da4b307db070118e8bcc527a6e32791e3f168799f9021a5e7bc",
+          "sha256": "9bfa2af49d048b2630ff591816f5323bf0065d9e319df27321b432844e19f8d2",
           "size": [12, 8]
         },
         {
@@ -174,9 +174,9 @@
             [200, 160, 120, 0],
             [200, 160, 120, 0],
             [200, 160, 120, 0],
-            [200, 160, 120, 255]
+            [200, 160, 120, 251]
           ],
-          "sha256": "6cf6f396230e0068467f574d84900378c127e4bd2ed8c65230b79b2b6383ed5a",
+          "sha256": "6ae4bf26b15145c664d24383eb14e90f68372f19e6b50dd3838d9342f1ae2fb1",
           "size": [6, 4]
         },
         {
@@ -187,22 +187,22 @@
             [200, 160, 120, 0],
             [200, 160, 120, 0],
             [200, 160, 120, 0],
-            [200, 160, 120, 192]
+            [200, 160, 120, 255]
           ],
-          "sha256": "3876c6b81e13003047ad3cb3f032a011ecc9030fc6c8ff21de2c958edf220011",
+          "sha256": "5045af080fcdfe61e5caaec400f7ac4d92573fbd123e97f34966660124dcf5a7",
           "size": [3, 2]
         },
         {
           "coveredAtMaskCutoff": 1,
           "level": 4,
           "samples": [
-            [200, 160, 120, 96],
-            [200, 160, 120, 96],
-            [200, 160, 120, 96],
-            [200, 160, 120, 96],
-            [200, 160, 120, 96]
+            [200, 160, 120, 128],
+            [200, 160, 120, 128],
+            [200, 160, 120, 128],
+            [200, 160, 120, 128],
+            [200, 160, 120, 128]
           ],
-          "sha256": "1c77a61189772b1dfa0ff006373344285175c07328728e556650e7aae5d56cf4",
+          "sha256": "362aa7e416f406e88e48129bf644c7a7b4233c1df097e61a9b7f4c82595034d0",
           "size": [1, 1]
         }
       ],
@@ -355,7 +355,7 @@
         "layout": "rgba",
         "maskFlips": 0,
         "maxDelta": 7,
-        "psnrDb": 54.76,
+        "psnrDb": 54.74,
         "sha256": "81917ae413a56beb0171601b3b3e621bd4f06601f75e7e1ac5de9abf510b051c"
       },
       {
@@ -379,10 +379,10 @@
       "psnrDb": 48.0
     },
     "skipped": {},
-    "version": 4
+    "version": 5
   },
   "rule": "Each colour texture carries the lossless tail of its mip chain, from the first level whose neither side exceeds 64 through 1×1, in RGBA8 sRGB with straight alpha. Only the texture whose every binding is a MASK base colour has its alpha rescaled to preserve source coverage at the material threshold; the other two keep their alpha intact.",
   "textures": {
-    "url": "../../textures/v4/{sha}/{kind}-{level}.{format}"
+    "url": "../../textures/v5/{sha}/{kind}-{level}.{format}"
   }
 }

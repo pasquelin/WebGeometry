@@ -117,10 +117,10 @@
       "psnrDb": 48.0
     },
     "skipped": {},
-    "version": 4
+    "version": 5
   },
   "rule": "A flattened composite of eight bits per channel enters progressive previews like any other RGBA8 source: the lossless tail of its mip chain is produced, no reason is carried in the report, and the pixels are those the file already carried — never recomposed layers.",
   "textures": {
-    "url": "../../textures/v4/{sha}/{kind}-{level}.{format}"
+    "url": "../../textures/v5/{sha}/{kind}-{level}.{format}"
   }
 }

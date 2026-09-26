@@ -41,7 +41,7 @@ export interface ProfileWindow {
 const SUMS = new Set(['totalMs', 'encodeSubmitMs']);
 
 /** The p50 and p95 of a list of durations, or `null` when it is empty. */
-function spread(values: number[]): Spread | null {
+export function spread(values: number[]): Spread | null {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
   const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];

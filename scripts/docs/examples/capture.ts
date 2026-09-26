@@ -108,6 +108,7 @@ export const ENGINE_FAILURE =
  *
  * `gpu: false` hides `navigator.gpu` from the page, the machine an example must render on too:
  * naming no backend, it reaches `chooseBackends`, which takes the engine's own WebGL2 path.
+ * `slowMs` makes a slowed build of it: every animation-frame callback first spends that long.
  */
 export async function openExample(
   browser: Browser,
@@ -116,6 +117,7 @@ export async function openExample(
   viewport: { width: number; height: number },
   share?: number,
   gpu = true,
+  slowMs = 0,
 ) {
   const least = share ?? leastDrawn(entry.id, gpu);
   const page = await browser.newPage({ viewport });
@@ -133,6 +135,15 @@ export async function openExample(
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'gpu', { get: () => undefined, configurable: true });
     });
+  if (slowMs)
+    await page.addInitScript((spend: number) => {
+      const request = requestAnimationFrame.bind(globalThis);
+      globalThis.requestAnimationFrame = (callback) =>
+        request((time) => {
+          for (const end = performance.now() + spend; performance.now() < end;);
+          callback(time);
+        });
+    }, slowMs);
   await page.goto(`http://127.0.0.1:${port}/${entry.file}`);
   let drawn = 0;
   for (let attempt = 0; attempt < 30 && drawn < least; attempt++) {
