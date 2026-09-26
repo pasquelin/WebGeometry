@@ -172,8 +172,7 @@ export interface BackendContext {
   particles?: readonly import('../../../sdk-core/src/fluids/particles.ts').ParticlePool[];
   /** Hears once why the engine refused the `particles`; the session goes on without them. */
   particlesRefused?: (reason: string) => void;
-  /** Hears a surface WebGL2 draws without a physical feature (`noticeMaterialDegraded`). */
-  materialDegraded?: import('../webgl/cluster/validation.ts').MaterialDegraded;
+  materialDegraded?: import('../webgl/cluster/validation.ts').MaterialDegraded; // `noticeMaterialDegraded`
   /** Contract lights, owned by the host and shared by every engine of the session. */
   sceneLights?: SceneLightStore;
   /** Imported light ids, in cache order: the host sets or removes them (`importedLights()`). */
