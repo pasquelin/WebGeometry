@@ -102,9 +102,10 @@ test('the scene materials are listed by table rank, each a detached copy', async
   const before = api.material('0');
   assert.deepEqual(before.tiling, [1, 1]);
   for (const read of [api.materials()[0], api.material('0'), api.importedMaterials()[0]]) {
-    (read.baseColor as number[])[0] = 9;
-    (read.emissive as number[])[1] = 9;
-    (read.tiling as number[])[0] = 9;
+    // A host that ignores `readonly` writes into what it read: the engine must not see it.
+    Reflect.set(read.baseColor, 0, 9);
+    Reflect.set(read.emissive, 1, 9);
+    Reflect.set(read.tiling!, 0, 9);
     read.roughness = 0;
   }
   assert.deepEqual(api.material('0'), before);
