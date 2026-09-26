@@ -130,6 +130,9 @@ fn a_reused_folder_proves_its_cells_through_the_pages() {
     let slot = tables["partition"]["pages"][0].as_str().expect("slot");
     let page = format!("scene-page-{}.json", &slot[..64]);
     let old = serde_json::to_vec(&json!({"version": 3})).expect("json");
+    // A rebuild of the key writes the same mesh pages, whatever it found already built (#792).
+    let mesh_pages = || read_json(&directory.join(MANIFEST_FILE))["pages"].clone();
+    let built = mesh_pages();
     for (name, bytes, reason) in [
         ("scene-cell-0.json", &b"{}"[..], "scene-cell-0.json"),
         (page.as_str(), b"{}", "is not the page its slot names"),
@@ -143,6 +146,7 @@ fn a_reused_folder_proves_its_cells_through_the_pages() {
         assert!(announced.contains(reason), "{reason}: {announced}");
         let rebuilt = fs::read(directory.join(name)).expect("rebuilt");
         assert_eq!(rebuilt, intact, "{reason}");
+        assert_eq!(mesh_pages(), built, "{reason}: the same mesh pages");
     }
     fs::remove_dir_all(options.source.parent().expect("root")).expect("cleanup");
 }
