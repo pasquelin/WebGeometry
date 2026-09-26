@@ -1,5 +1,6 @@
 import { BOX_VALUES } from '../../../../sdk-core/src/index.ts';
 import type { BlendCopy } from '../../cluster/blendCopyContract.ts';
+import type { PageSurface } from '../../page/surface.ts';
 import type { BlendHostScene } from '../../cluster/blendSceneRecord.ts';
 import { refreshBlendBounds } from './worlds.ts';
 import {
@@ -19,6 +20,16 @@ import { ensureBlendIndexBuffer, ensureBlendNormalBuffer, ensureBlendUvBuffer } 
 import type { createWebgpuBlendState } from './state.ts';
 import type { WebgpuGpuState } from '../pages/state/gpu.ts';
 type BlendState = ReturnType<typeof createWebgpuBlendState>;
+
+/** The colour and opacity a blend item draws with, written into `into`: at prepare, and again
+ *  when the host rewrote its surface in place (`refreshBlendMaterials`). */
+export function blendRgba(mat: PageSurface, into: [number, number, number, number]) {
+  into[0] = mat.baseColor[0];
+  into[1] = mat.baseColor[1];
+  into[2] = mat.baseColor[2];
+  into[3] = mat.opacity;
+  return into;
+}
 
 /** Creates forward transparent GPU items, one per copy — per placement —, in source mesh order. */
 export function prepareWebgpuBlend(
@@ -54,7 +65,6 @@ export function prepareWebgpuBlend(
       ? undefined
       : ensureBlendNormalBuffer(device, copy.geometry.attributes, gpu);
     const hasNormal = paged ? !!copy.geometry.attributes.normal : !!normal;
-    const opacity = mat.opacity;
     let flags = 0;
     if (mat.lit) flags |= FLAG_LIT;
     if (mat.doubleSided) flags |= FLAG_DOUBLE;
@@ -89,12 +99,7 @@ export function prepareWebgpuBlend(
       sourceGeometry: copy.geometry,
       worldBox,
       bounds: undefined as Float64Array | undefined,
-      rgba: [mat.baseColor[0], mat.baseColor[1], mat.baseColor[2], opacity] as [
-        number,
-        number,
-        number,
-        number,
-      ],
+      rgba: blendRgba(mat, [0, 0, 0, 0]),
       map: mat.map,
       flags,
       paged,
