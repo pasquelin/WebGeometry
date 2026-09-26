@@ -1,12 +1,16 @@
 //! The manifest as a page tree (#762): `clusters.json` is a root of fixed size — the fields that
 //! name the product, the slot of its head page and `FAN_OUT` slots of mesh pages, in the layout of
 //! the cell index and read by its pager (`partition/pages.rs`). The head page holds every other field and
-//! the previews' sidecar; a mesh page, slim primitives and their sidecar. Files are named by content.
+//! the previews' sidecar; a mesh page, slim primitives and their sidecar, cut under `PAGE_BYTES`
+//! (#792). Files are named by content.
 use super::*;
 use crate::compiler_tables::partition::pages::*;
 use crate::manifest_binary::{columns, Templates, MANIFEST_BINARY_VERSION};
 use crate::texture_preview::TexturePreview;
 use serde_json::Map;
+
+mod mesh;
+pub(crate) use mesh::*;
 
 /// The manifest's pages: a mesh page lists its slim primitives.
 pub(crate) const MANIFEST_PAGES: Kind = Kind {
@@ -23,18 +27,48 @@ pub(crate) fn sidecar_file(sha256: &str) -> String {
     format!("{}{sha256}.bin", MANIFEST_PAGES.prefix)
 }
 
-/// Writes the manifest `result` as pages in `directory`, `extra` among its fields and the texture
-/// previews in the head's sidecar, then its root, and removes the pages an older root named.
+/// Where a manifest's per-page URLs point: the shared objects, by fingerprint.
+pub(crate) const TEMPLATES: Templates = Templates {
+    page: "../../objects/{sha}.bin",
+    geometry: "../../objects/{sha}.bin",
+    bundle: "../../objects/{sha}.bin",
+};
+
+/// The page of `primitives` under `top` and `previews`, without the run's report, naming its
+/// sidecar: written in `directory` when one is given, its fingerprint returned; else only measured,
+/// under a fingerprint of zeros.
+fn columned(
+    top: &Map<String, Value>,
+    primitives: &[Value],
+    previews: &[TexturePreview],
+    directory: Option<&Path>,
+) -> Result<(Value, String)> {
+    let (page, bytes) = columns(top, primitives, &TEMPLATES, previews)?;
+    let mut page = without_run_report(page);
+    let sha256 = directory.map_or_else(|| "0".repeat(64), |_| hash(&bytes));
+    if let Some(directory) = directory {
+        atomic(&directory.join(sidecar_file(&sha256)), &bytes)?;
+    }
+    page["binary"]["url"] = json!(sidecar_file(&sha256));
+    page["binary"]["sha256"] = json!(&sha256);
+    Ok((page, sha256))
+}
+
+/// Writes the manifest `result` as pages in `directory` — `extra` among its fields, the texture
+/// previews in the head's sidecar, its primitives in `mesh`, already written — then its root, and
+/// removes the pages an older root named.
 pub(crate) fn write_manifest(
     result: &Value,
     extra: Value,
     previews: &[TexturePreview],
-    templates: &Templates,
+    mesh: &MeshPages,
     directory: &Path,
 ) -> Result<()> {
     let mut top = result.as_object().expect("a manifest").clone();
-    let primitives = top.remove(MANIFEST_PAGES.records).unwrap_or_default();
-    let primitives = primitives.as_array().map_or(&[][..], Vec::as_slice);
+    if let Some(Value::Array(primitives)) = top.remove(MANIFEST_PAGES.records) {
+        let report = primitives.iter().map(|p| p[RUN_REPORT].clone());
+        top.insert(RUN_REPORT.into(), report.collect());
+    }
     if let Value::Object(extra) = extra {
         top.extend(extra);
     }
@@ -42,30 +76,22 @@ pub(crate) fn write_manifest(
     for field in FIXED {
         root.extend(top.remove_entry(field));
     }
-    // The page of `primitives` and `previews` under `top` and its sidecar, both `kept`; its slot.
-    let mut kept = BTreeSet::new();
-    let mut page = |top: &Map<String, Value>, primitives: &[Value], previews| -> Result<String> {
-        let (mut page, bytes) = columns(top, primitives, templates, previews)?;
-        let sha256 = hash(&bytes);
-        atomic(&directory.join(sidecar_file(&sha256)), &bytes)?;
-        page["binary"]["url"] = json!(sidecar_file(&sha256));
-        page["binary"]["sha256"] = json!(&sha256);
-        page["version"] = json!(MANIFEST_PAGES.version);
-        let slot = write_page(&MANIFEST_PAGES, directory, &page, &[])?;
-        kept.extend([sha256, slot[..64].to_string()]);
-        Ok(slot)
-    };
-    root.insert("head".into(), json!(page(&top, &[], previews)?));
-    // One mesh page lists every primitive (#792 cuts them under `PAGE_BYTES`).
-    let mut pages = vec![page(&Map::new(), primitives, &[])?];
-    pages.resize(FAN_OUT, "0".repeat(SLOT_WIDTH));
-    root.insert("pages".into(), json!(pages));
+    let (mut head, sha256) = columned(&top, &[], previews, Some(directory))?;
+    head["version"] = json!(MANIFEST_PAGES.version);
+    let slot = write_page(&MANIFEST_PAGES, directory, &head, &[])?;
+    let mut kept = mesh.kept.clone();
+    kept.extend([sha256, slot[..64].to_string()]);
+    root.insert("head".into(), json!(slot));
+    root.insert("pages".into(), json!(mesh.slots));
     atomic(&directory.join(MANIFEST_FILE), &serde_json::to_vec(&root)?)?;
     // A refused folder is rebuilt under its key, which prune keeps whole: its old pages go here.
     for entry in fs::read_dir(directory)? {
         let path = entry?.path();
         let name = path.file_name().unwrap_or_default().to_string_lossy();
-        if name.starts_with(MANIFEST_PAGES.prefix) && !kept.iter().any(|s| name.contains(s)) {
+        let Some(named) = name.strip_prefix(MANIFEST_PAGES.prefix) else {
+            continue;
+        };
+        if !named.get(..64).is_some_and(|sha256| kept.contains(sha256)) {
             fs::remove_file(&path)?;
         }
     }
