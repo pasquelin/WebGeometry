@@ -941,7 +941,11 @@
     "banner": "Arrastra para mirar alrededor. Marca Conducir para tomar el coche: W o ↑ acelera, S o ↓ frena, A D o ← → giran. Soltar hace caer de nuevo las cajas y las pelotas.",
     "words": {
       "credit": "Valle modelado en código para este ejemplo, CC0 — ver assets/examples/CREDITS.md",
-      "refused": "Rechazado en este backend"
+      "refused": "Rechazado en este backend",
+      "close": "Primer plano",
+      "far": "Vista lejana",
+      "pan": "Barrido rápido",
+      "still": "Quieto"
     },
     "controls": {
       "drive": "Conducir el coche",
