@@ -9,7 +9,7 @@ import {
 } from '../../../sdk-core/src/physics/index.ts';
 import type { Object3D } from '../../../sdk-core/src/world/object/object3d.ts';
 import type { Bodied } from './bodies.ts';
-import { extrapolateAll } from './extrapolate.ts';
+import { extrapolateAll, interpolateAll, landAll } from './drawnPoses.ts';
 import { createPosePlacer } from './placer.ts';
 
 /** The bodies a tick's records name: meshes and generations by slot, and the way out of one. */
@@ -103,10 +103,8 @@ export function createPhysicsPoses(maxBodies: number, root: Object3D) {
           index = head & BODY_INDEX,
           g = generation[index],
           mesh = meshes[index];
-        // A body that left its slot, or a model's own (`bodySlots.ts`), draws nothing here. The
-        // mesh is compared, never read: its object stays out of the cache, ten thousand a tick.
-        if (g !== (head >>> GENERATION_SHIFT) % GENERATIONS || mesh === null || mesh === undefined)
-          continue;
+        // A body that left its slot, or a model's own (`bodySlots.ts`), draws nothing here.
+        if (g !== (head >>> GENERATION_SHIFT) % GENERATIONS || mesh == null) continue;
         if (bound[index] !== g) {
           placer.bind(index, g, mesh);
           decorative[index] = mesh.physics.decorative ? 1 : 0;
@@ -173,12 +171,11 @@ export function createPhysicsPoses(maxBodies: number, root: Object3D) {
         else listed[index] = 0;
       }
       count = kept;
-      // Short of the target, or on it: the record itself, sent again, is then seen unchanged.
-      if (alpha < 1 || ahead === 0) placer.draw(moving, count, to, alpha < 1 ? step : 1);
-      else {
-        extrapolateAll(moving, count, to, velocity, ahead, position, quaternion);
-        placer.commit(moving, count);
-      }
+      // Short of the target; on it, the record itself (sent again, it is seen unchanged); past it.
+      if (alpha < 1) interpolateAll(moving, count, to, step, position, quaternion);
+      else if (ahead === 0) landAll(moving, count, to, position, quaternion);
+      else extrapolateAll(moving, count, to, velocity, ahead, position, quaternion);
+      placer.commit(moving, count);
       placer.end();
       if (alpha < 1 || (awake && elapsed < 2 * span)) return true;
       for (let i = 0; i < count; i++) listed[moving[i]] = 0;

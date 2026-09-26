@@ -47,25 +47,29 @@ export function createPosePlacer(maxBodies: number, root: Object3D) {
     direct = false,
     placed: Bodied[] = [];
   /** The tree's stores, read once per batch: they are replaced when the tree grows. */
-  let [tp, tq, flags] = [tree.position, tree.quaternion, tree.flags];
+  let tp = tree.position,
+    tq = tree.quaternion,
+    flags = tree.flags;
   /** The listed slots into the tree and rows; its stores as locals, not reloaded at each use. */
   const commitAll = (list: Int32Array, count: number) => {
-    const [p, q, f] = [tp, tq, flags];
+    const p = tp,
+      q = tq,
+      f = flags;
     for (let i = 0; i < count; i++) commit(list[i], p, q, f);
   };
   /** Slot `index`'s pose, as its arrays hold it, into the tree's stores and its row. */
-  const commit = (index: number, tp: Float64Array, tq: Float64Array, flags: Uint8Array) => {
+  const commit = (index: number, sp: Float64Array, sq: Float64Array, sf: Uint8Array) => {
     const p = index * 3,
       q = index * 4,
       n = node[index];
-    tp[n * 3] = position[p];
-    tp[n * 3 + 1] = position[p + 1];
-    tp[n * 3 + 2] = position[p + 2];
-    tq[n * 4] = quaternion[q];
-    tq[n * 4 + 1] = quaternion[q + 1];
-    tq[n * 4 + 2] = quaternion[q + 2];
-    tq[n * 4 + 3] = quaternion[q + 3];
-    flags[n] |= NODE_TRS_DIRTY;
+    sp[n * 3] = position[p];
+    sp[n * 3 + 1] = position[p + 1];
+    sp[n * 3 + 2] = position[p + 2];
+    sq[n * 4] = quaternion[q];
+    sq[n * 4 + 1] = quaternion[q + 1];
+    sq[n * 4 + 2] = quaternion[q + 2];
+    sq[n * 4 + 3] = quaternion[q + 3];
+    sf[n] |= NODE_TRS_DIRTY;
     if (rowOf[index] === UNASKED) seatOf(index, owner[index]!);
     const b = batchOf[index],
       row = rowOf[index];
@@ -146,47 +150,13 @@ export function createPosePlacer(maxBodies: number, root: Object3D) {
       direct = rest;
       from.fill(Infinity);
       to.fill(-1);
-      [tp, tq, flags] = [tree.position, tree.quaternion, tree.flags];
+      tp = tree.position;
+      tq = tree.quaternion;
+      flags = tree.flags;
     },
     place,
+    /** The listed slots, their poses as their arrays hold them, into the tree and their rows. */
     commit: commitAll,
-    /**
-     * Draws the `count` slots listed in `list` the fraction `step` of the way from where they are
-     * drawn to their targets (7 numbers per slot in `target`, at the slot's index × 7), each turn
-     * normalised and taken the shorter way round; a `step` of 1 lands on the targets exactly.
-     */
-    draw(list: Int32Array, count: number, target: Float32Array, step: number) {
-      if (step === 1) {
-        for (let i = 0; i < count; i++) place(list[i], target, list[i] * 7);
-        return;
-      }
-      for (let i = 0; i < count; i++) {
-        const index = list[i],
-          o = index * 7;
-        const p = index * 3,
-          q = index * 4;
-        position[p] += (target[o] - position[p]) * step;
-        position[p + 1] += (target[o + 1] - position[p + 1]) * step;
-        position[p + 2] += (target[o + 2] - position[p + 2]) * step;
-        // A quaternion and its opposite are one rotation: the target on the drawn one's side.
-        const dot =
-          quaternion[q] * target[o + 3] +
-          quaternion[q + 1] * target[o + 4] +
-          quaternion[q + 2] * target[o + 5] +
-          quaternion[q + 3] * target[o + 6];
-        const s = dot < 0 ? -1 : 1;
-        const x = quaternion[q] + (s * target[o + 3] - quaternion[q]) * step,
-          y = quaternion[q + 1] + (s * target[o + 4] - quaternion[q + 1]) * step,
-          z = quaternion[q + 2] + (s * target[o + 5] - quaternion[q + 2]) * step,
-          w = quaternion[q + 3] + (s * target[o + 6] - quaternion[q + 3]) * step;
-        const n = 1 / (Math.sqrt(x * x + y * y + z * z + w * w) || 1);
-        quaternion[q] = x * n;
-        quaternion[q + 1] = y * n;
-        quaternion[q + 2] = z * n;
-        quaternion[q + 3] = w * n;
-      }
-      commitAll(list, count);
-    },
     /** Closes the batch: the world hears the written rows and the nodes it recomposes itself. */
     end() {
       const link = root._link;

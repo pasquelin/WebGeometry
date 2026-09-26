@@ -17,6 +17,7 @@ import { Group } from '../../../sdk-core/src/world/object/object3d.ts';
 import type { Bodied } from './bodies.ts';
 import { body, startModule } from './module.fixture.ts';
 import { createPhysicsPoses } from './poses.ts';
+import { poseRecord } from './worker.fixture.ts';
 import { PHYSICS_PROTOCOL, resultWords, type FromPhysics, type ToPhysics } from './protocol.ts';
 
 /** `count` seated crates in slots 0.., their rows in one batch, and the frames' `placed` calls. */
@@ -42,14 +43,10 @@ function seated(count: number) {
 
 /** A tick's records: slot `i` at height `y + i`, turning, moving at `v` m/s up (asleep: `sleep`). */
 function records(count: number, y: number, v: number, sleep = false) {
-  const words = new Uint32Array(count * POSE_WORDS),
-    floats = new Float32Array(words.buffer);
+  const words = new Uint32Array(count * POSE_WORDS);
   for (let i = 0; i < count; i++) {
-    words[i * POSE_WORDS] = i | (sleep ? ASLEEP_BIT : 0);
-    floats.set(
-      [i, y + i, 0, 0, Math.sin(y / 4), 0, Math.cos(y / 4), 0, v, 0, 0, 0.5, 0],
-      i * POSE_WORDS + 1,
-    );
+    const pose = [i, y + i, 0, 0, Math.sin(y / 4), 0, Math.cos(y / 4), 0, v, 0, 0, 0.5, 0];
+    words.set(poseRecord(i | (sleep ? ASLEEP_BIT : 0), pose), i * POSE_WORDS);
   }
   return words;
 }
