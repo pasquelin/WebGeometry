@@ -97,7 +97,8 @@ export function compactTile(
     hits = new Uint32Array(2 * layout.words);
   let opaqueKept = 0,
     blendKept = 0;
-  // Thread zero clears the masks before the first batch, and between batches counts a full one.
+  // The lanes clear the masks before the first batch; between batches thread zero counts a full
+  // one and clears them.
   for (let first = 0; first < lightCount; first += layout.threads) {
     if (first > 0) {
       opaqueKept += maskTotal(hits, layout.opaqueMask, layout.words);
