@@ -1,5 +1,6 @@
 import { DRAW_INDIRECT_STRIDE } from '../../../gpu/draw/draw.ts';
 import { MAX_SHADOW_REGIONS } from '../../../gpu/shadow/atlas.ts';
+import { layerPass } from '../../../gpu/shadow/layers.ts';
 import { HIZ_UNTESTED } from '../../../gpu/shadow/occlusion.ts';
 import { REGION_RESTORE, REGION_STATIC } from '../../shadow/regions.ts';
 import { shadowRegionGroup } from '../../shadow/regionGroups.ts';
@@ -89,38 +90,38 @@ export function encodeShadowAtlas(
   lights.shadowDraws += count;
   const drawsBefore = run.gpuDrawCalls;
   const draw = (passes: GPURenderPassDescriptor[], layer: boolean, tested: boolean) => {
-    for (let at = 0; at < passes.length; at++) {
-      if (!regions.inLayer(at)) continue;
-      let pass: GPURenderPassEncoder | undefined;
-      for (let region = 0; region < count; region++) {
-        const start = regions.startOf(region);
-        if (layer !== (start === REGION_STATIC) || regions.layer(region) !== at) continue;
-        const visible = tested && start === REGION_RESTORE;
-        const group = shadowRegionGroup(rt, device, region, visible);
-        if (!group) continue;
-        pass ??= encoder.beginRenderPass(passes[at]);
-        const x = regions.x(region),
-          y = regions.y(region);
-        pass.setViewport(x, y, SHADOW_PAGE, SHADOW_PAGE, 0, 1);
-        pass.setScissorRect(x, y, SHADOW_PAGE, SHADOW_PAGE);
-        if (start === REGION_RESTORE) {
-          pass.setPipeline(staticLayer!.restore);
-          pass.setBindGroup(0, staticLayer!.groups[at]);
-        } else {
-          pass.setPipeline(shadows.clear);
-          pass.setBindGroup(0, group);
-          pass.setBindGroup(1, shadows.faceGroup, [region * shadows.faceStride]);
-        }
-        pass.draw(3);
-        pass.setPipeline(shadows.depth);
+    let pass!: GPURenderPassEncoder,
+      open = -1;
+    for (let i = 0; i < count * passes.length; i++) {
+      const region = i % count,
+        at = (i - region) / count;
+      const start = regions.startOf(region);
+      if (layer !== (start === REGION_STATIC) || regions.layer(region) !== at) continue;
+      const visible = tested && start === REGION_RESTORE;
+      const group = shadowRegionGroup(rt, device, region, visible);
+      if (!group) continue;
+      if (open !== at) pass = layerPass(encoder, pass, passes[(open = at)]);
+      const x = regions.x(region),
+        y = regions.y(region);
+      pass.setViewport(x, y, SHADOW_PAGE, SHADOW_PAGE, 0, 1);
+      pass.setScissorRect(x, y, SHADOW_PAGE, SHADOW_PAGE);
+      if (start === REGION_RESTORE) {
+        pass.setPipeline(staticLayer!.restore);
+        pass.setBindGroup(0, staticLayer!.groups[at]);
+      } else {
+        pass.setPipeline(shadows.clear);
         pass.setBindGroup(0, group);
         pass.setBindGroup(1, shadows.faceGroup, [region * shadows.faceStride]);
-        const commands = visible ? occlusion!.visibleIndirect : cull.indirect;
-        pass.drawIndirect(commands, region * DRAW_INDIRECT_STRIDE);
-        run.gpuDrawCalls += 2;
       }
-      pass?.end();
+      pass.draw(3);
+      pass.setPipeline(shadows.depth);
+      pass.setBindGroup(0, group);
+      pass.setBindGroup(1, shadows.faceGroup, [region * shadows.faceStride]);
+      const commands = visible ? occlusion!.visibleIndirect : cull.indirect;
+      pass.drawIndirect(commands, region * DRAW_INDIRECT_STRIDE);
+      run.gpuDrawCalls += 2;
     }
+    if (open >= 0) pass.end();
   };
   if (regions.layered) draw(staticLayer!.passes, true, false);
   const tested = encodeOcclusion(rt, encoder, count);
@@ -153,37 +154,38 @@ export function encodeTransmittance(
   const { lights, run } = rt,
     { shadows, cull, regions, occlusion } = lights;
   const casters = rt.services.blendCasters.used > 0;
-  const half = SHADOW_PAGE / 2;
-  for (let at = 0; at < layer.passes.length; at++) {
-    if (!regions.inLayer(at)) continue;
-    let pass: GPURenderPassEncoder | undefined;
-    for (let region = 0; region < count; region++) {
-      const start = regions.startOf(region);
-      if (start === REGION_STATIC || regions.layer(region) !== at) continue;
-      const visible = tested && start === REGION_RESTORE;
-      const group = shadowRegionGroup(rt, device, region, visible);
-      if (!group) continue;
-      if (!pass) {
-        pass = encoder.beginRenderPass(layer.passes[at]);
-        pass.setBindGroup(2, layer.opaqueGroups[at]);
-      }
-      const x = regions.x(region) / 2,
-        y = regions.y(region) / 2;
-      pass.setViewport(x, y, half, half, 0, 1);
-      pass.setScissorRect(x, y, half, half);
-      pass.setBindGroup(0, group);
-      pass.setBindGroup(1, shadows!.faceGroup, [region * shadows!.faceStride]);
-      pass.setPipeline(layer.clear);
-      pass.draw(3);
-      run.gpuDrawCalls++;
-      if (!casters) continue;
-      const commands = visible ? occlusion!.visibleIndirect : cull!.indirect;
-      for (const pipeline of [layer.depth, layer.blend]) {
-        pass.setPipeline(pipeline);
-        pass.drawIndirect(commands, region * DRAW_INDIRECT_STRIDE);
-      }
-      run.gpuDrawCalls += 2;
+  const half = SHADOW_PAGE / 2,
+    { passes } = layer;
+  let pass!: GPURenderPassEncoder,
+    open = -1;
+  for (let i = 0; i < count * passes.length; i++) {
+    const region = i % count,
+      at = (i - region) / count;
+    const start = regions.startOf(region);
+    if (start === REGION_STATIC || regions.layer(region) !== at) continue;
+    const visible = tested && start === REGION_RESTORE;
+    const group = shadowRegionGroup(rt, device, region, visible);
+    if (!group) continue;
+    if (open !== at) {
+      pass = layerPass(encoder, pass, passes[(open = at)]);
+      pass.setBindGroup(2, layer.opaqueGroups[at]);
     }
-    pass?.end();
+    const x = regions.x(region) / 2,
+      y = regions.y(region) / 2;
+    pass.setViewport(x, y, half, half, 0, 1);
+    pass.setScissorRect(x, y, half, half);
+    pass.setBindGroup(0, group);
+    pass.setBindGroup(1, shadows!.faceGroup, [region * shadows!.faceStride]);
+    pass.setPipeline(layer.clear);
+    pass.draw(3);
+    run.gpuDrawCalls++;
+    if (!casters) continue;
+    const commands = visible ? occlusion!.visibleIndirect : cull!.indirect;
+    for (const pipeline of [layer.depth, layer.blend]) {
+      pass.setPipeline(pipeline);
+      pass.drawIndirect(commands, region * DRAW_INDIRECT_STRIDE);
+    }
+    run.gpuDrawCalls += 2;
   }
+  if (open >= 0) pass.end();
 }

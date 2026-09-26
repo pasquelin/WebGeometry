@@ -38,7 +38,6 @@ test('page 4 096 of a pool 64 pages a side opens its layer 1, where the shading 
   for (const page of [4095, 4096, 4096 + 65]) list.push(page, DRAW_ALL, volumes, words);
   const place = (r: number) => [list.layer(r), list.x(r) / 128, list.y(r) / 128];
   assert.deepEqual([0, 1, 2].flatMap(place), [0, 63, 63, 1, 0, 0, 1, 1, 1]);
-  assert.deepEqual([0, 1, 2].map(list.inLayer), [1, 2, 0], 'a layer without a page opens no pass');
   // The shading's `shadowOffset`, the same place: the page within its layer, then the layer.
   const offset =
     /local=phys%\(side\*side\);\n.*f32\(local%side\),f32\(local\/side\).*f32\(phys\/\(side\*side\)\)/;

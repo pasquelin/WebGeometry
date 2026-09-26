@@ -138,7 +138,6 @@ function encoded(casters: boolean) {
         x: (i: number) => 256 * i,
         y: () => 128,
         layer: () => 0,
-        inLayer: () => 3,
       },
     },
   } as unknown as WebgpuPagesRuntime;

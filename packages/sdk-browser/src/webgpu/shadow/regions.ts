@@ -1,7 +1,7 @@
 import { SHADOW_CULL_FLOATS } from '../../../../sdk-core/src/index.ts';
 import { SHADOW_CULL_CASTERS } from '../../../../sdk-core/src/scene/light-shadow/faces.ts';
 import { DRAW_ALL, DRAW_FULL } from '../../../../sdk-core/src/scene/light-shadow/pool.ts';
-import { MAX_LAYERS, SHADOW_PAGE } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
+import { SHADOW_PAGE } from '../../../../sdk-core/src/scene/light-shadow/virtual.ts';
 import { MAX_SHADOW_REGIONS } from '../../gpu/shadow/atlas.ts';
 import { CASTERS_ALL, CASTERS_MOVING, CASTERS_STATIC } from '../../gpu/shadow/cullShader.ts';
 
@@ -24,8 +24,6 @@ export function createShadowRegionList(poolSide: number) {
     local = (region: number) => page[region] % layerPages;
   const page = new Int32Array(MAX_SHADOW_REGIONS),
     start = new Uint8Array(MAX_SHADOW_REGIONS);
-  /** Regions whose page lies in each layer: a layer without one opens no pass. */
-  const perLayer = new Uint16Array(MAX_LAYERS);
   let count = 0,
     layered = 0;
   return {
@@ -39,7 +37,6 @@ export function createShadowRegionList(poolSide: number) {
     reset() {
       count = 0;
       layered = 0;
-      perLayer.fill(0);
     },
     pageOf: (region: number) => page[region],
     startOf: (region: number) => start[region],
@@ -47,7 +44,6 @@ export function createShadowRegionList(poolSide: number) {
     x: (region: number) => (local(region) % poolSide) * SHADOW_PAGE,
     y: (region: number) => Math.floor(local(region) / poolSide) * SHADOW_PAGE,
     layer: (region: number) => Math.floor(page[region] / layerPages),
-    inLayer: (layer: number) => perLayer[layer],
     /**
      * Appends the regions of physical page `phys` drawn in `mode` (`DRAW_*`), their caster words
      * in `volumeWords`. The first region's volume is written by the caller; a second one copies
@@ -73,7 +69,6 @@ export function createShadowRegionList(poolSide: number) {
         if (mode === DRAW_FULL) add(REGION_STATIC, CASTERS_STATIC);
         add(REGION_RESTORE, CASTERS_MOVING);
       }
-      perLayer[Math.floor(phys / layerPages)] += count - first;
       return count - first;
     },
   };
