@@ -146,6 +146,21 @@ export const DEFAULT_PHYSICS_BUDGET: Readonly<PhysicsBudget> = Object.freeze({
   softVertices: 16384,
 });
 
+/**
+ * `budget` over the defaults, sealed: a key that is no budget — one removed, as `triangles` — is
+ * refused by name, never ignored, whether passed here or added to `world.budget.physics` later.
+ */
+export function physicsBudgetOf(budget: Partial<PhysicsBudget> = {}): PhysicsBudget {
+  for (const key of Object.keys(budget))
+    if (!(key in DEFAULT_PHYSICS_BUDGET))
+      throw new EngineError(
+        'PHYSICS_BUDGET',
+        `Physics budget "${key}" does not exist (world.budget.physics.${key}).`,
+        { budget: key },
+      );
+  return Object.seal({ ...DEFAULT_PHYSICS_BUDGET, ...budget });
+}
+
 /** The share of `memoryBytes` the static collision holds at once. */
 const COLLISION_SHARE = 0.5;
 /** Bytes Jolt holds a static triangle by: what a cooked tile takes, bounding tree included. */

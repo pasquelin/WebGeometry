@@ -1,8 +1,8 @@
 import { EngineError } from '../../../sdk-core/src/contracts/cache.ts';
 import { WaterSurface, type WaterSpec } from '../../../sdk-core/src/fluids/index.ts';
 import {
-  DEFAULT_PHYSICS_BUDGET,
   GRAVITY_PRESETS,
+  physicsBudgetOf,
   type GravityPreset,
   type PhysicsBudget,
 } from '../../../sdk-core/src/physics/index.ts';
@@ -39,7 +39,7 @@ export function createWorldPhysics(
 ) {
   const invalidate = () => runtime.invalidate();
   const settings = typeof options === 'object' ? options : {};
-  const budget: PhysicsBudget = { ...DEFAULT_PHYSICS_BUDGET, ...settings.budget };
+  const budget = physicsBudgetOf(settings.budget);
   const gravity = new Vector3();
   let session: PhysicsSession | null = null,
     wanted = false,

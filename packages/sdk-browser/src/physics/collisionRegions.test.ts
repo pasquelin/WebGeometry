@@ -8,7 +8,10 @@ import {
 import { box } from '../../../sdk-core/src/world/geometry/basic.ts';
 import { Material } from '../../../sdk-core/src/world/material/material.ts';
 import { Mesh } from '../../../sdk-core/src/world/object/mesh.ts';
+import { Camera } from '../../../sdk-core/src/world/camera/camera.ts';
+import { Group } from '../../../sdk-core/src/world/object/object3d.ts';
 import { cooked, landed, place, streamedModel, tile } from './tiles.fixture.ts';
+import { createWorldPhysics } from './worldPhysics.ts';
 
 /** Tiles of the generated scene, 10 m apart along x, and the triangles of each: 15 M in all. */
 const TILES = 1500,
@@ -54,7 +57,8 @@ test('a 15 M-triangle static scene is never refused: its tiles follow a moving b
   const settleAt = async (x: number, eye = [x, 0.5, 0], range = RANGE) => {
     ball.position.set(x, 0.5, 0);
     ball.updateMatrixWorld(true);
-    for (let asked = -1; asked !== fetched.length; await landed()) {
+    for (let asked = -1, rounds = 0; asked !== fetched.length; await landed()) {
+      assert.ok(++rounds < TILES, 'the tiles settle: a stream that never stops fails, not hangs');
       asked = fetched.length;
       tiles.update(eye, range);
       assert.ok(bodies.count.collisionBytes <= share, `${bodies.count.collisionBytes} bytes held`);
@@ -103,4 +107,26 @@ test('a tile past the whole share holds no one back: the farther tiles still loa
   await landed();
   assert.equal(bodies.count.collisionBytes, 2, 'the tile that fits is resident');
   assert.deepEqual(errors, []);
+});
+
+test('a tile left out while its bytes are on their way is not claimed when they land', async () => {
+  const file = cooked([{ kind: 'mesh', tiles: [tile()] }], [place(0)]);
+  const { tiles, bodies, fetched } = await streamedModel(file, new Uint8Array(1));
+  tiles.update([0, 0, 0], 10);
+  tiles.update([100, 0, 0], 10);
+  await landed();
+  assert.deepEqual([fetched.length, bodies.count.collisionBytes], [2, 0], 'asked, then left out');
+});
+
+test('a physics budget that does not exist, as the removed triangles, is refused by name', () => {
+  const runtime = { invalidate() {}, explorer: null },
+    camera = () => new Camera('perspective');
+  const budget = { triangles: 5_000_000 } as never;
+  assert.throws(() => createWorldPhysics(runtime, new Group(), camera, { budget }), {
+    code: 'PHYSICS_BUDGET',
+    message: /"triangles"/,
+  });
+  const physics = createWorldPhysics(runtime, new Group(), camera, true);
+  assert.throws(() => Object.assign(physics.budget, { triangles: 1 }), /triangles/);
+  physics.dispose();
 });

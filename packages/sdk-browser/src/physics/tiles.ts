@@ -70,6 +70,7 @@ export function createTileStreamer(
       .catch((error) => signal.aborted || failed(error as EngineError));
   }
   const evict = (p: Placed) => {
+    p.out = true;
     if (p.id < 0) return;
     bodies.release(p.id & BODY_INDEX);
     p.id = -1;
@@ -90,8 +91,8 @@ export function createTileStreamer(
       const bytes = await cookedBytes(p.model, p.tile.url, signal, ONE_REQUEST);
       // Its model left, or was opened again meanwhile: this tile is no longer one it holds.
       if (signal.aborted) return;
-      // Its room was taken meanwhile, by a nearer tile or a static mesh: it waits to be asked again.
-      if (bodies.count.collisionBytes + p.tile.bytes > share) return;
+      // Left out since, or its room taken by a static mesh: it waits, the room kept for the nearer.
+      if (p.out || bodies.count.collisionBytes + p.tile.bytes > share) return;
       p.id = bodies.claim(p.tile.bytes, 0, { model: p.model, tile: p });
       const handle = p.id & BODY_INDEX;
       const { position, quaternion, scale } = tilePose(p);
@@ -154,10 +155,10 @@ export function createTileStreamer(
       const free = share - bodies.count.collisionBytes + held;
       let [room, full, loads] = [free, false, LOADS];
       for (const [, p] of wanted) {
-        const out = p.tile.bytes > free || (full ||= p.tile.bytes > room);
-        if (out) evict(p);
+        p.out = p.tile.bytes > free || (full ||= p.tile.bytes > room);
+        if (p.out) evict(p);
         else room -= p.tile.bytes;
-        if (out || p.id >= 0 || p.loading || fetching >= FETCHES || !loads) continue;
+        if (p.out || p.id >= 0 || p.loading || fetching >= FETCHES || !loads) continue;
         loads--;
         void load(p);
       }

@@ -32,6 +32,8 @@ export interface Placed {
   id: number;
   /** Its bytes are on their way. */
   loading: boolean;
+  /** Left out by the last update, past the share or unwanted: its bytes landing are not claimed. */
+  out: boolean;
 }
 
 /** Seconds of travel a moving body's tiles are loaded ahead of it. */
@@ -75,6 +77,7 @@ export function placedOf(model: Model, cooked: CookedPhysics): Placed[] {
         box: new Float64Array(6),
         id: -1,
         loading: false,
+        out: false,
       };
       locate(p);
       return p;
