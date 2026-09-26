@@ -25,8 +25,7 @@ const CLUSTER_TRIANGLES = 128,
 /** Whether the cut pages of `drawn` keep their normal cone: not a line's quads, which the rasters
  *  widen on screen, nor a sprite's, which they turn to the camera — what those face is not what
  *  was cut, so a cone of the cut triangles would cull them wrongly. */
-export const drawnCones = (drawn: DrawnTriangles) =>
-  !drawn.lines && drawn.spriteRadius === undefined;
+const drawnCones = (drawn: DrawnTriangles) => !drawn.lines && drawn.spriteRadius === undefined;
 
 /** Drawn triangles as one buffer: five lengths, whether their pages keep a cone (`drawnCones`),
  *  then the five arrays, every one four-byte wide. */
