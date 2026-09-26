@@ -10,16 +10,9 @@ import { sceneView } from '../../../tests/browser/probes/cutDispatchesScene.ts';
 import { evaluateDagSelectionKernel } from '../../../packages/sdk-browser/src/gpu/dag/selection.ts';
 import { DAG_NODE_FLOATS } from '../../../packages/sdk-browser/src/gpu/dag/types.ts';
 import { NODE_FLOOR } from '../../../packages/sdk-browser/src/gpu/dag/packNodes.ts';
-import { childBase, residentFlags } from '../../../packages/sdk-browser/src/gpu/dag/layout.ts';
-import { dagRecords } from '../../../packages/sdk-browser/src/gpu/dag/records.ts';
 
 test('the dispatch scene draws the same cut whether the descent drops on the floor or not', () => {
-  const { packed, uniforms } = sceneView(12000, 8);
-  const bits = dagRecords(packed).coldInts;
-  const resident = {
-    ready: residentFlags(bits, packed.pageCount),
-    childReady: residentFlags(bits, packed.pageCount, childBase(packed.pageCount)),
-  };
+  const { packed, uniforms, resident } = sceneView(12000, 8);
   const drawn = (nodes: Float32Array) =>
     evaluateDagSelectionKernel({ ...packed, nodes }, uniforms, resident).drawablePageIds;
   // A zero floor drops nothing: the former descent's verdicts.

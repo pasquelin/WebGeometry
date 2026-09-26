@@ -7,7 +7,7 @@ import {
 } from '../../../packages/sdk-browser/src/gpu/dag/pack.ts';
 import { cameraSelectionUniforms } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
 import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
-import { uploadResidency } from '../../../packages/sdk-browser/src/gpu/dag/readiness.fixture.ts';
+import { ruleResidency } from '../../../packages/sdk-browser/src/gpu/dag/readiness.fixture.ts';
 import {
   scenePages,
   sceneRoots,
@@ -21,21 +21,21 @@ import {
 export function scene(feuilles: number, niveaux: number) {
   const roots = sceneRoots(scenePages(feuilles, niveaux), [new G.Matrix4()], true);
   const packed = packDagSelection(roots);
-  uploadResidency(packed, new Uint8Array(packed.pageCount).fill(1));
-  return { packed, roots };
+  const resident = ruleResidency(packed, new Uint8Array(packed.pageCount).fill(1));
+  return { packed, roots, resident };
 }
 
 /** The dispatch bench's view of the scene: its camera, and the worlds brought back to that
  *  camera's render origin. */
 export function sceneView(feuilles: number, niveaux: number) {
-  const { packed, roots } = scene(feuilles, niveaux);
+  const { packed, roots, resident } = scene(feuilles, niveaux);
   const camera = G.perspectiveCamera(55, 16 / 9, 0.1, 200);
   camera.position.set(0, 0, 16);
   camera.lookAt(0, 0, 0);
   camera.updateMatrixWorld();
   const uniforms = cameraSelectionUniforms(cameraMoteur(camera), 1, [1280, 720]);
   packedWorldsToRenderOrigin(packed, roots, uniforms.cameraWorld);
-  return { packed, uniforms };
+  return { packed, uniforms, resident };
 }
 
 /**
