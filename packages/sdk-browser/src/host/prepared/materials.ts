@@ -97,6 +97,11 @@ async function build(entry: TableMaterial, variant: SurfaceVariant, slot: Slot) 
   return material;
 }
 
+/** The table rank each prepared surface was built from: the scene's own material id, which a
+ *  page lists and sets by (`../../world/api/materialApi.ts`); a surface built elsewhere has none. */
+const tableRanks = new WeakMap<GraphSurface, number>();
+export const tableRankOf = (surface: GraphSurface) => tableRanks.get(surface);
+
 /**
  * The surface of each table rank in each variant, built once and shared by every primitive that
  * wears it: a record the engine holds per surface is then held once per surface.
@@ -107,7 +112,10 @@ export function preparedMaterials(materials: readonly TableMaterial[], slot: Slo
     const key = `${rank}:${variant.vertexColors}:${variant.flatShading}`;
     let material = built.get(key);
     if (!material) {
-      material = build(materials[rank], variant, slot);
+      material = build(materials[rank], variant, slot).then((surface) => {
+        tableRanks.set(surface, rank);
+        return surface;
+      });
       built.set(key, material);
     }
     return material;
