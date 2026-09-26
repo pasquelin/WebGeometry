@@ -149,6 +149,9 @@ export function encodeParticles(
       rt.context.particlesRefused?.(
         'PARTICLES_UNSUPPORTED: particles draw on the visibility buffer',
       );
+    // A visibility buffer dropped mid-session: the step made before it gives its buffers back.
+    rt.gpu.particles?.dispose();
+    rt.gpu.particles = undefined;
     return;
   }
   rt.gpu.particles ??= createWebgpuParticles(device, (error) =>

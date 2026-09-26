@@ -79,6 +79,8 @@ export class ParticlePool {
       throw new Error(`PARTICLE_BLEND: a pool blends as ${PARTICLE_BLENDS.join(' or ')}`);
     if (!(size > 0) || !(softness > 0))
       throw new Error('PARTICLE_SIZE: a particle has a positive size and softness');
+    if (color.length !== 4 || !color.every(Number.isFinite))
+      throw new Error('PARTICLE_COLOR: a colour is four finite numbers, linear RGB and opacity');
     this.capacity = capacity;
     this.emitPerFrame = perFrame;
     this.acceleration = Float32Array.from(acceleration ?? [0, -GRAVITY_PRESETS.earth, 0]);

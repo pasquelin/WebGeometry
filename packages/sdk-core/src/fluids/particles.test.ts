@@ -81,4 +81,6 @@ test('a pool blends, sizes and softens as told, and refuses by name what no rend
   const blend = 'alpha' as ParticlePool['blend'];
   assert.throws(() => new ParticlePool({ capacity: 8, blend }), /^Error: PARTICLE_BLEND/);
   assert.throws(() => new ParticlePool({ capacity: 8, softness: 0 }), /^Error: PARTICLE_SIZE/);
+  const color = [1, 1, 1] as unknown as [number, number, number, number];
+  assert.throws(() => new ParticlePool({ capacity: 8, color }), /^Error: PARTICLE_COLOR/);
 });
