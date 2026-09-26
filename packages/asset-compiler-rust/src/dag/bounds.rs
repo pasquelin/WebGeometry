@@ -1,6 +1,4 @@
-use crate::shared_math::{extend_aabb, length};
-
-use trillion3d_page_codec::vec3::point;
+use crate::shared_math::{extend_aabb, length, point};
 
 /// AABB centre plus the farthest vertex. Conservative and deterministic.
 pub fn bounding_sphere(positions: &[f32], indices: &[u32]) -> [f64; 4] {

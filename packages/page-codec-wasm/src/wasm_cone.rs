@@ -10,7 +10,7 @@ use crate::normal_cone::cluster_cones;
 /// # Safety
 /// Every offset must lie in a live `arena_alloc` reservation: `positions` holds `position_values`
 /// floats (`f32`), `indices` `index_values` words, `ranges` `2 · clusters` words and `out`
-/// `4 · clusters` floats (`f64`); the ranges are disjoint.
+/// `4 · clusters` floats (`f64`); `out` overlaps no other reservation.
 #[no_mangle]
 pub unsafe extern "C" fn cone_clusters(
     positions: u32,

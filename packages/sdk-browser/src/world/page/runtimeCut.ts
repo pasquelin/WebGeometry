@@ -27,15 +27,17 @@ const CLUSTER_TRIANGLES = 128,
  *  was cut, so a cone of the cut triangles would cull them wrongly. */
 const drawnCones = (drawn: DrawnTriangles) => !drawn.lines && drawn.spriteRadius === undefined;
 
-/** Drawn triangles as one buffer: five lengths, whether their pages keep a cone (`drawnCones`),
- *  then the five arrays, every one four-byte wide. */
+/** The words before the arrays: five lengths, then whether the pages keep a cone. */
+const HEADER_WORDS = 6;
+
+/** Drawn triangles as one buffer: its header (`HEADER_WORDS`), then the five arrays, every one
+ *  four-byte wide. */
 export function packDrawn(drawn: DrawnTriangles): ArrayBuffer {
   const parts = [drawn.positions, drawn.normals, drawn.uvs, drawn.colors, drawn.indices];
   const lengths = parts.map((part) => part?.length ?? 0);
-  const packed = new Uint32Array(6 + lengths.reduce((a, b) => a + b, 0));
-  packed.set(lengths);
-  packed[5] = Number(drawnCones(drawn));
-  let at = 6;
+  const packed = new Uint32Array(HEADER_WORDS + lengths.reduce((a, b) => a + b, 0));
+  packed.set([...lengths, Number(drawnCones(drawn))]);
+  let at = HEADER_WORDS;
   for (const part of parts)
     if (part) {
       packed.set(new Uint32Array(part.buffer, part.byteOffset, part.length), at);
@@ -46,12 +48,12 @@ export function packDrawn(drawn: DrawnTriangles): ArrayBuffer {
 
 /** The triangles `packDrawn` wrote, as views on its buffer, and whether their pages keep a cone. */
 export function unpackDrawn(buffer: ArrayBuffer): { drawn: DrawnTriangles; cones: boolean } {
-  const lengths = new Uint32Array(buffer, 0, 5),
-    cones = new Uint32Array(buffer, 20, 1)[0] === 1;
-  let at = 24;
+  const header = new Uint32Array(buffer, 0, HEADER_WORDS),
+    cones = header[5] === 1;
+  let at = header.byteLength;
   const take = <T>(make: (b: ArrayBuffer, offset: number, length: number) => T, i: number) => {
-    const view = lengths[i] ? make(buffer, at, lengths[i]) : null;
-    at += lengths[i] * 4;
+    const view = header[i] ? make(buffer, at, header[i]) : null;
+    at += header[i] * 4;
     return view;
   };
   const float = (b: ArrayBuffer, offset: number, length: number) =>
@@ -79,7 +81,7 @@ export function unpackDrawn(buffer: ArrayBuffer): { drawn: DrawnTriangles; cones
  */
 export async function cutDrawnTriangles(
   drawn: DrawnTriangles,
-  cones = drawnCones(drawn),
+  cones: boolean,
 ): Promise<PageCutPayload> {
   const { positions, normals, uvs, colors, indices } = drawn;
   const bounds = new Float64Array(6);

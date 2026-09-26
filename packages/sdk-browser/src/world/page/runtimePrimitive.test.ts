@@ -35,7 +35,7 @@ test('the pages of a dashed line carry its distance along the line', async () =>
     position: new BufferAttribute(new Float32Array(points), 3),
   });
   const read = async (dashed: boolean) => {
-    const cut = await cutDrawnTriangles(drawnTriangles(path, 'lineStrip', { dashed })!);
+    const cut = await cutDrawnTriangles(drawnTriangles(path, 'lineStrip', { dashed })!, false);
     return cut.pages.map((page) => decodeGeometryPage(new Uint8Array(page.geometry)));
   };
   const [dashed] = await read(true);
@@ -54,11 +54,11 @@ test('a dashed line past 1024 units keeps its dashes at their distances', async 
   const path = geometry.createBuffer({
     position: new BufferAttribute(new Float32Array([0, 0, 0, 1500, 0, 0, 3000, 0, 0]), 3),
   });
-  const cut = await cutDrawnTriangles(drawnTriangles(path, 'lineStrip', { dashed: true })!);
+  const cut = await cutDrawnTriangles(drawnTriangles(path, 'lineStrip', { dashed: true })!, false);
   assert.equal(cut.pages.length, 1);
   // 3000 units on the finest grid that holds them, 2^-11; a textured box keeps the format's 2^-14.
   assert.equal(cut.uvExponent, -11);
-  const box = await cutDrawnTriangles(drawnTriangles(geometry.box(1, 1, 1), 'triangles')!);
+  const box = await cutDrawnTriangles(drawnTriangles(geometry.box(1, 1, 1), 'triangles')!, false);
   assert.equal(box.uvExponent, -14);
   const { uv } = decodeGeometryPage(new Uint8Array(cut.pages[0].geometry)).attributes;
   const along = [...new Set(Array.from(uv!).filter((_, i) => i % 2 === 0))].sort((a, b) => a - b);

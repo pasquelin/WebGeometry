@@ -82,7 +82,7 @@ pub(crate) fn pad_to_4(length: usize) -> usize {
 
 /// Small vector algebra on `[f64; 3]`, written once in the page codec beside the normal cone that
 /// reads it (`trillion3d_page_codec::vec3`): the compiler carries one implementation of each.
-pub use trillion3d_page_codec::vec3::{cross, divide, dot, length, scale, sub};
+pub use trillion3d_page_codec::vec3::{cross, divide, dot, length, point, scale, sub};
 
 /// Unit vector, or fallback when length stays under 1e-12: shorter,
 /// vector carries no direction and division makes no sense. Fallback belongs to

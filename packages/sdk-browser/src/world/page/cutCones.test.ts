@@ -16,7 +16,7 @@ await prepareSdkWasm(readFileSync(join(import.meta.dirname, '../../page/decode/p
 
 test('every cut page carries the cone triangle_cone builds on its own triangles', async () => {
   const drawn = drawnTriangles(geometry.sphere(1, 32, 16), 'triangles')!;
-  const cut = await cutDrawnTriangles(drawn);
+  const cut = await cutDrawnTriangles(drawn, true);
   assert.ok(cut.pages.length > 1, 'the sphere spans several clusters');
   for (const page of cut.pages) {
     const built = triangleCone(drawn.positions, new Uint32Array(page.index));
