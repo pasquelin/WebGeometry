@@ -52,6 +52,7 @@ export function createTileStreamer(
   type Opening = { placed: Placed[]; abort: AbortController };
   const models = new Map<Model, Opening>();
   const declared = createModelBodies(writer, bodies, invalidate, failed);
+  const share = collisionBytesOf(budget);
   let fetching = 0;
   function open(model: Model) {
     const opening: Opening = { placed: [], abort: new AbortController() };
@@ -90,7 +91,7 @@ export function createTileStreamer(
       // Its model left, or was opened again meanwhile: this tile is no longer one it holds.
       if (signal.aborted) return;
       // Its room was taken meanwhile, by a nearer tile or a static mesh: it waits to be asked again.
-      if (bodies.count.collisionBytes + p.tile.bytes > collisionBytesOf(budget)) return;
+      if (bodies.count.collisionBytes + p.tile.bytes > share) return;
       p.id = bodies.claim(p.tile.bytes, 0, { model: p.model, tile: p });
       const handle = p.id & BODY_INDEX;
       const { position, quaternion, scale } = tilePose(p);
@@ -140,18 +141,19 @@ export function createTileStreamer(
       if (!models.size) return;
       const wanted: [number, Placed][] = [],
         movers = moversOf(bodies.meshes);
+      let held = 0; // What the wanted resident tiles hold.
       for (const { placed } of models.values())
         for (const p of placed) {
           const near = nearness(p, eye, range, movers);
-          if (near < Infinity && !declared.holds(p.model, p.instance.node)) wanted.push([near, p]);
-          else evict(p);
+          if (near === Infinity || declared.holds(p.model, p.instance.node)) evict(p);
+          else wanted.push([near, p]);
+          if (p.id >= 0) held += p.tile.bytes;
         }
       wanted.sort((a, b) => a[0] - b[0]);
-      // The share beside the static meshes: what the collision holds but the wanted tiles in.
-      let room = collisionBytesOf(budget) - bodies.count.collisionBytes,
+      // The share beside the static meshes and the wanted resident tiles.
+      let room = share - bodies.count.collisionBytes + held,
         full = false,
         loads = LOADS;
-      for (const [, p] of wanted) if (p.id >= 0) room += p.tile.bytes;
       for (const [, p] of wanted) {
         full ||= p.tile.bytes > room;
         if (full) evict(p);

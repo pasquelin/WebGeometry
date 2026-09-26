@@ -160,7 +160,7 @@ export const PHYSICS_STEP = 1 / 60;
 export const MAX_CATCH_UP_STEPS = 4;
 
 /** Refuses a request past a budget, naming the budget, its limit and the request. */
-export function physicsBudgetError(budget: keyof PhysicsBudget, limit: number, requested: number) {
+function physicsBudgetError(budget: keyof PhysicsBudget, limit: number, requested: number) {
   return new EngineError(
     'PHYSICS_BUDGET',
     `Physics budget "${budget}" exceeded: ${requested} asked, ${limit} allowed (world.budget.physics.${budget}).`,

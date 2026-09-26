@@ -23,8 +23,10 @@ const row = () =>
       {
         kind: 'mesh',
         tiles: Array.from({ length: TILES }, (_, i) => ({
-          ...{ url: `t${i}.bin`, sha256: 'a'.repeat(64) },
-          ...{ bytes: TRIANGLES * TRIANGLE_BYTES, triangles: TRIANGLES },
+          url: `t${i}.bin`,
+          sha256: 'a'.repeat(64),
+          bytes: TRIANGLES * TRIANGLE_BYTES,
+          triangles: TRIANGLES,
           bounds: [i * 10, 0, -5, i * 10 + 10, 1, 5],
         })),
       },
