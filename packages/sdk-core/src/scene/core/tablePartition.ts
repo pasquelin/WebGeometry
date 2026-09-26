@@ -181,7 +181,7 @@ export async function readTablePartition(
 export function assertCellNodes(value: unknown): readonly CellNode[] {
   const cell = value as { version?: number; nodes?: CellNode[] } | null;
   if (!cell || cell.version !== CELL_VERSION || !Array.isArray(cell.nodes))
-    throw new EngineError('INVALID_SCENE_TABLES', 'scene cell is not a version 2 node list', {
+    throw new EngineError('INVALID_SCENE_TABLES', `scene cell is not a version ${CELL_VERSION} node list`, {
       version: cell?.version ?? null,
     });
   return cell.nodes;

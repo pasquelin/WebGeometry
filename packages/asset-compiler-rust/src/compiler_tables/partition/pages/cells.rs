@@ -25,6 +25,6 @@ pub(crate) fn write_pages(
         let pages: BTreeSet<&String> = pages.flatten().collect();
         Ok(json!({kind.records: records, "meshPages": pages}))
     };
-    let pager = Pager::new(kind, records, Some(bounds), directory, &leaf)?;
+    let mut pager = Pager::new(kind, records, Some(bounds), directory, &leaf)?;
     Ok(json!({"version": kind.version, "pages": pager.root(tree)?}))
 }

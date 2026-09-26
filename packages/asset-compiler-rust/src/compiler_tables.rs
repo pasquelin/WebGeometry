@@ -72,7 +72,7 @@ impl Materials {
 pub(super) fn stage_scene_tables(
     published: &Value,
     autonomous: Option<&Value>,
-    mesh_pages: &crate::compiler_manifest_pages::MeshPages,
+    mesh_pages: &partition::pages::MeshSlots,
     directory: &Path,
     progress: impl Fn(Value),
 ) -> Result<Product> {
@@ -96,7 +96,7 @@ pub(super) fn stage_scene_tables(
     let table = node_table(published)?;
     let roots = crate::compiler_nodes::scene_roots(published, values(published, "nodes")?)?;
     let (nodes, roots, partition, cells) =
-        match partition::partition(published, &table, &roots, &mesh_pages.by_mesh, directory)? {
+        match partition::partition(published, &table, &roots, mesh_pages, directory)? {
             Some(split) => (split.nodes, split.roots, split.partition, split.cells),
             None => (table, roots, Value::Null, 0),
         };

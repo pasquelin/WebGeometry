@@ -48,13 +48,16 @@ pub(crate) fn write_mesh_pages(primitives: &[Value], directory: &Path) -> Result
         }
         Ok(page)
     };
-    let pager = Pager::new(kind, slim, None, directory, &leaf)?;
+    let mut pager = Pager::new(kind, slim, None, directory, &leaf)?;
     let slots = pager.root(&halving(0..primitives.len()))?;
     let mut by_mesh = MeshSlots::new();
-    for (records, slot) in pager.written() {
+    for (records, slot) in pager.written {
         kept.borrow_mut().insert(slot[..64].to_string());
-        let listed = records.map_or(&[][..], |records| &primitives[records]);
-        for mesh in listed.iter().filter_map(|p| p["mesh"].as_u64()) {
+        let Some(records) = records else { continue };
+        for mesh in primitives[records]
+            .iter()
+            .filter_map(|p| p["mesh"].as_u64())
+        {
             let pages: &mut Vec<String> = by_mesh.entry(mesh).or_default();
             if pages.last() != Some(&slot) {
                 pages.push(slot.clone());

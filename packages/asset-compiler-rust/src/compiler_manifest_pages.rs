@@ -88,7 +88,10 @@ pub(crate) fn write_manifest(
     for entry in fs::read_dir(directory)? {
         let path = entry?.path();
         let name = path.file_name().unwrap_or_default().to_string_lossy();
-        if name.starts_with(MANIFEST_PAGES.prefix) && !kept.iter().any(|s| name.contains(s)) {
+        let Some(named) = name.strip_prefix(MANIFEST_PAGES.prefix) else {
+            continue;
+        };
+        if !named.get(..64).is_some_and(|sha256| kept.contains(sha256)) {
             fs::remove_file(&path)?;
         }
     }

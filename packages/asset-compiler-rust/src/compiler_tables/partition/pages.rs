@@ -4,7 +4,7 @@
 //! grow with the world. Each kind of record is paged so, under its own files and version (`Kind`).
 use super::*;
 use split::Region;
-use std::{cell::RefCell, fmt::Write as _, ops::Range};
+use std::{fmt::Write as _, ops::Range};
 
 mod cells;
 mod read;
@@ -74,9 +74,10 @@ pub(crate) struct Pager<'a> {
     directory: &'a Path,
     leaf: &'a Leaf<'a>,
     /// Whether each range measured is a region page.
-    measured: RefCell<BTreeMap<(usize, usize), bool>>,
-    /// Every page written and its slot, a region page with its records.
-    written: RefCell<Vec<(Option<Range<usize>>, String)>>,
+    measured: BTreeMap<(usize, usize), bool>,
+    /// Every page written and its slot, a region page with the records it lists: the region pages
+    /// in record order, each index page after the pages it lists.
+    pub written: Vec<(Option<Range<usize>>, String)>,
 }
 
 impl<'a> Pager<'a> {
@@ -100,8 +101,8 @@ impl<'a> Pager<'a> {
             bounds,
             directory,
             leaf,
-            measured: RefCell::default(),
-            written: RefCell::default(),
+            measured: BTreeMap::new(),
+            written: Vec::new(),
         };
         pager.empty = serde_json::to_vec(&pager.region(0..0, false)?)?.len();
         Ok(pager)
@@ -116,23 +117,23 @@ impl<'a> Pager<'a> {
 
     /// Whether `region` is a region page: one record, or records whose page fits `PAGE_BYTES`. Its
     /// page is measured once, and only when its records and the commas between them would fit.
-    fn fits(&self, region: &Region) -> Result<bool> {
+    fn fits(&mut self, region: &Region) -> Result<bool> {
         let (cells, one) = (&region.cells, region.halves.is_none());
         let key = (cells.start, cells.end);
-        if let Some(fits) = self.measured.borrow().get(&key) {
+        if let Some(fits) = self.measured.get(&key) {
             return Ok(*fits);
         }
         let least = self.empty + self.starts[cells.end] - self.starts[cells.start];
         let fits = one
             || least.saturating_sub(1) <= PAGE_BYTES
                 && serde_json::to_vec(&self.region(cells.clone(), false)?)?.len() <= PAGE_BYTES;
-        self.measured.borrow_mut().insert(key, fits);
+        self.measured.insert(key, fits);
         Ok(fits)
     }
 
     /// The slots of the pages listing `region`'s records in order, each written: its halving
     /// opened, the node of most records first, until `FAN_OUT` pages or every one is a region page.
-    fn slots(&self, region: &Region) -> Result<Vec<String>> {
+    fn slots(&mut self, region: &Region) -> Result<Vec<String>> {
         let mut pages = vec![region];
         while pages.len() < FAN_OUT {
             let mut open = Vec::new();
@@ -154,7 +155,7 @@ impl<'a> Pager<'a> {
     }
 
     /// Writes `region` as a region page, or as an index page over its slots; its slot.
-    fn write(&self, region: &Region) -> Result<String> {
+    fn write(&mut self, region: &Region) -> Result<String> {
         let cells = region.cells.clone();
         let leaf = self.fits(region)?;
         let body = if leaf {
@@ -165,20 +166,14 @@ impl<'a> Pager<'a> {
         let boxes = self.bounds.map_or(&[][..], |bounds| &bounds[cells.clone()]);
         let slot = write_page(self.kind, self.directory, &body, boxes)?;
         let records = leaf.then_some(cells);
-        self.written.borrow_mut().push((records, slot.clone()));
+        self.written.push((records, slot.clone()));
         Ok(slot)
     }
 
     /// The root's slots over `tree`, the empty ones last.
-    pub(crate) fn root(&self, tree: &Region) -> Result<Vec<String>> {
+    pub(crate) fn root(&mut self, tree: &Region) -> Result<Vec<String>> {
         let mut slots = self.slots(tree)?;
         slots.resize(FAN_OUT, "0".repeat(SLOT_WIDTH));
         Ok(slots)
-    }
-
-    /// Every page written and its slot, a region page with the records it lists: the region
-    /// pages in record order, each index page after the pages it lists.
-    pub(crate) fn written(self) -> Vec<(Option<Range<usize>>, String)> {
-        self.written.into_inner()
     }
 }
