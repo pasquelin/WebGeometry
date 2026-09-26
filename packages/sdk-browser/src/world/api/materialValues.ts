@@ -1,6 +1,7 @@
 /** The values of a scene material a page reads and sets, and how they cross a host surface
  *  (`materialApi.ts`). */
-import { EngineError, alphaModeOf, type Material } from '../../../../sdk-core/src/index.ts';
+import { EngineError, type Material } from '../../../../sdk-core/src/index.ts';
+import { alphaModeOf } from '../../../../sdk-core/src/contracts/material.ts';
 import type { Color } from '../../../../sdk-core/src/world/math/color.ts';
 import type { GraphSurface } from '../../host/graph/surface.ts';
 import { materialTextures } from '../../scene/meshes.ts';

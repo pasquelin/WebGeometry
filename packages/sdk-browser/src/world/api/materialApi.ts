@@ -4,7 +4,8 @@ import type { GraphSurface } from '../../host/graph/surface.ts';
 import type { GraphTexture } from '../../host/graph/texture.ts';
 import { tableRankOf } from '../../host/prepared/materials.ts';
 import { materialTextures, meshes } from '../../scene/meshes.ts';
-import { EngineError, alphaModeOf } from '../../../../sdk-core/src/index.ts';
+import { EngineError } from '../../../../sdk-core/src/index.ts';
+import { alphaModeOf } from '../../../../sdk-core/src/contracts/material.ts';
 import {
   invalid,
   read,

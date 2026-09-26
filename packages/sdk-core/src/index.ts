@@ -98,7 +98,6 @@ export { SCENE_MODEL_VERSION, SceneNode, type SceneNodeOptions } from './scene/c
 export type { SceneState } from './scene/core/nodeContracts.ts';
 export { SceneRoot, createSceneRoot } from './scene/core/root.ts';
 export type { AlphaMode, LinearRgb, Material, Side } from './contracts/material.ts';
-export { alphaModeOf } from './contracts/material.ts';
 export type { Texture, TextureColorSpace, TextureFilter, WrapMode } from './texture/contract.ts';
 export * from './scene/core/tableSurfaces.ts';
 export { compareImages } from './runtime/compareImages.ts';
