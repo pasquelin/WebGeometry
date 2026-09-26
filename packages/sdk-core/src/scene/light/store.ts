@@ -36,14 +36,14 @@ export function createSceneLightStore() {
     view: SceneLightingView = 'auto',
     epoch = 1,
     fogOnly = 0;
-  /** Room for `slots` lights, doubling, content kept: N lights cost log N copies. */
-  const reserve = (slots: number) => {
-    capacity = Math.max(slots, capacity * 2, 32);
+  /** Twice the room, content kept: N lights cost log N copies. */
+  const grow = () => {
+    capacity = Math.max(capacity * 2, 32);
     packed = grown(packed, Float32Array, baseOf(capacity));
     header = new Uint32Array(packed.buffer, 0, SCENE_LIGHT_HEADER_FLOATS);
     revision = grown(revision, Uint32Array, capacity);
   };
-  reserve(0);
+  grow();
   /** A light's atlas slice lives in the buffer itself: it is not held twice. */
   const sliceOf = (slot: number) => packed[baseOf(slot) + LIGHT_FIELD.shadowSlice];
   const writeSlice = (slot: number, slice: number) => {
@@ -123,7 +123,7 @@ export function createSceneLightStore() {
           id: validated.id,
         });
       const slot = ids.length;
-      if (slot >= capacity) reserve(slot + 1);
+      if (slot >= capacity) grow();
       ids.push(validated.id);
       indexOf.set(validated.id, slot);
       records.set(validated.id, validated);

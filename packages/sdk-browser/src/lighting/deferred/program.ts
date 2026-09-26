@@ -10,7 +10,7 @@ import { createWebgpuBindIdentity } from '../../webgpu/core/bindIdentity.ts';
 
 /** Direct-lighting contract resources the pass rereads; when absent, they are replaced. */
 export interface DirectLightResources {
-  /** The declared lights, grown with the scene; absent, the buffer the program was made with. */
+  /** The declared lights, grown with the scene: the one buffer a contract program reads them from. */
   lights?: GPUBuffer;
   tiles?: GPUBuffer;
   /** Shadow records and page table, and the buffer the resolve records its shadow reads in. */
@@ -39,7 +39,6 @@ export type ComposedImage = { color: GPUTextureView; share?: GPUTextureView };
 export type AccumulatedImage = Required<ComposedImage>;
 export interface DeferredBindings {
   uniform: GPUBuffer;
-  directLights: GPUBuffer;
   placeholders: {
     tiles: GPUBuffer;
     slices: GPUBuffer;
@@ -137,7 +136,7 @@ export async function createDeferredProgram(
       direct: DirectLightResources,
     ) {
       const { placeholders } = bindings;
-      const lights = direct.lights ?? bindings.directLights,
+      const lights = direct.lights,
         tiles = direct.tiles ?? placeholders.tiles,
         slices = direct.slices ?? placeholders.slices,
         atlas = direct.atlas ?? placeholders.atlasView,
@@ -164,7 +163,8 @@ export async function createDeferredProgram(
         { binding: 4, resource: depth },
         { binding: 5, resource: { buffer: bindings.uniform } },
       ];
-      if (sources.direct)
+      if (sources.direct) {
+        if (!lights) throw new Error('the contract program binds no declared-light buffer');
         entries.push(
           { binding: 6, resource: { buffer: lights } },
           { binding: 7, resource: { buffer: tiles } },
@@ -177,6 +177,7 @@ export async function createDeferredProgram(
           { binding: CONTRACT_SHADOW_BINDINGS.transmittance, resource: transmittance },
           { binding: CONTRACT_SHADOW_BINDINGS.translucentDepth, resource: translucentDepth },
         );
+      }
       if (sources.bounce && direct.bounceGrid && direct.probes && direct.surfaceCache)
         entries.push(
           { binding: 11, resource: { buffer: direct.bounceGrid } },
