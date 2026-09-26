@@ -95,7 +95,6 @@ export function sizeShadowPool(rt: WebgpuPagesRuntime) {
         lights.regions = createShadowRegionList(side);
       }
       atlas.sizePool(side, layers, granted.made);
-      // The request list follows the pool: its readback too.
       if (lights.pageRequests) {
         lights.pageRequests.dispose();
         lights.pageRequests = createShadowPageRequests(device, atlas.requestBuffer);

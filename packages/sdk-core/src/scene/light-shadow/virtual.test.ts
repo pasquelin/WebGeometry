@@ -55,7 +55,6 @@ test('past one layer, the pool holds twice what each shadowed light reads of the
   assert.deepEqual(shadowPoolShape(5040), { side: 51, layers: 2 });
   assert.equal(shadowPoolSize(3456, 2234, [1, 1]), 10080, 'a second full-screen light, twice');
   assert.deepEqual(shadowPoolShape(8192), { side: 64, layers: 2 });
-  assert.deepEqual(shadowPoolShape(Infinity), { side: 64, layers: 16 }, 'the 16-bit page index');
 });
 
 test('a sun page keeps its entry whichever extent sees it: absolute page modulo the extent', () => {

@@ -91,8 +91,7 @@ test("the default totals split into each pool's own default", () => {
 test('the shadow share counts the pool at 3840 × 2160 under one sun, and the page table', () => {
   assert.ok(shadowBufferBytes(0) >= SHADOW_TABLE_ENTRIES * 4);
   const { side, layers } = shadowPoolShape(shadowPoolSize(3840, 2160));
-  // Two layers of 53² pages: the atlas and its static layer, 351 MiB each; the blended casters'
-  // transmittance, a half of that.
+  // Two layers of 53² pages: the atlas and its static layer, 351 MiB each; transmittance, half.
   assert.deepEqual([side, layers, SHADOW_POOL_PAGES], [53, 2, 5618]);
   assert.equal(shadowAtlasBytes(side, layers), 5618 * 64 * 1024);
   const pool = 2 * shadowAtlasBytes(side, layers) + shadowTransmittanceBytes(side, layers);

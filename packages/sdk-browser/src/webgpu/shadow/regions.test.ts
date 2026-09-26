@@ -37,17 +37,9 @@ test('page 4 096 of a pool 64 pages a side opens its layer 1, where the shading 
     words = new Uint32Array(volumes.buffer);
   for (const page of [4095, 4096, 4096 + 65]) list.push(page, DRAW_ALL, volumes, words);
   const place = (r: number) => [list.layer(r), list.x(r) / 128, list.y(r) / 128];
-  assert.deepEqual([0, 1, 2].map(place), [
-    [0, 63, 63],
-    [1, 0, 0],
-    [1, 1, 1],
-  ]);
+  assert.deepEqual([0, 1, 2].flatMap(place), [0, 63, 63, 1, 0, 0, 1, 1, 1]);
   // The shading's `shadowOffset`, the same place: the page within its layer, then the layer.
-  const wgsl = directShadowWgsl(8, null, 18);
-  assert.ok(wgsl.includes('let local=phys%(side*side);'));
-  assert.ok(
-    wgsl.includes(
-      '(vec2f(f32(local%side),f32(local/side))-vec2f(p))*SHADOW_PAGE,f32(phys/(side*side))',
-    ),
-  );
+  const offset =
+    /local=phys%\(side\*side\);\n.*f32\(local%side\),f32\(local\/side\).*f32\(phys\/\(side\*side\)\)/;
+  assert.match(directShadowWgsl(8, null, 18), offset);
 });
