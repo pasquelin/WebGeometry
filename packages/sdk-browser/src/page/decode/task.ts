@@ -57,7 +57,8 @@ export async function runPageDecodeTask(
     if (request.op === 'cut') {
       // Loaded on the first cut alone: a worker that only decodes never reads the encoder.
       const cutter = await import('../../world/page/runtimeCut.ts');
-      const cut = await cutter.cutDrawnTriangles(cutter.unpackDrawn(request.source));
+      const { drawn, cones } = cutter.unpackDrawn(request.source);
+      const cut = await cutter.cutDrawnTriangles(drawn, cones);
       return {
         answer: {
           protocol: PAGE_DECODE_PROTOCOL,

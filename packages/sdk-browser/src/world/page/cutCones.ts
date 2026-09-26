@@ -28,7 +28,10 @@ export async function clusterCones(
     const [p, i, r, out] = arena.blocs();
     p.vue.set(positions);
     i.vue.set(indices);
-    r.vue.set(ranges.flat());
+    ranges.forEach(([start, end], k) => {
+      r.vue[k * 2] = start;
+      r.vue[k * 2 + 1] = end;
+    });
     const status = wasm.cone_clusters(
       p.offset,
       positions.length,

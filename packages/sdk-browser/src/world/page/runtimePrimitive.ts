@@ -29,12 +29,9 @@ function bounds(page: PageCutPayload['pages'][number], radius: number | undefine
 }
 
 /** The pages of a cut, served at addresses of their own: the primitive a manifest lists. The
- *  pages of line quads draw one coplanar layer over the faces they lie on (`LINE_DEPTH_LAYER`).
- *  Each keeps the cone of its triangles' normals, but a line's quads, widened on screen, and a
- *  sprite's, turned to the camera: what they face is not what was cut. */
+ *  pages of line quads draw one coplanar layer over the faces they lie on (`LINE_DEPTH_LAYER`). */
 function servePrimitive(cut: PageCutPayload, kind: DrawnKind): RuntimePrimitive {
   const urls: string[] = [];
-  const coned = !kind.lines && kind.spriteRadius === undefined;
   const pages: Page[] = cut.pages.map((page, id) => ({
     id,
     ...served(page.index, page.indexSha256, urls),
@@ -49,7 +46,7 @@ function servePrimitive(cut: PageCutPayload, kind: DrawnKind): RuntimePrimitive 
     group: null,
     source: null,
     ...(kind.lines ? { depthLayer: LINE_DEPTH_LAYER } : {}),
-    ...(coned && page.cone ? { cone: page.cone } : {}),
+    ...(page.cone ? { cone: page.cone } : {}),
     geometry: {
       ...served(page.geometry, page.geometrySha256, urls),
       vertexCount: page.vertexCount,

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { geometry } from '../../../../sdk-core/src/world/geometry/index.ts';
 import { drawnTriangles } from '../../../../sdk-core/src/world/geometry/drawn.ts';
 import { prepareSdkWasm } from '../../page/decode/geometryPageWasm.ts';
-import { triangleCone } from '../../../../../tests/kit/cone.ts';
+import { coneHolds, triangleCone } from '../../../../../tests/kit/cone.ts';
 import { cutRuntimePrimitive } from './runtimePrimitive.ts';
 import { cutDrawnTriangles, packDrawn } from './runtimeCut.ts';
 
@@ -14,24 +14,13 @@ import { cutDrawnTriangles, packDrawn } from './runtimeCut.ts';
 // test hands it the bytes, as the page decoder's tests do.
 await prepareSdkWasm(readFileSync(join(import.meta.dirname, '../../page/decode/pageCodec.wasm')));
 
-/** The float64 words of `values`: bit for bit, and ulps apart for two numbers of one sign. */
-const words = (values: number[]) =>
-  Array.from(new BigUint64Array(Float64Array.from(values).buffer));
-/** Ulps an angle may stand above the runtime's: twice `ANGLE_MARGIN_ULPS` (4, `normal_cone.rs`),
- *  the bound the cooked cones are held to (`tests/integration/cooked-cones.test.ts`). */
-const WIDEST = 2n * 4n;
-
 test('every cut page carries the cone triangle_cone builds on its own triangles', async () => {
   const drawn = drawnTriangles(geometry.sphere(1, 32, 16), 'triangles')!;
   const cut = await cutDrawnTriangles(drawn);
   assert.ok(cut.pages.length > 1, 'the sphere spans several clusters');
   for (const page of cut.pages) {
     const built = triangleCone(drawn.positions, new Uint32Array(page.index));
-    const cone = words([...page.cone!.axis, page.cone!.angle]),
-      expected = words([...built.axis, built.angle]);
-    assert.deepEqual(cone.slice(0, 3), expected.slice(0, 3), 'the same axis, bit for bit');
-    const wider = cone[3] - expected[3];
-    assert.ok(wider >= 0n && wider <= WIDEST, `an angle ${wider} ulps wider`);
+    assert.ok(coneHolds(page.cone!, built), JSON.stringify({ cone: page.cone, built }));
   }
 });
 

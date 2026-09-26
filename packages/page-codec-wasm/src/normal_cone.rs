@@ -15,7 +15,7 @@ use crate::vec3::{cross, divide, dot, point, sub};
 /// How many ulps the angle is raised by. fdlibm and the runtime's arccosine each lie within one ulp
 /// of the true angle, an ulp of which is at most two ulps of fdlibm's result where it crosses a
 /// power of two: four steps up from fdlibm's result reach past any runtime's.
-pub const ANGLE_MARGIN_ULPS: usize = 4;
+pub(crate) const ANGLE_MARGIN_ULPS: usize = 4;
 
 /// A cone that never rejects (`OPEN_CONE`): axis +Z, half-angle π.
 pub const OPEN_CONE: [f64; 4] = [0.0, 0.0, 1.0, std::f64::consts::PI];
@@ -30,7 +30,7 @@ fn face_cross(pos: &[f32], triangle: [u32; 3]) -> [f64; 3] {
 /// summed with Kahan compensation, the root scaled back. The specification leaves `Math.hypot`
 /// approximated; this is the rounding Chrome and Node return, where a plain `sqrt` of the squares
 /// differs in the last bit on a large share of inputs.
-pub fn hypot3(x: f64, y: f64, z: f64) -> f64 {
+pub(crate) fn hypot3(x: f64, y: f64, z: f64) -> f64 {
     let values = [x.abs(), y.abs(), z.abs()];
     // `f64::max` passes over a NaN, as V8 takes the largest of the others.
     let max = values[0].max(values[1]).max(values[2]);
