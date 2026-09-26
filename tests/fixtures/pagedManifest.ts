@@ -13,8 +13,9 @@ import { TEMPLATES } from './manifestBinary.ts';
 /** An empty slot of a root or an index page. */
 export const EMPTY = '0'.repeat(168);
 
-/** `manifest`'s root and files: a head page, one mesh page — under an index page when `index`. */
-export function pagedManifest(manifest: ClusterManifest, index = false) {
+/** `manifest`'s root and files: a head page, one mesh page — one per primitive when `cut`, as the
+ *  compiler cuts them under 128 KiB (#792) —, under an index page when `index`. */
+export function pagedManifest(manifest: ClusterManifest, index = false, cut = false) {
   const files = new Map<string, Uint8Array<ArrayBuffer>>();
   const put = (bytes: Uint8Array<ArrayBuffer>, extension: string) => {
     const sha256 = createHash('sha256').update(bytes).digest('hex');
@@ -36,9 +37,10 @@ export function pagedManifest(manifest: ClusterManifest, index = false) {
   };
   const { schema, formatVersion, status, scope, primitives, ...top } = manifest;
   const head = columns({ ...top, primitives: [] });
-  let mesh = slot(columns({ primitives }));
-  if (index) mesh = slot({ version: MANIFEST_BINARY_VERSION, pages: [mesh, EMPTY] });
-  const pages = [mesh, ...Array<string>(7).fill(EMPTY)];
+  const parts = cut ? primitives.map((primitive) => [primitive]) : [primitives];
+  let meshes = parts.map((part) => slot(columns({ primitives: part })));
+  if (index) meshes = [slot({ version: MANIFEST_BINARY_VERSION, pages: [...meshes, EMPTY] })];
+  const pages = [...meshes, ...Array<string>(8 - meshes.length).fill(EMPTY)];
   return { root: { schema, formatVersion, status, scope, head: slot(head), pages }, files };
 }
 

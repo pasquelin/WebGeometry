@@ -15,8 +15,8 @@ export function world(far: number | null = 0, near: number | null = null) {
     scale: [2, 2, 2],
   });
   const bodies: Record<string, unknown> = {
-    'near.json': { version: 2, nodes: [node(1, near), node(3, near)] },
-    'far.json': { version: 2, nodes: [node(5000, far)] },
+    'near.json': { version: 3, nodes: [node(1, near), node(3, near)] },
+    'far.json': { version: 3, nodes: [node(5000, far)] },
   };
   const partition: TablePartition = {
     bounds: [0, 0, 0, 5010, 5, 5],
@@ -40,6 +40,7 @@ export function world(far: number | null = 0, near: number | null = null) {
         meshes: [[7, 1]],
       },
     ],
+    regions: [{ cells: 2, meshPages: [] }],
   };
   const root = new Group();
   const core = new Object3D();
