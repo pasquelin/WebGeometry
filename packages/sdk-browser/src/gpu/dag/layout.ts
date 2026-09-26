@@ -79,6 +79,12 @@ export const selectionListCap = (pageCount: number) =>
  * held by the GPU survives the disappearance of the list it was the sum of.
  */
 export const SELECTION_HEADER_WORDS = 8;
+/** Word of `out` where the camera's requests wait for their sort, behind the drawn list and its
+ *  header, outside what the frame copies (`stagedAt` of `shader/snapshotWgsl.ts`). */
+export const stagedRequestsWord = (listCap: number) => 2 * (SELECTION_HEADER_WORDS + listCap);
+/** Bytes of `out` with the staged requests behind: what the kernels write, more than the frame
+ *  copies. */
+export const stagedOutputBytes = (listCap: number) => (stagedRequestsWord(listCap) + listCap) * 4;
 /** Readback slots the cut alternates between (`dispatch.ts`): the cache reads a drawn list at
  *  most this many frames behind the GPU, plus the frame being encoded. */
 export const DAG_READBACK_SLOTS = 2;

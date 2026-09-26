@@ -106,6 +106,9 @@ a completely GPU-autonomous engine.
 the current and the predicted one, each side opened by the angle the camera turns over the horizon.
 It is one descent: what the camera rejects is tried against the view ahead, never drawn, only
 requested, in a lower request tier ranked after every visible request, at most half the readback.
+The cut sorts its requests by that rank on the GPU, visible tier first and the larger replacement
+error first within a tier (`dagSortRequests`, `gpu/dag/shader/snapshotWgsl.ts`); the host reads
+them in that order and ranks nothing.
 The host serves those pages through the one residency queue as a lower tier after the camera's and
 the light cuts' (`webgpu/residency/lowerTier.ts`): never pinned, never evicting a camera page, and
 replaced by an empty list once the camera stops. A still camera sends no view ahead and cuts as
