@@ -1,4 +1,12 @@
-import { LIGHT_KIND, type SceneLight } from './contracts.ts';
+import {
+  LIGHT_KIND,
+  SCENE_LIGHT_FLOATS,
+  SCENE_LIGHT_HEADER_FLOATS,
+  type SceneLight,
+} from './contracts.ts';
+
+/** First float of light `slot` in the packed store. */
+export const baseOf = (slot: number) => SCENE_LIGHT_HEADER_FLOATS + slot * SCENE_LIGHT_FLOATS;
 
 /** Field of a light in the buffer, in floats from its base. Four `vec4f` per light. */
 export const LIGHT_FIELD = {

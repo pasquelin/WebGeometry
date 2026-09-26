@@ -931,11 +931,10 @@
       "CLUSTER_MATERIAL_UNSUPPORTED": "O caminho WebGL2 próprio do motor não consegue desenhar esse modelo.",
       "PAGE_BUDGET": "As páginas de que a visão precisa não cabem no orçamento de memória, ou esse caminho não tem orçamentos.",
       "UNSUPPORTED_MEMORY_BUDGETS": "As páginas de que a visão precisa não cabem no orçamento de memória, ou esse caminho não tem orçamentos.",
-      "INVALID_SCENE_LIGHT": "Uma luz está malformada, duplicada, desconhecida, uma a mais, ou não tem para onde ir.",
-      "DUPLICATE_SCENE_LIGHT": "Uma luz está malformada, duplicada, desconhecida, uma a mais, ou não tem para onde ir.",
-      "UNKNOWN_SCENE_LIGHT": "Uma luz está malformada, duplicada, desconhecida, uma a mais, ou não tem para onde ir.",
-      "SCENE_LIGHT_BUDGET": "Uma luz está malformada, duplicada, desconhecida, uma a mais, ou não tem para onde ir.",
-      "SCENE_LIGHTS_UNAVAILABLE": "Uma luz está malformada, duplicada, desconhecida, uma a mais, ou não tem para onde ir.",
+      "INVALID_SCENE_LIGHT": "Uma luz está malformada, duplicada, desconhecida, ou não tem para onde ir.",
+      "DUPLICATE_SCENE_LIGHT": "Uma luz está malformada, duplicada, desconhecida, ou não tem para onde ir.",
+      "UNKNOWN_SCENE_LIGHT": "Uma luz está malformada, duplicada, desconhecida, ou não tem para onde ir.",
+      "SCENE_LIGHTS_UNAVAILABLE": "Uma luz está malformada, duplicada, desconhecida, ou não tem para onde ir.",
       "INVALID_SCENE_ENVIRONMENT": "A exposição ou o ambiente da cena não são números válidos.",
       "INVALID_MATERIAL": "Uma mudança de material é desconhecida, está fora do intervalo, o moveria para outra classe de desenho, ou repetiria um mapa que ele compartilha.",
       "UNKNOWN_MATERIAL": "Uma mudança de material é desconhecida, está fora do intervalo, o moveria para outra classe de desenho, ou repetiria um mapa que ele compartilha.",
@@ -1604,7 +1603,7 @@
     "summary": "Configurações publicadas de iluminação direta.",
     "description": "Essas são escolhas de produto nomeadas, não constantes enterradas: todo limite em tempo de execução as relê, e o diagnóstico as publica como estão.",
     "members": {
-      "maxLights": "Luzes que o contrato aceita no total; além disso, `addLight` recusa. Um ladrilho de tela mantém cada uma que o toca; sua lista e o laço de pixel são limitados por esse número (X2).",
+      "tileLights": "Luzes que a lista de um ladrilho de tela mantém, em cada uma de suas duas fatias de profundidade: sua memória é esta, por ladrilho, o que quer que a cena tenha. Um ladrilho alcançado por mais luzes não mantém lista e percorre todas as luzes da cena — as que não o alcançam somam um zero exato —, então nenhuma luz é perdida (X2).",
       "tileSize": "Lado em pixels de um ladrilho de tela da lista de luzes.",
       "samplesPerPixel": "Luzes sombreadas por completo — leitura de sombra incluída — por pixel de uma imagem EM MOVIMENTO (X2): as outras são pesadas sem sua sombra, e as sombreadas são desenhadas em proporção, então a estimativa é não enviesada e o antisserrilhamento temporal a faz convergir. Uma imagem parada sombreia toda luz do seu ladrilho e converge para a soma exata; ali, esse número não tem papel nenhum.",
       "shadowPage": "Lado de uma página de sombra, em texels: a unidade do pool físico, dos mapas virtuais e da invalidação. Um objeto em movimento só invalida as páginas que a sua caixa projetada cobre.",
@@ -1770,7 +1769,7 @@
     "summary": "As camadas vivem em quatro bits do cache, então a pilha mais profunda que o compilador consegue descrever é 15."
   },
   "MAX_SHADOW_SLICES": {
-    "summary": "Luzes que um recorte de sombra pode endereçar no atlas: um por luz de sombra declarada."
+    "summary": "Fatias de sombra que o atlas endereça, sob as regras próprias da tabela de páginas (#818) — nunca um limite para as luzes: uma luz com sombra além delas ilumina sem sombra, e o quadro a conta (`shadowCastersUnsliced`)."
   },
   "ManifestBinaryDescriptor": {
     "summary": "Onde o binário está e como um cluster, uma página empacotada e um pacote nomeiam seu objeto.",
@@ -2809,14 +2808,11 @@
   "SCENE_ENVIRONMENT_FLOATS": {
     "summary": "Floats do ambiente no buffer de GPU."
   },
-  "SCENE_LIGHT_BUFFER_FLOATS": {
-    "summary": "Floats de todo o buffer de luz de GPU: cabeçalho, depois cada luz."
-  },
   "SCENE_LIGHT_FLOATS": {
-    "summary": "Floats de uma luz no buffer de GPU: cinco `vec4f`, nunca realocados."
+    "summary": "Floats de uma luz no buffer da GPU: cinco `vec4f`."
   },
   "SCENE_LIGHT_HEADER_FLOATS": {
-    "summary": "Cabeçalho do buffer de luz: contagem, ladrilhos em X, ladrilhos em Y, reservado."
+    "summary": "Cabeçalho do buffer de luzes: número, depois três palavras reservadas."
   },
   "SCENE_LIGHT_VERSION": {
     "summary": "A versão do contrato de luz que este motor lê."
@@ -2961,9 +2957,9 @@
     "summary": "As luzes de uma cena como a GPU as lê, empacotadas e mantidas atualizadas.",
     "members": {
       "settings": "Configurações publicadas de iluminação direta. Essas são escolhas de produto nomeadas, não constantes enterradas: todo limite em tempo de execução as relê, e o diagnóstico as publica como estão.",
-      "packed": "Cada luz, empacotada para a GPU.",
+      "packed": "Cada luz, empacotada para a GPU: um novo array quando a tabela cresce.",
       "environmentPacked": "A irradiância do ambiente como a GPU a lê, atrás das luzes (`../core/environment.ts`).",
-      "revision": "Incrementada a cada mudança.",
+      "revision": "Incrementado a cada mudança, por vaga.",
       "sliceOf": "O recorte de atlas de uma luz vive no próprio buffer: não é mantido duas vezes.",
       "ids": "O nome da luz de cada slot.",
       "count": "Quantas luzes.",
@@ -2980,7 +2976,7 @@
       "remove": "Remove uma luz.",
       "setEnvironment": "Define o ambiente.",
       "assignSlice": "Registra o recorte de atlas que uma luz ocupa, sem tocar no resto de seus campos. A revisão do armazenamento só sobe se o recorte realmente mudou: caso contrário, nada é empurrado para a GPU.",
-      "view": "Floats realmente ocupados: a escrita de GPU nunca empurra slots vazios."
+      "capacity": "Vagas que a tabela mantém: o buffer de luzes da GPU tem este comprimento."
     }
   },
   "SceneLightingView": {
@@ -4801,8 +4797,8 @@
     "summary": "A política avalia evidências; ela nunca fabrica uma referência nem amostra um relógio ela mesma."
   },
   "createSceneLightStore": {
-    "summary": "Luzes de cena, em capacidade fixa.",
-    "description": "O buffer é alocado uma vez para `maxLights` luzes e nunca é realocado; adicionar, definir ou remover uma luz só escreve seus dezesseis floats e incrementa sua revisão. `revision` por luz indica a um leitor que uma luz mudou: nenhuma estrutura é reconstruída por quadro. O escalonador de sombras lê a própria forma da luz, então uma mudança de intensidade ou de cor não torna obsoleta nenhuma página de sombra."
+    "summary": "Luzes da cena, tantas quantas a cena declara: `capacity` vagas, dobradas quando cheias e nunca reduzidas.",
+    "description": "Adicionar, definir ou remover uma luz escreve seus floats e incrementa sua `revision`, que indica a um leitor que ela mudou: nada é reconstruído por quadro. O escalonador de sombras lê a própria forma da luz, então uma mudança de intensidade ou de cor não torna obsoleta nenhuma página de sombra."
   },
   "createSceneRoot": {
     "summary": "Cria uma hierarquia de cena vazia e versionada.",

@@ -55,11 +55,11 @@ function views(buffer: Float64Array, capacity: number) {
   return Array.from({ length: capacity }, (_, i) => buffer.subarray(i * 16, i * 16 + 16));
 }
 
-function grown<T extends Int32Array | Uint8Array | Uint32Array | Float64Array>(
-  old: T | undefined,
-  make: new (length: number) => T,
-  length: number,
-) {
+/** A typed array of `length` entries holding `old`'s, which it outgrows: the one growth rule of
+ *  the transform tree and the scene light store. */
+export function grown<
+  T extends Int32Array | Uint8Array | Uint32Array | Float32Array | Float64Array,
+>(old: T | undefined, make: new (length: number) => T, length: number) {
   const next = new make(length);
   if (old) next.set(old);
   return next;

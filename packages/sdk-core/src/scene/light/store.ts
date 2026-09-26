@@ -1,8 +1,7 @@
 import { EngineError } from '../../contracts/cache.ts';
+import { grown } from '../../math/transform-tree/transformTree.ts';
 import {
   LIGHT_SETTINGS,
-  SCENE_LIGHT_BUFFER_FLOATS,
-  SCENE_LIGHT_FLOATS,
   SCENE_LIGHT_HEADER_FLOATS,
   type SceneEnvironment,
   type SceneLight,
@@ -10,7 +9,7 @@ import {
 } from './contracts.ts';
 import { sameSceneEnvironment, sameSceneLight } from './equal.ts';
 import { SCENE_ENVIRONMENT_FLOATS, packEnvironment } from '../core/environment.ts';
-import { LIGHT_FIELD, writeLightFields } from './fields.ts';
+import { LIGHT_FIELD, baseOf, writeLightFields } from './fields.ts';
 import { validateSceneEnvironment, validateSceneLight } from './validate.ts';
 
 export { LIGHT_FIELD } from './fields.ts';
@@ -19,25 +18,32 @@ export { LIGHT_FIELD } from './fields.ts';
 export type SceneLightStore = ReturnType<typeof createSceneLightStore>;
 
 /**
- * Scene lights, at fixed capacity. The buffer is allocated once for `maxLights` lights and
- * is never reallocated; adding, setting or removing a light only writes its sixteen floats and
- * increments its revision. Per-light `revision` tells a reader that a light has changed: no
- * structure is rebuilt per frame. The shadow scheduler reads the light's shape itself, so a
- * change of intensity or colour stales no shadow page.
+ * Scene lights, as many as the scene declares: `capacity` slots, doubled when full and
+ * never shrunk. Adding, setting or removing a light writes its floats and bumps its `revision`,
+ * which tells a reader it changed: nothing is rebuilt per frame. The shadow scheduler reads the
+ * light's shape itself, so an intensity or colour change stales no shadow page.
  */
 export function createSceneLightStore() {
-  const packed = new Float32Array(SCENE_LIGHT_BUFFER_FLOATS);
-  const header = new Uint32Array(packed.buffer, 0, SCENE_LIGHT_HEADER_FLOATS);
+  let capacity = 0,
+    packed = new Float32Array(0),
+    header: Uint32Array,
+    revision = new Uint32Array(0);
   const ids: string[] = [];
   const indexOf = new Map<string, number>();
-  const revision = new Uint32Array(LIGHT_SETTINGS.maxLights);
   /** The environment's irradiance as the GPU reads it, behind the lights (`../core/environment.ts`). */
   const environmentPacked = new Float32Array(SCENE_ENVIRONMENT_FLOATS);
   let environment: SceneEnvironment | undefined,
     view: SceneLightingView = 'auto',
     epoch = 1,
     fogOnly = 0;
-  const baseOf = (slot: number) => SCENE_LIGHT_HEADER_FLOATS + slot * SCENE_LIGHT_FLOATS;
+  /** Twice the room, content kept: N lights cost log N copies. */
+  const grow = () => {
+    capacity = Math.max(capacity * 2, 32);
+    packed = grown(packed, Float32Array, baseOf(capacity));
+    header = new Uint32Array(packed.buffer, 0, SCENE_LIGHT_HEADER_FLOATS);
+    revision = grown(revision, Uint32Array, capacity);
+  };
+  grow();
   /** A light's atlas slice lives in the buffer itself: it is not held twice. */
   const sliceOf = (slot: number) => packed[baseOf(slot) + LIGHT_FIELD.shadowSlice];
   const writeSlice = (slot: number, slice: number) => {
@@ -48,11 +54,19 @@ export function createSceneLightStore() {
   const records = new Map<string, SceneLight>();
   const store = {
     settings: LIGHT_SETTINGS,
-    /** Every light, packed for the GPU. */
-    packed,
+    /** Every light, packed for the GPU: a new array when the table grows. */
+    get packed() {
+      return packed;
+    },
     environmentPacked,
-    /** Bumped on every change. */
-    revision,
+    /** Bumped on every change, per slot. */
+    get revision() {
+      return revision;
+    },
+    /** Slots the table holds: the GPU light buffer is this long. */
+    get capacity() {
+      return capacity;
+    },
     sliceOf,
     /** Each slot's light name. */
     ids,
@@ -108,13 +122,8 @@ export function createSceneLightStore() {
         throw new EngineError('DUPLICATE_SCENE_LIGHT', `light ${validated.id} already present`, {
           id: validated.id,
         });
-      if (ids.length >= LIGHT_SETTINGS.maxLights)
-        throw new EngineError(
-          'SCENE_LIGHT_BUDGET',
-          `${ids.length + 1} lights requested, ${LIGHT_SETTINGS.maxLights} published`,
-          { maxLights: LIGHT_SETTINGS.maxLights },
-        );
       const slot = ids.length;
+      if (slot >= capacity) grow();
       ids.push(validated.id);
       indexOf.set(validated.id, slot);
       records.set(validated.id, validated);
@@ -159,11 +168,7 @@ export function createSceneLightStore() {
       indexOf.delete(id);
       records.delete(id);
       revision[last] = 0;
-      packed.fill(
-        0,
-        SCENE_LIGHT_HEADER_FLOATS + last * SCENE_LIGHT_FLOATS,
-        SCENE_LIGHT_HEADER_FLOATS + (last + 1) * SCENE_LIGHT_FLOATS,
-      );
+      packed.fill(0, baseOf(last), baseOf(last + 1));
       header[0] = ids.length;
       epoch++;
     },
@@ -187,10 +192,6 @@ export function createSceneLightStore() {
       if (sliceOf(slot) === slice) return;
       writeSlice(slot, slice);
       epoch++;
-    },
-    /** Floats actually occupied: GPU write never pushes empty slots. */
-    view() {
-      return packed.subarray(0, SCENE_LIGHT_HEADER_FLOATS + ids.length * SCENE_LIGHT_FLOATS);
     },
   };
   return store;
