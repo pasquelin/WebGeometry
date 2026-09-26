@@ -96,3 +96,21 @@ fn instance_attributes_of_different_counts_are_refused() {
     let error = compile(&options, |_| {}).expect_err("mismatched instance counts");
     assert_eq!(error.code, "INVALID_GLTF", "{error:?}");
 }
+
+#[test]
+fn a_morph_channel_on_an_instanced_node_drives_each_instance() {
+    let (mut document, bin) = committed();
+    document["animations"] = json!([{
+        "samplers": [{"input": 0, "output": 0}],
+        "channels": [{"sampler": 0, "target": {"node": 2, "path": "weights"}}],
+    }]);
+    crate::compiler_instancing::expand_gpu_instances(&mut document, &bin).expect("expand");
+    // `wing` (node 2) gave its mesh to nodes 4 and 5, its two instances.
+    let targets: Vec<&Value> = document["animations"][0]["channels"]
+        .as_array()
+        .expect("channels")
+        .iter()
+        .map(|channel| &channel["target"]["node"])
+        .collect();
+    assert_eq!(targets, [&json!(4), &json!(5)]);
+}

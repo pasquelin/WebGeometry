@@ -34,14 +34,21 @@ fn instances(g: &Value, bin: &[u8], node: &Value, attributes: &Value) -> Result<
                 "{EXTENSION} {attribute} has the wrong type"
             )));
         }
-        let out = out.get_or_insert_with(|| vec![Value::Object(template.clone()); values.count]);
+        // Decoded first: `collect_f32` bounds the count by what memory can hold, so a sparse
+        // accessor that declares billions of instances is refused, never allocated blindly.
+        let poses = values.collect_f32()?;
+        let out = match &mut out {
+            Some(out) => out,
+            None => {
+                let mut children = reserve(values.count)?;
+                children.resize(values.count, Value::Object(template.clone()));
+                out.insert(children)
+            }
+        };
         if out.len() != values.count {
             return Err(invalid(format!("{EXTENSION} attributes differ in count")));
         }
-        for (child, pose) in out
-            .iter_mut()
-            .zip(values.collect_f32()?.chunks_exact(width))
-        {
+        for (child, pose) in out.iter_mut().zip(poses.chunks_exact(width)) {
             child[field] = json!(pose);
         }
     }
@@ -74,6 +81,7 @@ pub(super) fn expand_gpu_instances(g: &mut Value, bin: &[u8]) -> Result<()> {
         return Ok(());
     }
     let nodes = g["nodes"].as_array_mut().expect("nodes checked above");
+    let mut moved = Vec::with_capacity(expanded.len());
     for (id, children) in expanded {
         let first = nodes.len();
         let node = nodes[id]
@@ -91,11 +99,45 @@ pub(super) fn expand_gpu_instances(g: &mut Value, bin: &[u8]) -> Result<()> {
             .ok_or_else(|| invalid("node.children is not an array"))?
             .extend((first..first + children.len()).map(|child| json!(child)));
         nodes.extend(children);
+        moved.push((id, first..nodes.len()));
     }
+    retarget_weight_channels(g, &moved);
     for list in ["extensionsUsed", "extensionsRequired"] {
         if let Some(names) = g.get_mut(list).and_then(Value::as_array_mut) {
             names.retain(|name| name != EXTENSION);
         }
     }
     Ok(())
+}
+
+/// A morph animation that drove the instanced node's `weights` drives each instance instead: the
+/// weights left the node with its mesh, and a channel still aimed at it would move nothing.
+fn retarget_weight_channels(g: &mut Value, moved: &[(usize, std::ops::Range<usize>)]) {
+    let Some(animations) = g.get_mut("animations").and_then(Value::as_array_mut) else {
+        return;
+    };
+    for animation in animations {
+        let Some(channels) = animation.get_mut("channels").and_then(Value::as_array_mut) else {
+            continue;
+        };
+        let mut added = Vec::new();
+        channels.retain(|channel| {
+            let weights =
+                channel.pointer("/target/path").and_then(Value::as_str) == Some("weights");
+            let target = channel.pointer("/target/node").and_then(Value::as_u64);
+            let Some((_, children)) = moved
+                .iter()
+                .find(|(id, _)| weights && target == Some(*id as u64))
+            else {
+                return true;
+            };
+            for child in children.clone() {
+                let mut copy = channel.clone();
+                copy["target"]["node"] = json!(child);
+                added.push(copy);
+            }
+            false
+        });
+        channels.extend(added);
+    }
 }
