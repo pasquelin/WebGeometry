@@ -33,9 +33,11 @@
  *  flat lists, closed up to the root cover (`docs/FORMAT.md` §Cluster DAG), that WebGPU requests
  *  and retains with a bundle. A version-7 reader cannot read the lists, so it refuses.
  *  Version 9 adds each page's normal cone, cooked by the compiler (`Page.cone`), in a column a
- *  version-8 reader lacks. */
-export const MANIFEST_BINARY_VERSION = 9;
-/** The geometry-page format a version-9 sidecar names, as the manifest's `geometryPages` declares
+ *  version-8 reader lacks.
+ *  Version 10 cuts the manifest into pages (`paged.ts`): a sidecar holds the columns of one page,
+ *  the head's the texture previews alone. */
+export const MANIFEST_BINARY_VERSION = 10;
+/** The geometry-page format a version-10 sidecar names, as the manifest's `geometryPages` declares
  *  it once and every page header opens with. */
 export const GEOMETRY_PAGE_FORMAT_VERSION = 3;
 /** The codec geometry pages are written with. */

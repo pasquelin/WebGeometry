@@ -27,6 +27,26 @@ export interface LigneResultat {
   ecartBaseline?: number | null;
 }
 
+/** A row no timer fed, `null` never zero: its name, and what verifies it. */
+export const ligne = (
+  row: Pick<LigneResultat, 'name'> &
+    Partial<Pick<LigneResultat, 'size' | 'motif' | 'correct' | 'difference'>>,
+): LigneResultat => ({
+  size: null,
+  medianeMs: null,
+  p95Ms: null,
+  minMs: null,
+  nsParElement: null,
+  tours: 0,
+  opsParSec: null,
+  temoin: null,
+  ecartTemoin: null,
+  correct: null,
+  difference: null,
+  motif: null,
+  ...row,
+});
+
 /** A named benchmark's result: the file(s) it measures and its rows, one per case. */
 export interface Mesure {
   name: string;

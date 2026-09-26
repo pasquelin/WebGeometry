@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { prepare, prepareMany, createCompilationJob, COMPILER_LINE_LIMIT } from './index.mts';
 import type { BatchSummary } from './compiler/contracts.ts';
+import { manifest } from '../../../tests/fixtures/manifestBinary.ts';
+import { writePagedManifest } from '../../../tests/fixtures/pagedManifest.ts';
 
 /** A stand-in compiler that speaks the event protocol: events on stderr, a pointer on stdout, manifest on disk. */
 async function fakeCompiler(root: string, body: string): Promise<string> {
@@ -13,11 +15,15 @@ async function fakeCompiler(root: string, body: string): Promise<string> {
   await chmod(executable, 0o755);
   return executable;
 }
+/** The cache the stand-in names, `k1` of both scopes: a paged manifest of seven triangles. */
+async function writeCache(output: string) {
+  const seven = { ...manifest(), selectedTriangles: 7, primitives: [] };
+  for (const scope of ['slice', 'full'])
+    await writePagedManifest(join(output, 'native', scope, 'k1'), seven);
+}
 const readyCompiler = `
 const [input,output,scope]=process.argv.slice(2);
-const fs=require('node:fs'),path=require('node:path');
-const dir=path.join(output,'native',scope,'k1');fs.mkdirSync(dir,{recursive:true});
-fs.writeFileSync(path.join(dir,'clusters.json'),JSON.stringify({status:'ready',key:'k1',scope,selectedTriangles:7,primitives:[]}));
+const path=require('node:path');
 process.stderr.write(JSON.stringify({event:'accepted',job:'job'})+'\\n');
 process.stderr.write(JSON.stringify({event:'progress',job:'job',phase:'import',completed:1,total:1})+'\\n');
 process.stderr.write(JSON.stringify({event:'complete',job:'job'})+'\\n');
@@ -27,6 +33,7 @@ test('prepare relays events, reads the pointer from stdout and the manifest from
   const root = await mkdtemp(join(tmpdir(), 'trillion3d-prepare-'));
   try {
     const executable = await fakeCompiler(root, readyCompiler);
+    await writeCache(join(root, 'out'));
     const events: string[] = [];
     const result = await prepare(join(root, 'in'), join(root, 'out'), 'slice', 1, {
       executable,
@@ -46,6 +53,7 @@ test('compilation job progress always has a phase, including compiler lifecycle 
   const root = await mkdtemp(join(tmpdir(), 'trillion3d-job-progress-'));
   try {
     const executable = await fakeCompiler(root, readyCompiler);
+    await writeCache(join(root, 'out'));
     const phases: string[] = [];
     const job = await createCompilationJob('job', join(root, 'in'), join(root, 'out'), {
       executable,

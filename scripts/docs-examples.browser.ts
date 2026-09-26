@@ -6,6 +6,7 @@ import { startDocsServer } from './docs-serve.ts';
 import { leastDrawn, openExample, RENDER_ONLY } from './docs/examples/capture.ts';
 import { physicsExamples } from './docs/examples/physics.ts';
 import { readyEntries as ready } from '../site/app/examples/list.ts';
+import { flagged, type HealthVerdict } from '../site/examples/kit/verdict.ts';
 
 /** The centre of the render, the kit's panels outside it. */
 const centre = (page: Page) =>
@@ -35,7 +36,46 @@ async function controlsDriveTheRender(browser: Browser, port: number) {
   await page.close();
 }
 
-test('every example file renders an image on its own, fetching Jolt only when it has physics, and the portal page fills with it', async () => {
+/**
+ * #798: the health check flies its tour on each backend and publishes its verdict: four parts with
+ * their lines, every line green but those a backend documents (neutral) and those waiting on an
+ * open issue (`until #n`, printed for the measurer), and no uncaught error. A slowed build (40 ms
+ * spent in every animation frame) turns the rate line of every part red, the verdict with it.
+ */
+async function healthCheckJudges(browser: Browser, port: number) {
+  const entry = ready.find(({ id }) => id === 'health-check');
+  assert.ok(entry);
+  const [found, flags]: string[][] = [[], []],
+    view = { width: 1728, height: 1117 };
+  for (const gpu of [true, false])
+    for (const slow of [0, 40]) {
+      const side = `${gpu ? 'WebGPU' : 'WebGL2'}${slow ? ' slowed' : ''}`;
+      const { page, errors } = await openExample(browser, port, entry, view, undefined, gpu, slow);
+      await page.waitForFunction(() => '__verdict' in globalThis, null, {
+        polling: 500,
+        timeout: 120_000,
+      });
+      const verdict = await page.evaluate(
+        () => (globalThis as unknown as { __verdict: HealthVerdict }).__verdict,
+      );
+      const rates = verdict.resultats.filter(({ name }) => name.endsWith(': FPS'));
+      if (slow) {
+        if (verdict.correct || !rates.length || rates.some(({ correct }) => correct))
+          found.push(`${side}: not every rate line red`);
+      } else {
+        if (rates.length !== 4) found.push(`${side}: ${rates.length} parts judged, not 4`);
+        for (const line of verdict.resultats)
+          if (line.correct === false)
+            (flagged(line) ? flags : found).push(`${side} ${line.name}: ${line.motif}`);
+      }
+      found.push(...errors.map((error) => `${side}: ${error}`));
+      await page.close();
+    }
+  console.log(`Waiting on open issues:\n${flags.join('\n') || '—'}`);
+  assert.deepEqual(found, []);
+}
+
+test('every example file renders an image on its own, fetching Jolt only when it has physics, the portal page fills with it, and the health check judges itself', async () => {
   const { server, port } = await startDocsServer();
   const browser = await launchChrome({ headless: true });
   try {
@@ -82,6 +122,7 @@ test('every example file renders an image on its own, fetching Jolt only when it
     // Both lists in one verdict: a physics mismatch never hides a blank page (#503).
     assert.deepEqual({ jolt, blank }, { jolt: [], blank: [] });
     await controlsDriveTheRender(browser, port);
+    await healthCheckJudges(browser, port);
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));

@@ -16,6 +16,7 @@ import {
   HOST_WRAP_MIRRORED_REPEAT,
 } from './surfaceConstants.ts';
 import type { Texture, TextureFilter, WrapMode } from '../../../sdk-core/src/index.ts';
+import { AFFINE } from '../../../sdk-core/src/texture/contract.ts';
 
 /** Addressing the host declared, in the engine's words; anything else repeats, as the samplers do. */
 export function importWrapMode(wrap: number): WrapMode {
@@ -115,16 +116,13 @@ function fillSampling(record: Editable, host: HostTexture) {
   return 1;
 }
 
-/** The six affine entries of a 3×3 UV matrix, column-major. */
-const AFFINE = [0, 1, 3, 4, 6, 7];
-
 /** Recomposes the host's UV matrix, which the record aliases, when a source of it moved: the
  *  seven scalars the host composes it from, or its six affine entries when the page owns it
  *  (`matrixAutoUpdate` false). No trigonometry for a texture that stays put. 1 when it moved. */
 function fillPlacement(host: HostTexture, placed: Float64Array) {
   const e = host.matrix.elements;
   if (!host.matrixAutoUpdate)
-    return AFFINE.reduce((moved, k, i) => moved | put(placed, i, e[k]), put(placed, 6, 0));
+    return AFFINE.reduce<number>((moved, k, i) => moved | put(placed, i, e[k]), put(placed, 6, 0));
   const { offset, repeat, center } = host;
   const moved =
     put(placed, 0, offset.x) |
@@ -192,4 +190,10 @@ export function followHostTexture(record: Texture) {
   followPicture(entry);
   if (fillSampling(into, host)) into.sampling++;
   if (fillPlacement(host, entry.placed)) into.placement++;
+}
+
+/** Format its host declares for a record's raw texels; `undefined` for any other picture. */
+export function texelFormatOf(record: Texture) {
+  const host = byRecord.get(record)?.host;
+  return host?.kind === 'texels' ? host.format : undefined;
 }

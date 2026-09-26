@@ -2,7 +2,6 @@
 // `crypto.subtle`, `Worker`) are ambient.
 import type {
   EvaluatedInstalledPage,
-  LooseMetadata,
   LooseSdk,
   LooseWorld,
 } from './installed-package-browser-page-types.ts';
@@ -96,13 +95,11 @@ export async function evaluateInstalledPage({
   const pointerUrl = new URL(manifestUrl, location.href);
   const pointer = (await (await fetch(pointerUrl)).json()) as { url: string };
   const metadataUrl = new URL(pointer.url, pointerUrl);
-  const slim = (await (await fetch(metadataUrl)).json()) as LooseMetadata;
-  const metadata = slim.binary
-    ? sdk.decodeManifestBinary(
-        slim,
-        await (await fetch(new URL(slim.binary.url, metadataUrl))).arrayBuffer(),
-      )
-    : slim;
+  const root: unknown = await (await fetch(metadataUrl)).json();
+  const metadata = await sdk.readPagedManifest(
+    root,
+    async ({ url }) => new Uint8Array(await (await fetch(new URL(url, metadataUrl))).arrayBuffer()),
+  );
   const geometry = metadata.primitives
     .flatMap((primitive) => primitive.pages)
     .find((item) => item.geometry)?.geometry;

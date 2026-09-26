@@ -1,8 +1,8 @@
 {
   "case": "Three opaque surfaces stacked on one plane; the third only gets there through its node's translation.",
   "rule": "Areas 36, 16 and 4: the smallest goes on top. Three pairs overlap (16 + 4 + 4 = 24).",
-  "formatVersion": 7,
-  "manifestBinaryVersion": 9,
+  "formatVersion": 9,
+  "manifestBinaryVersion": 10,
   "coplanar": {
     "stage": "coplanar-depth-layers-v1",
     "surfaces": 3,

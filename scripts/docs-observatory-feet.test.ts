@@ -99,7 +99,7 @@ test("the compiled observatory decodes each block corner within its page's decla
     file.startsWith('site/assets/gallery/signature-architecture/'),
   );
   assert.ok(pointer, 'the observatory cache is compiled (pnpm run compile:caches)');
-  const { dir, manifest } = readCacheManifest(fileURLToPath(new URL(dirname(pointer), root)));
+  const { dir, manifest } = await readCacheManifest(fileURLToPath(new URL(dirname(pointer), root)));
   const out = new Float64Array(blocks.length * 24);
   blocks.forEach(({ min, max }, n) =>
     boxCornersInto(out, n * 24, min[0], min[1], min[2], max[0], max[1], max[2], IDENTITY_MATRIX4),

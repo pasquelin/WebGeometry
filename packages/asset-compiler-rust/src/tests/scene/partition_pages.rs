@@ -1,11 +1,13 @@
 //! The paged cell index (#750): the cells' records lie in pages beside the tables, whose root has
 //! the same bytes whatever the world, and a reused folder proves its cells through those pages.
+//! The manifest's root keeps its bytes too, and its primitives are read through index pages (#762).
 //!
 //! Provenance: the grids of `partition.rs`; the committed open-world cell
 //! (`tests/fixtures/openworld-cell`) laid eight by eight, 250 m apart; a synthetic halving tree for
 //! the index pages, which a cooked world reaches only past eight pages of records.
 use super::partition::{cells, compiled, compiled_full, grid};
 use super::*;
+use crate::compiler_manifest_pages::{read_manifest, MANIFEST_PAGES};
 use crate::compiler_tables::partition::{pages::*, split::Region};
 use crate::tests::cache::reuse::compile_with_events;
 
@@ -54,6 +56,8 @@ fn the_root_has_one_size_whatever_the_world_and_every_page_its_limit() {
     let size = |value: &Value| serde_json::to_vec(value).expect("json").len();
     let root = 1_391; // FORMAT.md, and the index-page root below
     for (options, tables, directory) in &worlds {
+        let manifest = fs::read(directory.join(MANIFEST_FILE)).expect("clusters.json");
+        assert_eq!(manifest.len(), 1_717, "the manifest's root, FORMAT.md");
         assert_eq!(size(&tables["partition"]), root, "the root's bytes");
         let largest = files(directory, "scene-page-")
             .into_iter()
@@ -105,6 +109,18 @@ fn index_pages_list_at_most_the_fan_out_and_give_every_record_back_in_order() {
     let read = read_records(&directory, &root).expect("records");
     assert_eq!(read, records, "every record, in cell order");
     fs::remove_dir_all(directory).expect("cleanup");
+}
+
+#[test]
+fn the_manifest_reads_its_primitives_through_an_index_page() {
+    let (options, _, directory) = compiled(grid(48, 4.0, 1.0), false);
+    let mut root = read_json(&directory.join(MANIFEST_FILE));
+    let direct = read_manifest(&directory, &root).expect("pages").manifest;
+    let index = json!({"version": MANIFEST_PAGES.version, "pages": root["pages"]});
+    root["pages"][0] = json!(write_page(&MANIFEST_PAGES, &directory, &index, &[]).expect("index"));
+    let paged = read_manifest(&directory, &root).expect("through the index page");
+    assert_eq!(paged.manifest, direct, "every primitive, in order");
+    fs::remove_dir_all(options.source.parent().expect("root")).expect("cleanup");
 }
 
 #[test]

@@ -3,6 +3,7 @@ export {
   assertCacheIdentity,
   assertCachePointer,
   assertCacheReady,
+  assertCacheRoot,
   assertFormat,
   EngineError,
 } from '../../sdk-core/src/contracts/cache.ts';
@@ -122,6 +123,7 @@ export type {
   TextureBlockFormat,
   TextureLayout,
 } from '../../sdk-core/src/texture/previewFormat.ts';
+export { readPagedManifest } from '../../sdk-core/src/manifest/paged.ts';
 export type {
   Texture,
   TextureColorSpace,

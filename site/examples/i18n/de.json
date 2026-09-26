@@ -941,7 +941,11 @@
     "banner": "Ziehen, um sich umzusehen. Auto fahren ankreuzen, um es zu nehmen: W oder ↑ gibt Gas, S oder ↓ bremst, A D oder ← → lenken. Erneut fallen lassen schickt Kisten und Bälle wieder hinab.",
     "words": {
       "credit": "Tal für dieses Beispiel im Code modelliert, CC0 — siehe assets/examples/CREDITS.md",
-      "refused": "Von diesem Backend abgelehnt"
+      "refused": "Von diesem Backend abgelehnt",
+      "close": "Nahaufnahme",
+      "far": "Fernsicht",
+      "pan": "Schneller Schwenk",
+      "still": "Stillstand"
     },
     "controls": {
       "drive": "Auto fahren",

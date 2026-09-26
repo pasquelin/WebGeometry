@@ -29,7 +29,7 @@ pub(super) fn reuse(
     progress: &(impl Fn(Value) + Sync),
 ) -> Result<Option<Reused>> {
     let directory = o.key_directory(key);
-    let Ok(head) = fs::read(directory.join("clusters.json")) else {
+    let Ok(head) = fs::read(directory.join(MANIFEST_FILE)) else {
         return Ok(None);
     };
     let started = Instant::now();

@@ -4377,8 +4377,14 @@
     "description": "Göstericinin işaret ettiği önbellek manifestosu URL'sini, gösterici URL'sine karşı çözülmek üzere döndürür. Bir host'un bu alanları kendisinin okumasının hiçbir anlamı yoktur; bu, okuyucunun çalıştırdığı kontroldür."
   },
   "assertCacheReady": {
-    "summary": "Bir host'un, cluster'ları satır içinde mi yoksa ikili bir yardımcı dosyada mı yazıldığına bakılmaksızın, yalnızca önbellek manifestosunda kontrol edebileceği şey: önbellek hazır, istenen kapsamda, bu SDK'nın okuduğu bir formatta, ve seçtiği geometriyi bildiriyor.",
-    "description": "Bu üçgen sayımını döndürür, böylece bir kullanılabilirlik sondası başka hiçbir şey okumak zorunda kalmaz ve hiçbir alan adını bilmesi gerekmez. Cluster'ların kendi kimliği `assertCacheIdentity`'dir: sayfaları okur, bu yüzden bir sondanın kasıtlı olarak indirmediği, çözülmüş bir manifesto üzerinde çalışır."
+    "summary": "Bir ana makinenin sayfaları üzerinden okunan bir önbellek manifestosunda (`readPagedManifest`) denetleyebileceği şey: kökü (`assertCacheRoot`) ve seçtiği geometri.",
+    "description": "Bu üçgen sayısını döndürür; böylece bir kullanılabilirlik yoklaması hiçbir alan adını bilmek zorunda kalmaz. Kümelerin kimliği `assertCacheIdentity` işidir: sayfaları okur, bu yüzden çözülmüş bir manifesto üzerinde çalışır."
+  },
+  "assertCacheRoot": {
+    "summary": "Bir ana makinenin bir önbellek manifestosunun kökünde (`clusters.json`) sayfalarından önce denetleyebileceği şey: önbellek hazır, istenen kapsamda ve bu SDK'nın okuduğu bir biçimde."
+  },
+  "readPagedManifest": {
+    "summary": "`root` altındaki manifesto; sayfaları ve ek dosyaları `read` ile yan yana okunur — tarayıcıda `fetchVerified`, her birini onu adlandıran boyut ve parmak iziyle kanıtlar: kökün alanları, başlığınkiler ve her ağ sayfasının ilkelleri sırayla (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Bu çalışma zamanının okumadığı bir önbellek formatını reddeder."

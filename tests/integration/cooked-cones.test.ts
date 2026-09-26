@@ -26,8 +26,8 @@ const WIDEST = 2n * 4n;
 const bytesOf = (file: string) => new Uint8Array(readFileSync(file)).buffer;
 
 /** Every page of the scene cache whose pointer is `pointer`, and how many of them disagree. */
-function checkScene(pointer: string) {
-  const { dir, manifest } = readCacheManifest(dirname(fileURLToPath(new URL(pointer, root))));
+async function checkScene(pointer: string) {
+  const { dir, manifest } = await readCacheManifest(dirname(fileURLToPath(new URL(pointer, root))));
   const tables = JSON.parse(
     readFileSync(join(dir, 'scene-tables.json'), 'utf8'),
   ) as PreparedSceneTables;
@@ -82,7 +82,7 @@ test('every cooked cone holds the cone the runtime built from the same triangles
   let pages = 0;
   const disagreements: string[] = [];
   for (const pointer of pointers) {
-    const scene = checkScene(pointer);
+    const scene = await checkScene(pointer);
     pages += scene.pages;
     disagreements.push(...scene.disagreements);
   }

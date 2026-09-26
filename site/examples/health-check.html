@@ -33,6 +33,7 @@
       import { animation, vehicle, capability, diagnostic } from '../runtime/engine.js';
       import { announce, controls, leafTexture, matcapBall, physicsReadouts, readout, seeded } from '../runtime/kit.js';
       import { vehicles, walkingRobot, words } from '../runtime/kit.js';
+      import { tour, healthCheck, showVerdict } from '../runtime/kit.js';
 
       // Every feature of the engine in one scene, each built by the kit or the engine as its own
       // example builds it: a compiled valley, the streamed observatory past its far edge and its
@@ -40,10 +41,12 @@
       // in each material, a point light with its shadows, and crates and balls that fall and roll.
       const world = createWorld('view', { controls: 'orbit', physics: true });
       const say = words();
-      // What a backend refuses is said on the world's channel, with its reason: shown, never hidden.
-      diagnostic.createChannel().observe(({ kind, message }) => {
-        if (kind.includes('refused')) announce(say('refused'), message);
-      });
+      // Every frame the camera's tour draws counts toward the verdict of the part it is in; what
+      // a backend refuses is said with its reason: a red line, but a limit the backend documents.
+      let flown = null;
+      const check = healthCheck(world, () => flown?.part ?? null);
+      const refuse = (reason, documented) => (announce(say('refused'), reason), check.refuse(reason, documented));
+      diagnostic.createChannel().observe(({ kind, message }) => kind.includes('refused') && refuse(message));
       world.scene.background = math.color('#bcd3e6');
       world.camera.far = 600;
       const [valley, sky, observatory] = await Promise.all([
@@ -161,11 +164,29 @@
       // `drive` hands the keyboard to the car and the camera to its chase; `reset` parks it again.
       const ui = controls({ drive: false, drop, reset: () => park(driven, start) }, ({ drive }) => {
         world.controls.kind = drive ? 'vehicle' : 'orbit';
+        if (drive) flown?.stop();
       }, world);
       physicsReadouts(world, ['bodies', 'step']);
       const drawn = readout('renderer');
       world.camera.position.set(70, 45, 70);
       world.controls.target.set(0, 0, -20);
+
+      // The tour, the same frames on every run: a close-up of the stage, the valley and the
+      // observatory from far, a fast pan across them, then the camera held still. When it ends,
+      // or the viewer takes the controls, the verdict shows and is published as `window.__verdict`.
+      const wide = [70, 60, 90],
+        swept = [-90, 0, edge / 2];
+      flown = tour(world, [
+        { name: 'close', position: [x + 7, top + 3, z + 9], target: [x, top + 1, z], seconds: 3, hold: 2 },
+        { name: 'far', position: wide, target: [0, 0, edge], seconds: 3, hold: 2 },
+        { name: 'pan', position: wide, target: swept, seconds: 0.8, hold: 0.4 },
+        { name: 'still', position: wide, target: swept, seconds: 0.1, hold: 3 },
+      ]);
+      const judged = world.onFrame(() => {
+        if (flown.gliding) return;
+        judged();
+        showVerdict(check.verdict(), say);
+      });
 
       let heading = 0;
       world.beforeFrame(({ delta }) => {
@@ -174,13 +195,13 @@
         if (ui.drive) chase(driven, delta);
       });
 
-      // The path drawing the world, and what it refuses of the scene file's lights, with why:
+      // The path drawing the world, and what it documents it refuses of the scene's lights, with why:
       // asked once its first frame is drawn, so of a session that is open.
       const asked = world.onFrame(() => {
         asked();
         drawn(world.renderer);
         const { reason } = capability.lighting(world);
-        if (reason) announce(say('refused'), reason);
+        if (reason) refuse(reason, true);
       });
     </script>
   </body>

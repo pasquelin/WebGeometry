@@ -61,10 +61,8 @@ fn compile_one(name: &str) -> (f64, Value) {
     let mut objects: Vec<(String, String)> = Vec::new();
     let store = options.cache.join("native").join("objects");
     digests(&store, &store, &mut objects);
-    let slim: Value = serde_json::from_slice(
-        &std::fs::read(directory.join("clusters.json")).expect("clusters.json"),
-    )
-    .expect("clusters.json is valid JSON");
+    let slim = crate::compiler_manifest_pages::read_manifest_at(&directory);
+    let slim = slim.expect("the manifest's pages").manifest;
     // Phases belong to the job that spent them: the survey carries them per fixture,
     // since no counter adds them up from one compilation to another.
     let record = json!({"fixture":name,"ms":ms,"phasesMs":result["metrics"]["phaseElapsedMs"],

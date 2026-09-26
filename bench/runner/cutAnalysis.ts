@@ -1,5 +1,5 @@
 // Cut of a series, read off the engine: identifiers from `coupe.txt` crossed with the
-// `clusters.bin` sidecar, to say where the triangles come from — by primitive, by DAG level.
+// manifest's column files, to say where the triangles come from — by primitive, by DAG level.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readCacheManifest } from './cacheManifest.ts';
@@ -70,22 +70,22 @@ export function analyseCut(ids: string[], index: Map<string, PageInfo>, meshName
 
 const cacheIndex = new Map<string, { index: Map<string, PageInfo>; names: string[] }>();
 
-/** Loads the index of a derived directory (manifest + sidecar + source.gltf names). */
-function loadIndex(derived: string) {
+/** Loads the index of a derived directory (manifest pages + source.gltf names). */
+async function loadIndex(derived: string) {
   const hit = cacheIndex.get(derived);
   if (hit) return hit;
-  const { dir, manifest } = readCacheManifest(join(derived, 'native/full'));
+  const { dir, manifest } = await readCacheManifest(join(derived, 'native/full'));
   const loaded = { index: indexPages(manifest), names: meshNames(join(dir, 'source.gltf')) };
   cacheIndex.set(derived, loaded);
   return loaded;
 }
 
 /** Analyses a cut file against the cache that produced it; `null` if either is missing. */
-export function analyseFile(coupePath: string | null, derived: string | null) {
+export async function analyseFile(coupePath: string | null, derived: string | null) {
   if (!coupePath || !derived || !existsSync(coupePath) || !existsSync(derived)) return null;
   const ids = readFileSync(coupePath, 'utf8').split('\n').filter(Boolean);
   if (!ids.length) return null;
-  const { index, names } = loadIndex(derived);
+  const { index, names } = await loadIndex(derived);
   return analyseCut(ids, index, names);
 }
 

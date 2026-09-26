@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepare } from '../index.mts';
+import { manifest as fixture } from '../../../../tests/fixtures/manifestBinary.ts';
+import { writePagedManifest } from '../../../../tests/fixtures/pagedManifest.ts';
 
 /** The `prepare()` metrics of a run that built the hierarchy, as the manifest/pointer merge
  *  produces them in practice: not part of `CompilationResult`'s narrow declared shape, only
@@ -93,11 +95,6 @@ test('prepare() reports the folder reused by a second identical run', async (t) 
   }
 });
 
-/** What the stub compiler in `faux()` writes to the manifest and prints as its pointer. */
-interface FauxManifest {
-  status: string;
-  metrics: { importMs: number; compileMs: number };
-}
 interface FauxPointer {
   status: string;
   scope: string;
@@ -108,21 +105,17 @@ interface FauxPointer {
 }
 
 /**
- * A stub compiler: it drops the requested manifest then announces the pointer. It pins both
- * readings, which the real binary cannot, and makes the merge rule observable.
+ * A stub compiler: the manifest of `metrics` is paged in beforehand, then the stub announces the
+ * pointer. It pins both readings, which the real binary cannot, and makes the merge rule observable.
  */
-async function faux(root: string, manifeste: FauxManifest, pointeur: FauxPointer): Promise<string> {
+async function faux(root: string, metrics: object, pointeur: FauxPointer): Promise<string> {
+  const paged = { ...fixture(), primitives: [], metrics };
+  await writePagedManifest(join(root, 'cache', 'native', pointeur.scope), paged, pointeur.url);
   const chemin = join(root, 'faux-compilateur.ts');
   await writeFile(
     chemin,
     `#!/usr/bin/env node
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-const [, , , sortie, portee] = process.argv;
-const pointeur = ${JSON.stringify(pointeur)};
-await mkdir(join(sortie, 'native', portee), { recursive: true });
-await writeFile(join(sortie, 'native', portee, pointeur.url), ${JSON.stringify(JSON.stringify(manifeste))});
-process.stdout.write(JSON.stringify(pointeur));
+process.stdout.write(${JSON.stringify(JSON.stringify(pointeur))});
 `,
     { mode: 0o755 },
   );
@@ -132,7 +125,6 @@ process.stdout.write(JSON.stringify(pointeur));
 test('the manifest keeps priority, the pointer fills in the final measurements', async () => {
   const root = await mkdtemp(join(tmpdir(), 'trillion3d-fusion-'));
   try {
-    const manifeste = { status: 'ready', metrics: { importMs: 1, compileMs: 2 } };
     const pointeur = {
       status: 'ready',
       scope: 'full',
@@ -142,7 +134,7 @@ test('the manifest keeps priority, the pointer fills in the final measurements',
       metrics: { importMs: 999, wallMs: 40, pruneMs: 5 },
     };
     const result = await prepare(await quad(root), join(root, 'cache'), 'full', 150000, {
-      executable: await faux(root, manifeste, pointeur),
+      executable: await faux(root, { importMs: 1, compileMs: 2 }, pointeur),
       resourceBaseUrl: '/assets/',
     });
     assert.deepEqual(result.metrics, { importMs: 1, compileMs: 2, wallMs: 40, pruneMs: 5 });

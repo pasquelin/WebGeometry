@@ -1,4 +1,5 @@
 use super::*;
+use compiler_manifest_pages::Paged;
 
 pub(super) fn referenced_objects(
     json: &Value,
@@ -58,29 +59,29 @@ impl Keep {
         let textures = previews.iter().map(|p| p.sha256.clone()).collect();
         Ok(Self { objects, textures })
     }
-    /// What a published manifest and its sidecar name, for a scope this job does
+    /// What a published manifest and its sidecars name, for a scope this job does
     /// not touch: pages and texture levels live only in the sidecar columns, read
     /// once for both.
-    pub fn named_by(manifest: &Value, binary: &[u8]) -> Result<Self> {
-        let mut objects = BTreeSet::new();
-        referenced_objects(manifest, Some(binary), &mut objects)?;
-        let textures = manifest_binary::texture_digests(binary)
-            .map_err(unreadable)?
-            .into_iter()
-            .collect();
+    pub fn named_by(paged: &Paged) -> Result<Self> {
+        let (mut objects, mut textures) = (BTreeSet::new(), BTreeSet::new());
+        referenced_objects(&paged.manifest, None, &mut objects)?;
+        for sidecar in &paged.sidecars {
+            objects.extend(manifest_binary::digests(sidecar).map_err(unreadable)?);
+            textures.extend(manifest_binary::texture_digests(sidecar).map_err(unreadable)?);
+        }
         Ok(Self { objects, textures })
     }
 }
 /// Objects and image fingerprints named by a scope that is not recompiled. Without
-/// a readable sidecar, prune cannot decide what to keep, so it fails and deletes
+/// a readable manifest, prune cannot decide what to keep, so it fails and deletes
 /// nothing rather than counting that scope as zero objects.
 fn other_scope(dir: &Path, keep: &mut Keep) -> Result<()> {
-    let Ok(text) = fs::read(dir.join("clusters.json")) else {
+    if !dir.join(MANIFEST_FILE).is_file() {
         return Ok(());
-    };
-    let binary = fs::read(dir.join(MANIFEST_BINARY_FILE))
+    }
+    let paged = compiler_manifest_pages::read_manifest_at(dir)
         .map_err(|e| unreadable(format!("{}: {e}", dir.display())))?;
-    let named = Keep::named_by(&serde_json::from_slice(&text)?, &binary)?;
+    let named = Keep::named_by(&paged)?;
     keep.objects.extend(named.objects);
     keep.textures.extend(named.textures);
     Ok(())

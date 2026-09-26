@@ -128,27 +128,37 @@ export interface View {
   target: readonly number[];
 }
 
+/** Where the camera stands and the point it looks at, as one list `[x, y, z, tx, ty, tz]`. */
+export function cameraView({ camera, controls }: CirclingWorld) {
+  const [p, t] = [camera.position, controls.target];
+  return [p.x, p.y, p.z, t.x, t.y, t.z];
+}
+
+/** Moves the camera a fraction `t` of the way from the view `from` to the view `to`, both as
+ *  `cameraView` gives them. */
+export function glideCamera(world: CirclingWorld, from: number[], to: number[], t: number) {
+  const [x, y, z, tx, ty, tz] = mix(from, to, t);
+  world.camera.position.set(x, y, z);
+  world.controls.target.set(tx, ty, tz);
+}
+
 /**
  * The camera's flights: `flyTo(view, seconds, wait)` flies it from wherever it stands to `view`
  * after `wait` seconds, eased by `curve`, until the viewer's press or wheel ends the flight where
  * it is. A flight asked for during another starts from where that one had got to.
  */
 export function flights(world: CirclingWorld, curve = ease.inOut) {
-  const { position } = world.camera,
-    { target } = world.controls;
   let from: number[] = [],
     to: number[] = [],
     seconds = 1,
     delay = 0;
   const glide = opening(world, (time) => {
     if (!to.length) return false;
-    const [x, y, z, tx, ty, tz] = mix(from, to, curve((time - delay) / seconds));
-    position.set(x, y, z);
-    target.set(tx, ty, tz);
+    glideCamera(world, from, to, curve((time - delay) / seconds));
     return time < delay + seconds;
   });
   return (view: View, length: number, wait = 0) => {
-    from = [position.x, position.y, position.z, target.x, target.y, target.z];
+    from = cameraView(world);
     to = [...view.position, ...view.target];
     [seconds, delay] = [length, wait];
     glide.restart();

@@ -11,8 +11,11 @@ fn assert_cache_coherent(o: &Options) {
         directory.join("clusters.json").exists(),
         "the pointer names {key}, whose directory is gone"
     );
-    let binary = fs::read(directory.join(MANIFEST_BINARY_FILE)).expect("sidecar");
-    for digest in manifest_binary::digests(&binary).expect("sidecar columns") {
+    let sidecars = paged(&directory).sidecars;
+    let digests = sidecars
+        .iter()
+        .map(|s| manifest_binary::digests(s).expect("sidecar columns"));
+    for digest in digests.flatten() {
         assert!(
             object_path(o, &digest).exists(),
             "the page {digest} the manifest names is gone"

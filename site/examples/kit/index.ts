@@ -32,6 +32,8 @@ export { walkingRobot } from './robot.ts';
 export { vehicles } from './vehicles.ts';
 export { brownNoise, whiteNoise } from './sound.ts';
 export { stats } from './stats.ts';
+export { tour } from './tour.ts';
+export { healthCheck, showVerdict } from './verdict.ts';
 export { language, words } from './words.ts';
 export { isCapture, play, type Game, type PlayOptions } from './play.ts';
 export type { GameKey, GameOption } from './gameMenu.ts';

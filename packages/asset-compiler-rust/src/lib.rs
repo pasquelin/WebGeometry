@@ -59,8 +59,8 @@ pub const STRUCTURE_VERSION: u32 = 1;
 /// so the coarsest complete cover of a whole scene is a handful of large requests instead of one
 /// small request per primitive — which is what the first image waits on.
 pub const BOOTSTRAP_BUNDLE_BYTES: usize = 1024 * 1024;
-/// Name of the binary sidecar beside `clusters.json`.
-pub const MANIFEST_BINARY_FILE: &str = "clusters.bin";
+/// The root of the manifest, of fixed size: its pages lie beside it (`compiler_manifest_pages.rs`).
+pub const MANIFEST_FILE: &str = "clusters.json";
 #[derive(Debug)]
 pub struct CompilerError {
     pub code: &'static str,
@@ -134,6 +134,7 @@ mod compiler_coplanar;
 mod compiler_copy;
 mod compiler_lights;
 mod compiler_lock;
+mod compiler_manifest_pages;
 mod compiler_materials;
 mod compiler_nodes;
 mod compiler_page_object;

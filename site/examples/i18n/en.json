@@ -941,7 +941,11 @@
     "banner": "Drag to look around. Tick Drive the car to take it: W or ↑ accelerates, S or ↓ brakes, A D or ← → steer. Drop again sends the crates and balls down once more.",
     "words": {
       "credit": "Valley modelled in code for this example, CC0 — see assets/examples/CREDITS.md",
-      "refused": "Refused on this backend"
+      "refused": "Refused on this backend",
+      "close": "Close-up",
+      "far": "Far view",
+      "pan": "Fast pan",
+      "still": "Still"
     },
     "controls": {
       "drive": "Drive the car",

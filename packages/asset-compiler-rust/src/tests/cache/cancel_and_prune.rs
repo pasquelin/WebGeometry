@@ -23,12 +23,12 @@ fn objects_on_disk(cache: &Path) -> BTreeSet<String> {
 #[test]
 fn a_sidecar_of_another_version_stops_the_prune_without_removing_anything() {
     let (root, options, full) = two_mesh_folder();
-    let sidecar = options
+    let directory = options
         .cache
         .join("native/full")
-        .join(full["key"].as_str().expect("key"))
-        .join(MANIFEST_BINARY_FILE);
-    let mut bytes = fs::read(&sidecar).expect("sidecar");
+        .join(full["key"].as_str().expect("key"));
+    let mut bytes = paged(&directory).sidecars.remove(1);
+    let sidecar = directory.join(crate::compiler_manifest_pages::sidecar_file(&hash(&bytes)));
     bytes[4..8].copy_from_slice(&(manifest_binary::MANIFEST_BINARY_VERSION - 1).to_le_bytes());
     fs::write(&sidecar, &bytes).expect("older version");
     let before = objects_on_disk(&options.cache);

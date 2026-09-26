@@ -81,7 +81,7 @@ export async function reviewCutouts(
 
 /**
  * The thumbnails of the concerned models, by image: a texture two models share is read once. One
- * model at a time — each read holds a whole `clusters.bin`, and the questions are then asked one by
+ * model at a time — each read holds a whole manifest's columns, and the questions are then asked one by
  * one anyway, so reading them all at once would only raise the peak.
  */
 async function thumbnailsOf(concerned: Loaded[]): Promise<Map<string, Thumbnail>> {

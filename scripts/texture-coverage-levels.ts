@@ -59,7 +59,7 @@ export async function coverageLevels(
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [cache = '', scope = 'full'] = process.argv.slice(2);
-  const { dir, manifest } = readCacheManifest(join(cache, 'native', scope));
+  const { dir, manifest } = await readCacheManifest(join(cache, 'native', scope));
   const read = (url: string) => readFile(join(dir, url));
   for (const chain of await coverageLevels(manifest, read)) console.log(JSON.stringify(chain));
 }

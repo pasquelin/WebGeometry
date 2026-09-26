@@ -45,7 +45,7 @@ fn texture_previews_match_their_golden_expected_json() {
 /// Digest the golden compares: the stage report, the slim-manifest counters, then
 /// for each sidecar entry its provenance and each of its levels byte by byte.
 pub(in crate::tests) fn previews_digest(run: &GoldenRun) -> Value {
-    let bytes = &run.binary;
+    let bytes = &run.previews;
     let word = |at: usize| u32::from_le_bytes(bytes[at..at + 4].try_into().expect("word"));
     let column = |index: usize| {
         let at = (HEADER_WORDS + index * 2) * 4;

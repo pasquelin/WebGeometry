@@ -1,8 +1,9 @@
 //! Proof that a cached folder is whole before `compiler_reuse.rs` keeps it: every product of the
 //! folder against the fingerprint the manifest recorded, every cell against the record its tables'
-//! pages hold, the sidecar against `binary.sha256`, every object it names against its
+//! pages hold, every page and sidecar of the manifest against its slot, every object it names against its
 //! content-addressed name, every baked texture level it names by its presence.
 use super::*;
+use compiler_manifest_pages::{read_manifest, Paged};
 use compiler_reuse::{Check, Reused};
 
 /// The folder under `key`, checked head to objects. The first failed check names
@@ -14,26 +15,22 @@ pub(super) fn prove(
     head: &[u8],
     pool: &rayon::ThreadPool,
 ) -> Check<Reused> {
-    let manifest: Value = serde_json::from_slice(head).map_err(|e| format!("manifest: {e}"))?;
-    let format = check_head(&manifest, key, &o.scope)?;
+    let root: Value = serde_json::from_slice(head).map_err(|e| format!("manifest: {e}"))?;
+    // The root first: a folder of another job or format is refused before a page is read.
+    let format = check_head(&root, key, &o.scope)?;
     // The answer sheet is a product of every compilation, at the cache root: a
     // host reads "nothing to answer" in its absence, so a folder without it is not whole.
     if !o.cache.join(cutout::DECISIONS_FILE).is_file() {
         return Err("cutout answer sheet is missing".into());
     }
-    let binary =
-        fs::read(directory.join(MANIFEST_BINARY_FILE)).map_err(|e| format!("sidecar: {e}"))?;
-    if manifest["binary"]["sha256"] != json!(hash(&binary)) {
-        return Err("sidecar does not match binary.sha256".into());
+    // Objects live in the sidecar columns alone, each sidecar proven as its page is read, and
+    // read once: the digests and levels proven are what prune keeps.
+    let Paged { manifest, sidecars } = read_manifest(directory, &root)?;
+    let (mut objects, mut levels) = (BTreeSet::new(), Vec::new());
+    for sidecar in &sidecars {
+        objects.extend(manifest_binary::digests(sidecar).map_err(|e| e.message)?);
+        levels.extend(manifest_binary::texture_levels(sidecar).map_err(|e| e.message)?);
     }
-    // Objects live in the sidecar columns alone; the `sha256` fields of the head
-    // name the sidecar, the proxy and the recorded files. The sidecar is read once:
-    // the digests and levels proven are what prune keeps.
-    let objects: BTreeSet<String> = manifest_binary::digests(&binary)
-        .map_err(|e| e.message)?
-        .into_iter()
-        .collect();
-    let levels = manifest_binary::texture_levels(&binary).map_err(|e| e.message)?;
     let record = manifest[compiler_publish::FILES_FIELD].as_object().cloned();
     let mut files = compiler_tables::cell_records(directory)?; // The manifest's records win.
     files.extend(record.ok_or("manifest records no files")?);

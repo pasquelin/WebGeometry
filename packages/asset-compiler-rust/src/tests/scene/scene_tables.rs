@@ -146,8 +146,8 @@ fn the_format_number_is_raised_and_an_earlier_cache_is_refused_by_it() {
     let (first, _) = compile_with_events(&options);
     assert_eq!(first["formatVersion"], json!(FORMAT_VERSION));
     assert_eq!(
-        FORMAT_VERSION, 7,
-        "the batch that writes selectedNodes as a count raises it"
+        FORMAT_VERSION, 9,
+        "the batch that pages the manifest raises it"
     );
     let path = options
         .key_directory(first["key"].as_str().expect("key"))
