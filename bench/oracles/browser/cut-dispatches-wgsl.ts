@@ -64,12 +64,10 @@ function shippedFn(name: string) {
   return found[0];
 }
 
-/** What the frozen `levelStep` shares with the shipped cut, taken from the shipped descent rather
- *  than copied: the flags layout — `queueBase` and `candBase`, whose queues 0 and 1 are the frozen
- *  ones for a camera (`queueCap` is `nodeCount`) and whose further queues the shipped stages address
- *  (`lastUseAt` is `queueBase(3)`, #477) — `rootOf`, and the names the shipped shader's other
- *  stages call since (`markOf`, `tooCoarse`). `descend` is rewritten: the shipped one appends to
- *  queues this layout does not have. */
+/** Taken from the shipped descent, not copied: the flags layout (`queueBase`, `candBase`: for a
+ *  camera `queueCap` is `nodeCount`, so queues 0 and 1 are the frozen ones, and the shipped stages
+ *  reach queue 3 through `lastUseAt`, #477), `rootOf`, and `markOf`/`tooCoarse`, which other shipped
+ *  stages call. `descend` is rewritten: the shipped one appends to queues this layout lacks. */
 const AVANT_SHIMS = `${['queueBase', 'candBase', 'rootOf', 'markOf', 'tooCoarse'].map(shippedFn).join('\n')}
 fn descend(src:u32,node:CullNode){
  if(node.childCount>0u){spanAppend(queueCounter(1u-src),queueGroups(1u-src),queueBase(1u-src),node.firstChild,node.childCount);return;}

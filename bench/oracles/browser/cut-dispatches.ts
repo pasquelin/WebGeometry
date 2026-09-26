@@ -66,8 +66,7 @@ export function ressourcesAvant(
   const blockCount = Math.ceil(pageCount / SELECTION_WORKGROUP);
   // The frozen counters run from `base` to `base + 9`, whose last word is the shipped first per-view
   // word: `dagPrepare` zeroes it as `resetCounters` does, and only a light cut counts in it.
-  const travail = dagWorkLayout(blockCount),
-    base = travail.base;
+  const { base, words } = dagWorkLayout(blockCount);
   const STORAGE = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC;
   // The frame words are the shipped ones: the frozen descent reads the same records.
   const frameData = primitiveFrameWords(packed);
@@ -92,7 +91,7 @@ export function ressourcesAvant(
     // The shipped `dagWanted` stages the camera's requests behind the drawn list, where the
     // shipped `dagSortRequests` reads them (`shader/snapshotWgsl.ts`).
     out: { buffer: tampon(stagedOutputBytes(selectionListCap(pageCount))) },
-    work: { buffer: tampon(travail.words * 4) },
+    work: { buffer: tampon(words * 4) },
     worlds: { buffer: tampon(64, packed.worlds) },
     frames: { buffer: tampon(16, frameData) },
     cold: { buffer: tampon(48, packed.pageCones) },

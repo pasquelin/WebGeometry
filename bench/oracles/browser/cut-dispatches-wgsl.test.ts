@@ -1,9 +1,6 @@
-// The dispatch bench compares the frozen descent with the shipped one inside ONE module: every
-// stage around the descent is the shipped one. A shipped stage that calls a function the frozen
-// text owns reads the FROZEN layout there, and the two cuts stop comparing like with like without
-// a compile error: #477 made `dagMask` stamp each page's last use at `queueBase(3u)`, the frozen
-// `queueBase` answered zero for it, and the stamps overwrote the draw flags — "same drawn pages"
-// failed in the browser only. The call sites are pinned here, in Node, so a new one is seen first.
+// The frozen descent runs inside the shipped shader: a shipped stage calling a function the frozen
+// text owns reads the FROZEN layout, silently. #477: `stampUse` wrote at the frozen `queueBase(3u)`,
+// zero, over the draw flags, and "same drawn pages" failed in the browser only. Pinned here, in Node.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DESCENT_AVANT } from './cut-dispatches-wgsl.ts';
@@ -23,7 +20,8 @@ test('the shipped stages reach the frozen descent only through the calls it answ
   // logs a drawn page where its `dagClearDrawn` reads it, and `dagWanted` bounds its dispatch by
   // its candidate count. A call added here reads the frozen layout: take the callee from the
   // shipped descent (`AVANT_SHIMS`) unless both layouts give it the same answer.
-  assert.deepEqual([...new Set([...calls].map((m) => m[0]))].sort(), [
+  // Every call site, not each distinct text: a second `candCounter()` elsewhere is a new reader too.
+  assert.deepEqual([...calls].map((m) => m[0]).sort(), [
     'candCounter()',
     'drawnAppend(i)',
     'resetCounters()',
