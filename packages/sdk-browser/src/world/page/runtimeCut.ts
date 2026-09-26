@@ -1,9 +1,9 @@
 /**
  * THE RUNTIME CUTTER: drawn triangles cut into engine pages, off the main thread.
  *
- * What runs here touches no platform object — no URL, no DOM, no host library — so the page
- * worker runs it (`page/decode/task.ts`, op `cut`) and the main thread runs the same function when
- * no worker lives. The triangles travel as one buffer (`packDrawn`), and the pages come back as
+ * What runs here touches no platform object — no URL, no DOM, no host library — but the SDK
+ * module, which builds each cluster's normal cone (`cutCones.ts`); so the page worker runs it
+ * (`page/decode/task.ts`, op `cut`) and the main thread runs the same function when no worker lives. The triangles travel as one buffer (`packDrawn`), and the pages come back as
  * bytes with their descriptors and digests: serving them at an address is the caller's.
  */
 import { encodeGeometryPage, UV_EXPONENT } from '../../../../page-codec/geometryPage.ts';
@@ -14,6 +14,7 @@ import { sphereFromBounds } from '../../../../sdk-core/src/math/primitives/spher
 import type { PageCutPage, PageCutPayload } from '../../../../sdk-core/src/page/decodeContracts.ts';
 import type { DrawnTriangles } from '../../../../sdk-core/src/world/geometry/drawn.ts';
 import { sha256Hex } from '../../measurement/sha256Hex.ts';
+import { clusterCones } from './cutCones.ts';
 
 /** A cluster holds at most this many triangles and vertices: the page format's cluster, the one
  *  the compiler cuts (`docs/FORMAT.md`). */
@@ -83,6 +84,7 @@ export async function cutDrawnTriangles(drawn: DrawnTriangles): Promise<PageCutP
   const uvExponent = uvs
     ? gridExponentFor(widestUvSpan(uvs, indices, ranges), UV_EXPONENT)
     : UV_EXPONENT;
+  const cones = await clusterCones(positions, indices, ranges);
   const cut = [];
   let maxPositionError = 0;
   for (const [start, end] of ranges) {
@@ -98,7 +100,7 @@ export async function cutDrawnTriangles(drawn: DrawnTriangles): Promise<PageCutP
     cut.push({ start, corners, page, box, sphere, geometry: page.data.slice().buffer });
   }
   const pages: PageCutPage[] = await Promise.all(
-    cut.map(async ({ start, corners, page, box, sphere, geometry }) => ({
+    cut.map(async ({ start, corners, page, box, sphere, geometry }, k) => ({
       index: corners.buffer,
       geometry,
       indexSha256: await sha256Hex(corners.buffer),
@@ -112,6 +114,7 @@ export async function cutDrawnTriangles(drawn: DrawnTriangles): Promise<PageCutP
       indexCount: page.indexCount,
       flags: page.flags,
       uncompressedBytes: page.uncompressedBytes,
+      ...(cones ? { cone: cones[k] } : {}),
     })),
   );
   return { pages, positionExponent, uvExponent, maxPositionError };

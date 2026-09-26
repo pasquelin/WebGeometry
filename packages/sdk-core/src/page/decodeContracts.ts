@@ -1,3 +1,5 @@
+import type { Page } from '../contracts/geometry.ts';
+
 /**
  * Off-main-thread page-decode contract, version 5: the decoded geometry travels as one block
  * with its quantization error, and the arena slot records that error in word 8; `cut` turns
@@ -35,6 +37,8 @@ export interface PageCutPage {
   /** Indices in the page. */ indexCount: number;
   /** Which attributes it carries. */ flags: number;
   /** Its size once unpacked. */ uncompressedBytes: number;
+  /** The cone of its triangles' normals, when the SDK module built one (`Page.cone`). */
+  cone?: Page['cone'];
 }
 /** What a `cut` returns: its pages, and the grids they were quantized on. */
 export interface PageCutPayload {
