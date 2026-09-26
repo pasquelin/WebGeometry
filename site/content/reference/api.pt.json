@@ -4377,8 +4377,14 @@
     "description": "Devolve a URL do manifesto de cache que o ponteiro nomeia, para ser resolvida contra a URL do ponteiro. Um host não tem por que ler esses campos ele mesmo; esta é a verificação que o leitor executa."
   },
   "assertCacheReady": {
-    "summary": "O que um host pode verificar só no manifesto de cache, sejam seus clusters escritos inline ou em um auxiliar binário: o cache está pronto, do escopo pedido, em um formato que este SDK lê, e declara a geometria que selecionou.",
-    "description": "Devolve essa contagem de triângulos, então uma sondagem de disponibilidade não precisa ler mais nada e não precisa conhecer nenhum nome de campo. A identidade dos próprios clusters é `assertCacheIdentity`: ela lê as páginas, então roda sobre um manifesto decodificado, que uma sondagem deliberadamente não baixa."
+    "summary": "O que um host pode verificar num manifesto de cache lido pelas suas páginas (`readPagedManifest`): a sua raiz (`assertCacheRoot`) e a geometria que escolheu.",
+    "description": "Devolve esse número de triângulos, para que uma sonda de disponibilidade não precise de conhecer nenhum nome de campo. A identidade dos clusters é tarefa de `assertCacheIdentity`: lê as páginas, por isso corre sobre um manifesto descodificado."
+  },
+  "assertCacheRoot": {
+    "summary": "O que um host pode verificar na raiz de um manifesto de cache (`clusters.json`) antes de qualquer uma das suas páginas: o cache está pronto, no escopo pedido, num formato que este SDK lê."
+  },
+  "readPagedManifest": {
+    "summary": "O manifesto sob `root`, as suas páginas e os seus ficheiros anexos lidos lado a lado através de `read` — num navegador `fetchVerified`, que prova cada um pelo tamanho e pela impressão que o nomeiam: os campos da raiz, os da cabeça e as primitivas de cada página de malha, por ordem (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Recusa um formato de cache que este runtime não lê."

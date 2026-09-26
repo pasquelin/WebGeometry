@@ -941,7 +941,11 @@
     "banner": "Etrafa bakmak için sürükleyin. Arabayı almak için Sür’ü işaretleyin: W veya ↑ hızlanır, S veya ↓ fren yapar, A D veya ← → direksiyon. Yeniden bırak, kasaları ve topları yeniden düşürür.",
     "words": {
       "credit": "Vadi bu örnek için kodla modellendi, CC0 — bkz. assets/examples/CREDITS.md",
-      "refused": "Bu arka uçta reddedildi"
+      "refused": "Bu arka uçta reddedildi",
+      "close": "Yakın çekim",
+      "far": "Uzak görünüm",
+      "pan": "Hızlı kaydırma",
+      "still": "Durağan"
     },
     "controls": {
       "drive": "Arabayı sür",

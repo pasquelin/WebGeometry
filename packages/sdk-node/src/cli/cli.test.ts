@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, chmod, rm, mkdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, chmod, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
+import { manifest } from '../../../../tests/fixtures/manifestBinary.ts';
+import { writePagedManifest } from '../../../../tests/fixtures/pagedManifest.ts';
 
 interface RunResult {
   code: number | null;
@@ -39,17 +41,8 @@ test('CLI emits only its summary on stdout and events on stderr', async () => {
   const root = await mkdtemp(join(tmpdir(), 'trillion3d-cli-'));
   try {
     const cache = join(root, 'cache');
-    await mkdir(join(cache, 'native', 'slice', 'abc'), { recursive: true });
-    await writeFile(
-      join(cache, 'native', 'slice', 'abc', 'clusters.json'),
-      JSON.stringify({
-        status: 'ready',
-        key: 'abc',
-        scope: 'slice',
-        selectedTriangles: 3,
-        primitives: [{ big: true }],
-      }),
-    );
+    const slice = { ...manifest(), key: 'abc', scope: 'slice' as const, selectedTriangles: 3 };
+    await writePagedManifest(join(cache, 'native', 'slice', 'abc'), slice);
     const executable = join(root, 'compiler');
     await writeFile(
       executable,

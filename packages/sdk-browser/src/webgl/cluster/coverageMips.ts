@@ -1,29 +1,42 @@
 import { createWebglProgram } from '../core/program.ts';
 import { FULLSCREEN_VERTEX } from '../core/fullscreenPass.ts';
 import { floatTargets } from '../core/renderTarget.ts';
-import { COVERAGE_PICK_GLSL, COVERAGE_SCALE_GLSL } from '../../texture/coverageRule.ts';
+import {
+  COVERAGE_CUT_GLSL,
+  COVERAGE_PICK_GLSL,
+  COVERAGE_SCALE_GLSL,
+} from '../../texture/coverageRule.ts';
 import { levelSize } from '../../texture/tiles.ts';
 
-/** One point per texel of a level, on the column of its alpha byte — level 0's own, a level's
- *  median from the copy of the one above (`halved`) —, on row `id & 15` of the level's sixteen:
- *  no cell passes 2^24 texels, where a float stops counting. */
-const COUNT = `#version 300 es
-uniform highp sampler2D source;uniform ivec2 extent;uniform int columns;uniform bool halved;
+/** Four points per texel of a level, one per filtered sample of its square (`cutBin`), its alpha
+ *  bytes level 0's own or a level's medians from the copy of the one above (`halved`): on the
+ *  column of its bin, row `texel & 15` of the level's sixteen, channel `quarter` — no cell passes
+ *  2^24 samples, where a float stops counting. */
+export const COVERAGE_COUNT_GLSL = `#version 300 es
+uniform highp sampler2D source;uniform ivec2 extent;uniform ivec2 size;uniform bool halved;uniform uint cutoff;
+flat out uint quarter;
 ${COVERAGE_SCALE_GLSL}
+${COVERAGE_CUT_GLSL}
+uint alphaAt(ivec2 p){
+ p=min(p,size-1);
+ if(!halved)return toByte(texelFetch(source,p,0).a);
+ ivec2 q=p*2;ivec2 hi=extent-1;
+ return median(vec4(texelFetch(source,min(q,hi),0).a,texelFetch(source,min(q+ivec2(1,0),hi),0).a,
+  texelFetch(source,min(q+ivec2(0,1),hi),0).a,texelFetch(source,min(q+ivec2(1,1),hi),0).a));
+}
 void main(){
- ivec2 p=ivec2(gl_VertexID%columns,gl_VertexID/columns);ivec2 q=p*2;ivec2 hi=extent-1;
- uint a=halved?median(vec4(texelFetch(source,min(q,hi),0).a,texelFetch(source,min(q+ivec2(1,0),hi),0).a,
-  texelFetch(source,min(q+ivec2(0,1),hi),0).a,texelFetch(source,min(q+ivec2(1,1),hi),0).a))
-  :toByte(texelFetch(source,p,0).a);
- gl_Position=vec4((float(a)+.5)/128.-1.,(float(gl_VertexID&15)+.5)/8.-1.,0.,1.);gl_PointSize=1.;
+ int texel=gl_VertexID>>2;ivec2 p=ivec2(texel%size.x,texel/size.x);quarter=uint(gl_VertexID&3);
+ uvec4 a=uvec4(alphaAt(p),alphaAt(p+ivec2(1,0)),alphaAt(p+ivec2(0,1)),alphaAt(p+ivec2(1,1)));
+ gl_Position=vec4((float(cutBin(a,quarter,cutoff))+.5)/128.-1.,(float(texel&15)+.5)/8.-1.,0.,1.);gl_PointSize=1.;
 }`;
 const ONE = `#version 300 es
-precision highp float;out vec4 color;void main(){color=vec4(1.);}`;
+precision highp float;precision highp int;flat in uint quarter;out vec4 color;
+void main(){color=vec4(equal(uvec4(quarter),uvec4(0u,1u,2u,3u)));}`;
 /** The level's `t`, from level 0's rows and its own, as a byte in every channel. */
 const PICK = `#version 300 es
 precision highp float;precision highp int;
 uniform highp sampler2D counts;uniform uint cutoff;uniform int level;uniform uvec2 texels;out vec4 color;
-uint rows(uint bin,int from){uint n=0u;for(int r=0;r<16;r++)n+=uint(texelFetch(counts,ivec2(int(bin),from+r),0).r);return n;}
+uint rows(uint bin,int from){uint n=0u;for(int r=0;r<16;r++){uvec4 c=uvec4(texelFetch(counts,ivec2(int(bin),from+r),0));n+=c.x+c.y+c.z+c.w;}return n;}
 uint binOf(uint t){return rows(t,16*level);}
 ${COVERAGE_PICK_GLSL}
 void main(){uint covered=0u;for(uint b=cutoff;b<256u;b++)covered+=rows(b,0);color=vec4(float(pick(cutoff,covered,texels))/255.);}`;
@@ -40,12 +53,12 @@ export const BLEND_STATE = [
   'BLEND_EQUATION_ALPHA',
 ] as const;
 
-/** The programs, their uniforms, the counts' 256 × 256 float target and its framebuffer; null on
+/** The programs, their uniforms, the counts' 256 × 256 RGBA float target and its framebuffer; null on
  *  a context that cannot add into it. Binds the counts on the active unit. */
 function buildCounts(gl: WebGL2RenderingContext) {
   if (!floatTargets(gl) || !gl.getExtension('EXT_float_blend')) return null;
   // Compiled before any binding: a refused program throws with the caller's state untouched.
-  const count = createWebglProgram(gl, COUNT, ONE);
+  const count = createWebglProgram(gl, COVERAGE_COUNT_GLSL, ONE);
   let pick: WebGLProgram;
   try {
     pick = createWebglProgram(gl, FULLSCREEN_VERTEX, PICK);
@@ -56,7 +69,7 @@ function buildCounts(gl: WebGL2RenderingContext) {
   const counts = gl.createTexture()!,
     frame = gl.createFramebuffer()!;
   gl.bindTexture(gl.TEXTURE_2D, counts);
-  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R32F, 256, 256);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 256, 256);
   // A 32-bit float texture filters under no default: left to them, it is incomplete and every
   // `texelFetch` of the pick reads 0.
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -78,8 +91,9 @@ function buildCounts(gl: WebGL2RenderingContext) {
     frame,
     source: at(count, 'source'),
     extent: at(count, 'extent'),
-    columns: at(count, 'columns'),
+    size: at(count, 'size'),
     halved: at(count, 'halved'),
+    countCutoff: at(count, 'cutoff'),
     sampled: at(pick, 'counts'),
     cutoff: at(pick, 'cutoff'),
     level: at(pick, 'level'),
@@ -88,8 +102,8 @@ function buildCounts(gl: WebGL2RenderingContext) {
 }
 
 /**
- * The coverage rule's counts on WebGL2 (docs/FORMAT.md, "Coverage-preserving alpha"): every texel
- * adds one to its byte's cell by additive blending into a float target, which needs
+ * The coverage rule's counts on WebGL2 (docs/FORMAT.md, "Coverage-preserving alpha"): every filtered
+ * sample adds one to its bin's cell by additive blending into a float target, which needs
  * `EXT_color_buffer_float` and `EXT_float_blend` — without them a chain keeps the median alone.
  * Level 0 fills rows 0–15, level `k` rows `16k`… (fifteen levels at most, a 16384 side); a
  * one-texel draw then writes `t` into the scratch, on the row under the level it holds.
@@ -102,8 +116,8 @@ export class WebglCoverageCounts {
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
   }
-  /** Whether a `width` × `height` chain is counted: sixteen float rows count exactly up to 2^28
-   *  texels, a 16384² picture; `t` takes a scratch row under the picture, which one as tall as the
+  /** Whether a `width` × `height` chain is counted: sixteen rows of four float channels count
+   *  exactly up to 2^28 texels, a 16384² picture; `t` takes a scratch row under the picture, which one as tall as the
    *  context allows has not; and the context adds into a float target, asked once — that first ask
    *  binds the draw framebuffer and the active unit. */
   takes(width: number, height: number) {
@@ -131,12 +145,13 @@ export class WebglCoverageCounts {
     gl.useProgram(built.count);
     gl.uniform1i(built.source, unit);
     gl.uniform2i(built.extent, sw, sh);
+    gl.uniform1ui(built.countCutoff, cutoff);
     for (const at of level === 1 ? [0, 1] : [level]) {
       const [side, rows] = levelSize(width, height, at);
-      gl.uniform1i(built.columns, side);
+      gl.uniform2i(built.size, side, rows);
       gl.uniform1i(built.halved, Number(at > 0));
       gl.viewport(0, 16 * at, 256, 16);
-      gl.drawArrays(gl.POINTS, 0, side * rows);
+      gl.drawArrays(gl.POINTS, 0, 4 * side * rows);
     }
     gl.disable(gl.BLEND);
     gl.bindTexture(gl.TEXTURE_2D, built.counts);

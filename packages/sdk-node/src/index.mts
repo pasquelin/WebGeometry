@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { runCompiler } from './compiler/process.mts';
 export {
   COMPILER_LINE_LIMIT,
@@ -8,7 +8,7 @@ export {
   resolveCompilerExecutable,
 } from './compiler/process.mts';
 export { getSdkProvenance } from './compiler/provenance.mts';
-import { DEFAULT_SCOPE } from '../../sdk-core/src/index.ts';
+import { DEFAULT_SCOPE, readPagedManifest } from '../../sdk-core/src/index.ts';
 import type { AssetScope } from '../../sdk-core/src/index.ts';
 import type {
   BatchJob,
@@ -79,9 +79,10 @@ export async function prepare(
     options.onProgress,
   );
   if (pointer.status !== 'ready') throw new Error(pointer.code ?? 'COMPILER_NOT_READY');
-  const manifest = JSON.parse(
-    await readFile(join(output, 'native', pointer.scope, pointer.url), 'utf8'),
-  ) as CompilationResult;
+  const path = join(output, 'native', pointer.scope, pointer.url);
+  const root = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
+  const read = (page: { url: string }) => readFile(join(dirname(path), page.url));
+  const manifest = (await readPagedManifest(root, read)) as unknown as CompilationResult;
   return {
     ...manifest,
     metrics: withFinalMetrics(manifest, pointer),

@@ -141,8 +141,14 @@
     "description": "Renvoie l’URL du manifeste du cache que nomme le pointeur, à résoudre par rapport à l’URL du pointeur. Un hôte n’a pas à lire ces champs lui-même ; c’est la vérification que fait le lecteur."
   },
   "assertCacheReady": {
-    "summary": "Ce qu’un hôte peut vérifier sur le seul manifeste du cache, que ses clusters soient écrits dedans ou dans un fichier annexe binaire : le cache est prêt, de la portée demandée, dans un format que lit ce SDK, et déclare la géométrie qu’il a choisie.",
-    "description": "Renvoie ce nombre de triangles, pour qu’une sonde de disponibilité n’ait rien d’autre à lire ni aucun nom de champ à connaître. L’identité des clusters eux-mêmes est l’affaire de `assertCacheIdentity` : elle lit les pages, donc elle tourne sur un manifeste décodé, qu’une sonde ne télécharge volontairement pas."
+    "summary": "Ce qu’un hôte peut vérifier sur un manifeste de cache lu par ses pages (`readPagedManifest`) : sa racine (`assertCacheRoot`), et la géométrie qu’il a choisie.",
+    "description": "Renvoie ce nombre de triangles, pour qu’une sonde de disponibilité n’ait aucun nom de champ à connaître. L’identité des clusters eux-mêmes est l’affaire de `assertCacheIdentity` : elle lit les pages, donc elle tourne sur un manifeste décodé."
+  },
+  "assertCacheRoot": {
+    "summary": "Ce qu’un hôte peut vérifier sur la racine d’un manifeste de cache (`clusters.json`) avant aucune de ses pages : le cache est prêt, de la portée demandée, dans un format que lit ce SDK."
+  },
+  "readPagedManifest": {
+    "summary": "Le manifeste sous `root`, ses pages et leurs fichiers annexes lus côte à côte par `read` — dans un navigateur `fetchVerified`, qui prouve chacun par la taille et l’empreinte qui le nomment : les champs de la racine, ceux de la tête, et les primitives de chaque page de maillage dans l’ordre (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Refuse un format de cache que ce moteur ne lit pas."

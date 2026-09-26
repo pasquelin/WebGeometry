@@ -12,7 +12,7 @@ import { EngineError } from '../../contracts/cache.ts';
 const PARTITION_VERSION = 2;
 /** A kind of page (`partition/pages.rs`): the prefix of its files, the version every page carries,
  *  the member a region page lists its records under, and the codes of a refusal. */
-interface PageKind {
+export interface PageKind {
   prefix: string;
   version: number;
   records: string;
@@ -103,8 +103,8 @@ export function assertTablePartition(value: unknown): TablePartitionRoot | null 
   return root as TablePartitionRoot;
 }
 
-const bits = new DataView(new ArrayBuffer(8));
-const text = new TextDecoder();
+const bits = /* @__PURE__ */ new DataView(/* @__PURE__ */ new ArrayBuffer(8));
+const text = /* @__PURE__ */ new TextDecoder();
 /** The `f64` whose bits are the sixteen hexadecimal digits `hex`. */
 const float64 = (hex: string) => (bits.setBigUint64(0, BigInt(`0x${hex}`)), bits.getFloat64(0));
 
@@ -131,12 +131,12 @@ async function readPage(
 }
 
 /** The pages `slots` of `kind` name, their boxes beside them, the empty ones left out. */
-const named = (kind: PageKind, slots: readonly unknown[]) =>
+export const named = (kind: PageKind, slots: readonly unknown[]) =>
   slots.map((slot) => slotPage(kind, slot)).filter((slot) => slot !== null);
 
 /** Every region page of `kind` under `slots`, in record order, the pages read side by side
  *  through `read` (which verifies each against its slot). */
-async function readLeaves(
+export async function readLeaves(
   kind: PageKind,
   slots: ReturnType<typeof named>,
   read: (page: TablePage) => Promise<Uint8Array>,

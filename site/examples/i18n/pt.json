@@ -941,7 +941,11 @@
     "banner": "Arraste para olhar em volta. Marque Conduzir para pegar o carro: W ou ↑ acelera, S ou ↓ trava, A D ou ← → viram. Soltar faz cair de novo as caixas e as bolas.",
     "words": {
       "credit": "Vale modelado em código para este exemplo, CC0 — ver assets/examples/CREDITS.md",
-      "refused": "Recusado neste backend"
+      "refused": "Recusado neste backend",
+      "close": "Close-up",
+      "far": "Vista distante",
+      "pan": "Panorâmica rápida",
+      "still": "Parado"
     },
     "controls": {
       "drive": "Conduzir o carro",

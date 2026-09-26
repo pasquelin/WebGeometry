@@ -48,8 +48,8 @@ function normalAngle(a: Float32Array, at: number, b: Float32Array, bt: number) {
   return (Math.acos(Math.min(1, Math.max(-1, dot))) * 180) / Math.PI;
 }
 
-function measureCache(full: string) {
-  const { dir, manifest } = readCacheManifest(full);
+async function measureCache(full: string) {
+  const { dir, manifest } = await readCacheManifest(full);
   const { gltf, read } = accessorReader(dir);
   // A page URL is relative to the manifest's own directory; nothing else knows the layout.
   const file = (url: string) => new Uint8Array(readFileSync(join(dir, url)));
@@ -105,5 +105,5 @@ function measureCache(full: string) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const full = process.argv[2];
   if (!full) throw new Error('usage: pageQuantization.ts <cache>/native/full');
-  console.log(JSON.stringify(measureCache(full), null, 2));
+  console.log(JSON.stringify(await measureCache(full), null, 2));
 }

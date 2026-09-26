@@ -97,6 +97,14 @@ function writeDash(surface: GraphSurface, material: Material) {
   surface.gapSize = solid ? 0 : ((material.gapSize as number | undefined) ?? 0) / scale;
 }
 
+/** Both sides in one pass, for a quad the rasters lay on screen (a line's, a sprite's): it has no
+ *  face to cull, and a transparent one drawn back then front would take two entries of the
+ *  transparent plan, whose per-frame ranking grows with the square of their count (#364). */
+function drawBothSidesOnce(surface: GraphSurface) {
+  surface.side = hostSide('double');
+  surface.forceSinglePass = true;
+}
+
 /**
  * The raster state of a surface that draws line quads (`drawn.ts`): its `linewidth` in CSS
  * pixels (the rasters scale it by the host's pixel ratio each frame), a dashed line's dash and
@@ -108,8 +116,7 @@ function writeDash(surface: GraphSurface, material: Material) {
 function drawLines(surface: GraphSurface, material: Material) {
   surface.lineWidth = (material.linewidth as number | undefined) ?? 1;
   if (material.kind === 'lineDashed') writeDash(surface, material);
-  surface.side = hostSide('double');
-  surface.forceSinglePass = true;
+  drawBothSidesOnce(surface);
   surface.polygonOffset = true;
   surface.polygonOffsetFactor = 0;
   surface.polygonOffsetUnits = -depthLayerUnits(LINE_DEPTH_LAYER);
@@ -133,7 +140,7 @@ function drawSprite(surface: GraphSurface, material: Material) {
   surface.sprite = true;
   writeSpriteTurn(surface, material);
   surface.sizeAttenuation = material.sizeAttenuation !== false;
-  surface.side = hostSide('double');
+  drawBothSidesOnce(surface);
 }
 
 /** What a mesh draws of its geometry: faces, line quads (`drawLines`) or a sprite's quad. */

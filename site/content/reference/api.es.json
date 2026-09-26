@@ -141,8 +141,14 @@
     "description": "Devuelve la URL del manifiesto de la caché que nombra el puntero, para resolver respecto a la URL del puntero. Un host no tiene que leer estos campos por sí mismo; esa es la comprobación que hace el lector."
   },
   "assertCacheReady": {
-    "summary": "Lo que un host puede comprobar solo con el manifiesto de la caché, tanto si sus clústeres están escritos en él como en un archivo binario aparte: la caché está lista, tiene el alcance solicitado, un formato que lee este SDK, y declara la geometría que eligió.",
-    "description": "Devuelve este número de triángulos, para que una sonda de disponibilidad no tenga que leer nada más ni conocer ningún nombre de campo. La identidad de los clústeres en sí es asunto de `assertCacheIdentity`: lee las páginas, así que se ejecuta sobre un manifiesto decodificado, que una sonda no descarga a propósito."
+    "summary": "Lo que un host puede comprobar en un manifiesto de caché leído por sus páginas (`readPagedManifest`): su raíz (`assertCacheRoot`) y la geometría que eligió.",
+    "description": "Devuelve ese número de triángulos, para que una sonda de disponibilidad no tenga que conocer ningún nombre de campo. La identidad de los clústeres es cosa de `assertCacheIdentity`: lee las páginas, así que se ejecuta sobre un manifiesto decodificado."
+  },
+  "assertCacheRoot": {
+    "summary": "Lo que un host puede comprobar en la raíz de un manifiesto de caché (`clusters.json`) antes de cualquiera de sus páginas: la caché está lista, con el ámbito pedido y en un formato que este SDK lee."
+  },
+  "readPagedManifest": {
+    "summary": "El manifiesto bajo `root`, sus páginas y sus archivos anexos leídos en paralelo mediante `read` — en un navegador `fetchVerified`, que prueba cada uno por el tamaño y la huella que lo nombran: los campos de la raíz, los de la cabecera y las primitivas de cada página de malla en orden (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Rechaza un formato de caché que este motor no lee."

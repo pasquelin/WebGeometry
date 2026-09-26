@@ -4354,8 +4354,14 @@
     "description": "Mengembalikan URL manifest cache yang disebut nama pointer-nya, untuk diselesaikan terhadap URL pointer. Sebuah host tidak berhak membaca bidang-bidang ini sendiri; ini adalah pemeriksaan yang dijalankan pembaca."
   },
   "assertCacheReady": {
-    "summary": "Yang bisa diperiksa sebuah host pada manifest cache saja, apakah cluster-nya ditulis inline atau dalam sebuah sidecar biner: cache-nya siap, dari cakupan yang diminta, dalam format yang dibaca SDK ini, dan mendeklarasikan geometri yang dipilihnya.",
-    "description": "Mengembalikan hitungan segitiga itu, jadi sebuah probe ketersediaan tidak perlu membaca apa pun lagi dan tidak perlu tahu nama bidang apa pun. Identitas cluster itu sendiri adalah `assertCacheIdentity`: ia membaca halaman, jadi ia berjalan pada sebuah manifest yang diurai, yang sengaja tidak diunduh sebuah probe."
+    "summary": "Apa yang dapat diperiksa host pada manifes cache yang dibaca melalui halamannya (`readPagedManifest`): akarnya (`assertCacheRoot`), dan geometri yang dipilihnya.",
+    "description": "Mengembalikan jumlah segitiga itu, sehingga probe ketersediaan tidak perlu tahu nama bidang apa pun. Identitas klaster sendiri diurus `assertCacheIdentity`: ia membaca halaman, jadi berjalan pada manifes yang sudah didekode."
+  },
+  "assertCacheRoot": {
+    "summary": "Apa yang dapat diperiksa host pada akar manifes cache (`clusters.json`) sebelum halaman mana pun: cache siap, dengan cakupan yang diminta, dalam format yang dibaca SDK ini."
+  },
+  "readPagedManifest": {
+    "summary": "Manifes di bawah `root`, halaman-halamannya dan berkas pendampingnya dibaca berdampingan melalui `read` — di peramban `fetchVerified`, yang membuktikan masing-masing lewat ukuran dan sidik yang menamainya: bidang akar, bidang kepala, dan primitif setiap halaman mesh secara berurutan (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Menolak sebuah format cache yang tidak dibaca runtime ini."

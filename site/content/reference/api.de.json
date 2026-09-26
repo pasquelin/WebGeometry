@@ -141,8 +141,14 @@
     "description": "Gibt die URL des Cache-Manifests zurück, das der Zeiger benennt, aufzulösen relativ zur URL des Zeigers. Ein Host muss diese Felder nicht selbst lesen; das ist die Prüfung, die der Leser übernimmt."
   },
   "assertCacheReady": {
-    "summary": "Was ein Host allein am Cache-Manifest prüfen kann, egal ob seine Cluster darin oder in einer binären Begleitdatei stehen: der Cache ist bereit, hat den angeforderten Umfang, ein Format, das dieses SDK liest, und deklariert die Geometrie, die er gewählt hat.",
-    "description": "Gibt diese Dreieckszahl zurück, damit eine Verfügbarkeitssonde nichts anderes lesen und keinen Feldnamen kennen muss. Die Identität der Cluster selbst ist Sache von `assertCacheIdentity`: sie liest die Seiten, läuft also auf einem dekodierten Manifest, das eine Sonde absichtlich nicht herunterlädt."
+    "summary": "Was ein Host an einem über seine Seiten gelesenen Cache-Manifest (`readPagedManifest`) prüfen kann: seine Wurzel (`assertCacheRoot`) und die gewählte Geometrie.",
+    "description": "Gibt diese Dreieckszahl zurück, damit eine Verfügbarkeitsprobe keinen Feldnamen kennen muss. Die Identität der Cluster selbst prüft `assertCacheIdentity`: Es liest die Seiten und läuft daher auf einem dekodierten Manifest."
+  },
+  "assertCacheRoot": {
+    "summary": "Was ein Host an der Wurzel eines Cache-Manifests (`clusters.json`) vor jeder seiner Seiten prüfen kann: Der Cache ist bereit, im angefragten Umfang und in einem Format, das dieses SDK liest."
+  },
+  "readPagedManifest": {
+    "summary": "Das Manifest unter `root`, seine Seiten und deren Begleitdateien nebeneinander über `read` gelesen — im Browser `fetchVerified`, das jede an der Größe und dem Fingerabdruck prüft, die sie benennen: die Felder der Wurzel, die des Kopfes und die Primitive jeder Mesh-Seite in Reihenfolge (`decodeManifestBinary`)."
   },
   "assertFormat": {
     "summary": "Verweigert ein Cache-Format, das diese Engine nicht liest."

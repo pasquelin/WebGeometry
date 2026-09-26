@@ -1,7 +1,8 @@
 // A module with a name it declares nowhere compiles on no device: the measurer's browser would
 // be the first to see it (#348, `unresolved value 'uni'` in the cluster decoding proof, which
 // decodes through the page geometry and declares no camera). This Node test reads every text the
-// engine compiles, and that proof's, before any browser does.
+// engine compiles, and those of the proofs that compile their own, before any browser does: the
+// cut-dispatches oracle's too (#364, `unresolved call target 'spriteOf'`).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -11,9 +12,10 @@ import { PAGE_GEOMETRY_WGSL } from '../../visibility/shader/pageGeometryWgsl.ts'
 import { PAGE_BINDING, PAGE_INFO_STRUCT_WGSL } from '../../visibility/shader/pageWgsl.ts';
 import { VIS_SHADER } from '../../visibility/buffer.ts';
 import { CLUSTER_DECODING_SHADER } from '../../../../../tests/browser/probes/clusterDecodingGpu.ts';
+import { DAG_SELECTION_SHADER_AVANT } from '../../../../../bench/oracles/browser/cut-dispatches-wgsl.ts';
 
-test('every WGSL text the engine compiles, and the decoding proof, declares every name it uses', () => {
-  const shaders = { ...ENGINE_SHADERS, CLUSTER_DECODING_SHADER };
+test('every WGSL text the engine and its proofs compile declares every name it uses', () => {
+  const shaders = { ...ENGINE_SHADERS, CLUSTER_DECODING_SHADER, DAG_SELECTION_SHADER_AVANT };
   const unresolved = Object.entries(shaders)
     .map(([name, code]) => [name, unresolvedNames(code)] as const)
     .filter(([, names]) => names.length);

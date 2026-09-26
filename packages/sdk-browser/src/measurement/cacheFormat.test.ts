@@ -7,6 +7,8 @@ import {
   EngineError,
   FORMAT_VERSION,
 } from '../../../sdk-core/src/index.ts';
+import { manifest } from '../../../../tests/fixtures/manifestBinary.ts';
+import { pagedManifest } from '../../../../tests/fixtures/pagedManifest.ts';
 
 /** A page location for the test's lifetime, the previous one given back after. */
 function stubLocation(t: TestContext) {
@@ -21,26 +23,14 @@ function stubLocation(t: TestContext) {
   });
 }
 
-/** The cache's pointer or its empty cluster metadata, both at `version`. */
-function cacheResponse(pointer: boolean, version: number) {
-  return new Response(
-    JSON.stringify(
-      pointer
-        ? { status: 'ready', scope: 'full', formatVersion: version, url: 'clusters.json' }
-        : {
-            status: 'ready',
-            scope: 'full',
-            schema: version,
-            formatVersion: version,
-            selectedNodes: 0,
-            selectedTriangles: 0,
-            errorModel: 'dag-group-qem-v2',
-            clusterStrategy: 'dag-groups',
-            primitives: [],
-          },
-    ),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
+/** The file at `url` of a cache of no primitive at `version`: its pointer, root or one of its pages. */
+function cacheResponse(url: string, version: number) {
+  const empty = { ...manifest(), schema: version, formatVersion: version, primitives: [] };
+  const { root, files } = pagedManifest(empty);
+  const page = files.get(url.split('/').pop()!);
+  if (page) return new Response(page);
+  const pointer = { status: 'ready', scope: 'full', formatVersion: version, url: 'clusters.json' };
+  return Response.json(url.endsWith('manifest.json') ? pointer : root);
 }
 
 /** Opens the full cache on a canvas that has no context under Node; rejects with `code`. */
@@ -58,7 +48,7 @@ for (const version of [FORMAT_VERSION, CLUSTERED_BLEND_FORMAT_VERSION])
   test(`explorer accepts format ${version} pointer and metadata before loading the source`, async (t) => {
     stubLocation(t);
     t.mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) =>
-      cacheResponse(String(input).endsWith('manifest.json'), version),
+      cacheResponse(String(input), version),
     );
     const load = t.mock.method(GLTFLoader.prototype, 'loadAsync', async () => {
       throw new Error('source-load-boundary');
@@ -71,9 +61,9 @@ for (const version of [FORMAT_VERSION, CLUSTERED_BLEND_FORMAT_VERSION])
 test('explorer rejects an unsupported pointer format before requesting metadata', async (t) => {
   stubLocation(t);
   let reads = 0;
-  t.mock.method(globalThis, 'fetch', async () => {
+  t.mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) => {
     reads++;
-    return cacheResponse(reads === 1, 1);
+    return cacheResponse(String(input), 1);
   });
   await assertOpenRejects('UNSUPPORTED_FORMAT');
   assert.equal(reads, 1);

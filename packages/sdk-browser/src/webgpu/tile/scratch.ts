@@ -1,5 +1,5 @@
 import type { Texture } from '../../../../sdk-core/src/index.ts';
-import { textureRgba } from '../../visibility/types.ts';
+import { texelsRefusal, textureRgba } from '../../visibility/types.ts';
 import { premultipliedByte } from '../../visibility/math.ts';
 import { generateMaterialMips } from '../../texture/mips.ts';
 import { mipLevelCountFor } from '../../texture/tiles.ts';
@@ -66,6 +66,8 @@ export function createTileScratch(
     const { map } = options;
     const rgba = textureRgba(map);
     if (rgba) {
+      const refusal = texelsRefusal(map);
+      if (refusal) throw new Error(refusal);
       if (rgba.width !== width || rgba.height !== height) throw new Error('TEXTURE_SOURCE_SIZE');
       const texels =
         map.flipY || map.premultiplyAlpha
@@ -88,7 +90,13 @@ export function createTileScratch(
     const cutoff = options.coverage?.cutoff(options.map);
     generateMaterialMips(device, texture, format, width, height, cutoff !== undefined, cutoff);
   };
-  fill();
+  try {
+    fill();
+  } catch (error) {
+    // A picture refused at its first fill leaves no texture behind: its tile asks again.
+    texture.destroy();
+    throw error;
+  }
   return {
     texture,
     bytes: textureBytesOf(descriptor) ?? 0,

@@ -13,13 +13,13 @@ export async function recordInputs(report: Report, sides: SideBase[]) {
     report.sides[side.name].buildHash = (await fingerprintBuild(side.dist)).hash;
   }
 }
-export function recordCuts(report: Report, sides: SideBase[], out: string) {
+export async function recordCuts(report: Report, sides: SideBase[], out: string) {
   for (const series of report.series) {
     for (const side of sides) {
       const reading = series.sides?.[side.name];
       if (!reading) continue;
       try {
-        reading.cutAnalysis = analyseFile(
+        reading.cutAnalysis = await analyseFile(
           neighboringCut(out, reading.png),
           side.cache ?? sceneDerived(report.scene),
         );

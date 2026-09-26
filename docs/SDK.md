@@ -125,11 +125,10 @@ page once), the last event with
 the first pages (example `watch-a-world-load`).
 
 A host that probes a cache before opening it — to enable a button, to tell a user to recompile —
-calls `assertCachePointer(pointer, scope)` and `assertCacheReady(metadata, scope)` on the two JSON
-documents it fetched: the first returns the cache URL the pointer names, the second the selected
-triangle count, and both raise an `EngineError` (`INVALID_POINTER`, `CACHE_NOT_READY`,
-`SCOPE_MISMATCH`, `UNSUPPORTED_FORMAT`, `INVALID_CACHE`, `STALE_CACHE`) otherwise. They are the
-checks `scene.load` runs, and download no binary sidecar.
+calls `assertCachePointer(pointer, scope)` and `assertCacheRoot(root, scope)` on the pointer and on
+`clusters.json`: the first returns the cache URL the pointer names, and both raise an `EngineError`
+(`INVALID_POINTER`, `CACHE_NOT_READY`, `SCOPE_MISMATCH`, `UNSUPPORTED_FORMAT`, `INVALID_CACHE`)
+otherwise. They are the checks `scene.load` runs first, and download no page.
 
 ### Files over HTTP
 
@@ -1183,7 +1182,7 @@ frame, and the capture reads its own image.
 - **Node**: `prepare`, `prepareMany`, `createCompilationJob`, or the `trillion3d-compile` CLI
   ([COMPILER.md](COMPILER.md#using-it-from-node)).
 - **Other languages**: spawn `trillion3d-compiler` and read the cache — JSON pointer,
-  `clusters.json` and its sidecar, SHA-256 objects, `source.gltf` ([FORMAT.md](FORMAT.md)). The
+  `clusters.json` and its pages, SHA-256 objects, `source.gltf` ([FORMAT.md](FORMAT.md)). The
   interface is the versioned manifest.
 
 ## Migration from Three.js

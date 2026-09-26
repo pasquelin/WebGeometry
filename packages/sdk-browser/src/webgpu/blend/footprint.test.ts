@@ -5,6 +5,7 @@ import { surfaceOf } from '../../page/surface.ts';
 import type { PlacementOf } from '../../placement/rows.ts';
 import { buildBlendStatics, refreshBlendPlan } from './plan.ts';
 import { orderBlendPasses } from './order.ts';
+import { blendSceneOf } from './plan.fixture.ts';
 import { createWebgpuBlendState, type BlendGpuItem } from './state.ts';
 
 type BlendState = ReturnType<typeof createWebgpuBlendState>;
@@ -21,14 +22,6 @@ function item(z: number, extra: Partial<BlendGpuItem> = {}) {
     bounds: new Float64Array([-1, -1, z - 1, 1, 1, z + 1]),
     ...extra,
   } as unknown as BlendGpuItem;
-}
-
-function sceneOf(items: BlendGpuItem[]) {
-  const blendState = createWebgpuBlendState();
-  blendState.blendGpu.push(...items);
-  buildBlendStatics(blendState);
-  refreshBlendPlan(blendState);
-  return blendState;
 }
 
 /** Everything a ranking hands the frame: order, runs, mask, reject and water counts. */
@@ -49,7 +42,7 @@ function outcome(blendState: BlendState, rejected: number) {
 function rankAgainstFresh(blendState: BlendState, eye: number[]) {
   const kept = outcome(blendState, orderBlendPasses(blendState, eye));
   const ranked = blendState.blendGpu.every((entry) => entry.orderKey !== UNRANKED);
-  const fresh = sceneOf([...blendState.blendGpu]);
+  const fresh = blendSceneOf([...blendState.blendGpu]);
   fresh.blendPlanes.set(blendState.blendPlanes);
   assert.deepEqual(
     kept,
@@ -61,7 +54,7 @@ function rankAgainstFresh(blendState: BlendState, eye: number[]) {
 
 /** A scene ranked twice from the same eye: its inputs are on record, and the next frame skips. */
 function heldScene(items = [item(-4), item(-8), item(-2), item(-6)]) {
-  const blendState = sceneOf(items);
+  const blendState = blendSceneOf(items);
   // Rejects every box beyond z = 3: none of the four, but a moved one can be.
   blendState.blendPlanes.set([0, 0, -1, 3]);
   const eye = [0, 0, 0];
@@ -77,7 +70,7 @@ test('a still view with still items keeps the last order, bit-identical to a ful
 });
 
 test('the first still frame after a move ranks, the second keeps', () => {
-  const blendState = sceneOf([item(-4), item(-8)]);
+  const blendState = blendSceneOf([item(-4), item(-8)]);
   orderBlendPasses(blendState, [0, 0, 0]);
   orderBlendPasses(blendState, [0, 0, -9]);
   for (const entry of blendState.blendGpu) entry.orderKey = UNRANKED;

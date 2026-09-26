@@ -67,5 +67,5 @@ export function bytesPerTriangle(manifest: TriangleManifest) {
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop() ?? '')) {
   const cache = process.argv[2];
   if (!cache) throw new Error('usage: bytesPerTriangle.ts <cache>/native/full');
-  console.log(JSON.stringify(bytesPerTriangle(readCacheManifest(cache).manifest), null, 2));
+  console.log(JSON.stringify(bytesPerTriangle((await readCacheManifest(cache)).manifest), null, 2));
 }

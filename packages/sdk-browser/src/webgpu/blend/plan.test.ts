@@ -1,15 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as G from '../../host/graph/graph.fixture.ts';
-import {
-  buildBlendStatics,
-  planCull,
-  planPipeline,
-  planVertexCull,
-  refreshBlendPlan,
-} from './plan.ts';
+import { planCull, planPipeline, planVertexCull } from './plan.ts';
+import { blendSceneOf } from './plan.fixture.ts';
 import { hostBlending } from '../../scene/materialBlending.ts';
-import { createWebgpuBlendState, type BlendGpuItem } from './state.ts';
+import type { BlendGpuItem } from './state.ts';
 import { surfaceOf } from '../../page/surface.ts';
 
 /** The blend plan of a lone item, everything but its material left at its simplest. */
@@ -17,16 +12,15 @@ function plan(
   material: G.GraphSurface | G.GraphSurface[],
   { transmissive = false, paged = false } = {},
 ) {
-  const blendState = createWebgpuBlendState();
-  blendState.blendGpu.push({
-    transmissive,
-    surface: surfaceOf(material),
-    matrix: new G.Matrix4(),
-    count: 3,
-    paged,
-  } as unknown as BlendGpuItem);
-  buildBlendStatics(blendState);
-  refreshBlendPlan(blendState);
+  const blendState = blendSceneOf([
+    {
+      transmissive,
+      surface: surfaceOf(material),
+      matrix: new G.Matrix4(),
+      count: 3,
+      paged,
+    } as unknown as BlendGpuItem,
+  ]);
   return [...blendState.orders[transmissive ? 1 : 0]];
 }
 

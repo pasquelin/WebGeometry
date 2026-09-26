@@ -48,8 +48,10 @@ pub use levels::*;
 /// both atlases included; version 4 adds the gated block-compressed levels and
 /// tails. A new chain under a name of its own moves no existing file and needs
 /// no increment: the `Coverage` chain (#42) is one, and so is each cutoff's
-/// coverage-preserving chain (#44), `srgb-coverage-<C>`.
-pub const TEXTURE_PREVIEW_VERSION: u32 = 4;
+/// coverage-preserving chain (#44), `srgb-coverage-<C>`. Version 5 counts that
+/// chain's coverage on the filtered cut (#43): its bytes move under the same
+/// names, and level files are written only when missing.
+pub const TEXTURE_PREVIEW_VERSION: u32 = 5;
 pub use bake_write::{level_path, texture_version_dir, LEVEL_WRITE_FAILED, LOSSLESS, TEXTURE_DIR};
 pub use blocks::{BlockFormat, Layout};
 pub use reduce::AtlasKind;

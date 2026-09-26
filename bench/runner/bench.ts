@@ -183,7 +183,7 @@ async function main() {
 /** Writes `mesure.json` and `resume.md`, and says where. */
 async function publish(report: Report, sides: Side[]) {
   report.finishedAt = new Date().toISOString();
-  recordCuts(report, sides, OUT);
+  await recordCuts(report, sides, OUT);
   await writeFile(join(OUT, 'mesure.json'), JSON.stringify(report, null, 1));
   const appendix = [...limitsLines(report.limits), ...fluidsLines(report.fluids)];
   await writeFile(join(OUT, 'resume.md'), [resume(report), ...appendix].join('\n'));

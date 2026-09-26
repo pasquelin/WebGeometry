@@ -24,7 +24,6 @@ import {
   VIEW_WORD_ROWS,
 } from '../../../packages/sdk-browser/src/gpu/dag/shader/viewsWgsl.ts';
 import { primitiveFrameWords } from '../../../packages/sdk-browser/src/gpu/dag/worlds.ts';
-export { DAG_LEVEL_WGSL_AVANT } from './cut-dispatches-wgsl.ts';
 
 /** What `ressourcesAvant` reads of the bench's packed scene: the same fields the shipped
  *  `createDagResources` reads, before the batch renamed and reshaped a few of them. */

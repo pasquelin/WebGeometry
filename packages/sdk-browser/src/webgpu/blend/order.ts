@@ -114,8 +114,8 @@ const precedes = (keyA: number, rankA: number, keyB: number, rankB: number) =>
  *
  * A camera that moves little leaves the list almost sorted: insertion takes it back in one walk
  * and a few shifts, where a full sort remakes it entirely. The buffer is the scene's, rewritten
- * in place, and both entries of a double-sided item carry the same rank — they therefore never
- * overtake each other, and the back stays in front of the face.
+ * in place, and both entries of a double-sided item drawn in two passes carry the same rank —
+ * they therefore never overtake each other, and the back stays in front of the face.
  */
 function sortPlanFarToNear(order: Uint32Array, items: readonly BlendGpuItem[]) {
   let shifted = false;

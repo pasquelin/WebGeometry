@@ -4377,8 +4377,14 @@
     "description": "返回该指针所指名的缓存清单 URL,以便相对指针 URL 进行解析。宿主自己没有必要读取这些字段;这正是读取器所执行的检查。"
   },
   "assertCacheReady": {
-    "summary": "宿主仅凭缓存清单本身就能检查的内容——无论其簇是内联写入的还是写在一个二进制旁挂文件中:缓存已经就绪、属于所请求的范围、格式是这个 SDK 能读取的,并且声明了它所选中的几何体。",
-    "description": "返回那个三角形计数,因此一次可用性探测不需要读取任何其他内容,也不需要知道任何字段名。簇本身的身份校验由 `assertCacheIdentity` 负责:它需要读取页面,因此运行在已解码的清单上,而一次探测是刻意不去下载这些内容的。"
+    "summary": "主机在通过页面读取的缓存清单（`readPagedManifest`）上可检查的内容：它的根（`assertCacheRoot`）以及它所选的几何。",
+    "description": "返回该三角形数量，使可用性探测无需知道任何字段名。簇本身的身份由 `assertCacheIdentity` 负责：它读取页面，因此运行在已解码的清单上。"
+  },
+  "assertCacheRoot": {
+    "summary": "主机在读取缓存清单的任何页面之前，可在其根（`clusters.json`）上检查的内容：缓存已就绪、属于所请求的范围、并采用本 SDK 可读的格式。"
+  },
+  "readPagedManifest": {
+    "summary": "`root` 之下的清单：其页面及附属文件通过 `read` 并行读取——在浏览器中是 `fetchVerified`，它用命名每个文件的大小和指纹加以验证：根的字段、头页的字段，以及每个网格页的图元，按顺序（`decodeManifestBinary`）。"
   },
   "assertFormat": {
     "summary": "拒绝这个运行时不认识的缓存格式。"

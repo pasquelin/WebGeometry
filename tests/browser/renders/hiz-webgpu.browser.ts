@@ -5,6 +5,8 @@ import { blankPageServer } from '../../kit/server/blankPage.ts';
 import { resolve } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { HIZ_SHADER, hizBindEntries } from '../../../packages/sdk-browser/src/gpu/hiz/hiz.ts';
+import { HIZ_TEST_PAGES_ENTRIES } from '../../../packages/sdk-browser/src/gpu/hiz/shader.ts';
+import { PAGE_INFO_STRIDE } from '../../../packages/sdk-browser/src/visibility/types.ts';
 import {
   STATE_WORDS,
   ST_TESTED,
@@ -50,6 +52,8 @@ try {
     shader: HIZ_SHADER,
     cases,
     bindEntries: hizBindEntries(256),
+    pagesEntries: HIZ_TEST_PAGES_ENTRIES,
+    pageInfoBytes: PAGE_INFO_STRIDE,
     stateWords: STATE_WORDS,
     stTested: ST_TESTED,
     testedU32: TESTED_U32,

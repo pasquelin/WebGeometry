@@ -79,14 +79,14 @@ pub(super) fn chain(source: &image::RgbaImage, kind: AtlasKind) -> Vec<Vec<u8>> 
     let last = preview_last_level(width, height);
     let mut levels = Vec::with_capacity(last as usize + 1);
     levels.push(source.as_raw().clone());
-    let covered = super::coverage::Covered::of(source.as_raw(), kind);
+    let covered = super::coverage::Covered::of(source.as_raw(), width as usize, kind);
     let mut size = (width, height);
     for level in 1..=last {
         let next = preview_level_size(width, height, level);
         let previous = levels.last().expect("previous level");
         let mut halved = halve(previous, size, next, kind);
         if let Some(covered) = &covered {
-            covered.preserve(&mut halved);
+            covered.preserve(&mut halved, next.0 as usize);
         }
         levels.push(halved);
         size = next;

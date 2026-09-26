@@ -64,29 +64,15 @@ export function assertCachePointer(pointer: unknown, scope: AssetScope): string 
   if (value.formatVersion !== undefined) assertFormat(value.formatVersion as number);
   return value.url;
 }
-/**
- * What a host can check on the cache manifest alone, whether its clusters are written inline or in a
- * binary sidecar: the cache is ready, of the requested scope, in a format this SDK reads, and
- * declares the geometry it selected. Returns that triangle count, so an availability probe needs to
- * read nothing else and needs to know no field name.
- *
- * The identity of the clusters themselves is `assertCacheIdentity`: it reads the pages, so it runs
- * on a decoded manifest, which a probe deliberately does not download.
- */
-export function assertCacheReady(metadata: unknown, scope: AssetScope): number {
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata))
+/** What a host checks on the root `clusters.json` before any page: the cache is ready, of the
+ *  requested scope, in a format this SDK reads. */
+export function assertCacheRoot(root: unknown, scope: AssetScope): void {
+  if (!root || typeof root !== 'object' || Array.isArray(root))
     throw new EngineError('INVALID_CACHE', 'cache manifest is not a JSON object', {});
-  const value = metadata as Record<string, unknown>;
+  const value = root as Record<string, unknown>;
   // The number first: an earlier format is refused by it, never by a field it wrote otherwise.
   const formatVersion = (value.formatVersion ?? value.schema) as number;
   assertFormat(formatVersion);
-  if (
-    !Array.isArray(value.primitives) ||
-    !Number.isSafeInteger(value.selectedNodes) ||
-    typeof value.selectedTriangles !== 'number' ||
-    !Number.isFinite(value.selectedTriangles)
-  )
-    throw new EngineError('INVALID_CACHE', 'invalid cache schema', {});
   if (value.schema !== formatVersion)
     throw new EngineError('UNSUPPORTED_FORMAT', 'Cache schema and formatVersion differ', {
       schema: value.schema,
@@ -101,6 +87,19 @@ export function assertCacheReady(metadata: unknown, scope: AssetScope): number {
       requestedScope: scope,
       cacheScope: value.scope,
     });
+}
+/** The manifest read through its pages: its root (`assertCacheRoot`) and selected geometry.
+ *  Returns that triangle count; the clusters' identity is `assertCacheIdentity`'s. */
+export function assertCacheReady(metadata: unknown, scope: AssetScope): number {
+  assertCacheRoot(metadata, scope);
+  const value = metadata as Record<string, unknown>;
+  if (
+    !Array.isArray(value.primitives) ||
+    !Number.isSafeInteger(value.selectedNodes) ||
+    typeof value.selectedTriangles !== 'number' ||
+    !Number.isFinite(value.selectedTriangles)
+  )
+    throw new EngineError('INVALID_CACHE', 'invalid cache schema', {});
   // The one identity statement a slim manifest can make on its own: a DAG cache names the model its
   // clusters were certified with. Older caches name neither and stay readable.
   if (value.clusterStrategy === 'dag-groups' && value.errorModel !== DAG_ERROR_MODEL)

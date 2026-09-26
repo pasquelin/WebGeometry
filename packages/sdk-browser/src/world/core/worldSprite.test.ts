@@ -22,6 +22,11 @@ import type { Seat } from './worldBatches.ts';
 import { boxTransform } from '../../../../sdk-core/src/index.ts';
 import { SPRITE_UNCULLED, spriteAt } from '../../visibility/shader/spriteWgsl.ts';
 import { dagFixture } from '../../page/selection/dag.fixture.ts';
+import { surfaceOf } from '../../page/surface.ts';
+import { drawPasses } from '../../cluster/batchMesh.ts';
+import { planCull } from '../../webgpu/blend/plan.ts';
+import { blendSceneOf } from '../../webgpu/blend/plan.fixture.ts';
+import type { BlendGpuItem } from '../../webgpu/blend/state.ts';
 import { packed } from '../../gpu/dag/selectionHelpers.fixture.ts';
 import { primitiveFrameWords, primitiveWordAt } from '../../gpu/dag/worlds.ts';
 
@@ -77,23 +82,45 @@ test("a sprite's size rule written at run time is a new entry, whose roots carry
   assert.deepEqual(marks, [1, SPRITE_UNCULLED | 1, 1], 'the GPU frame word follows');
 });
 
-test("a sprite's host mesh wears the sprite surface and is bounded by its radius", () => {
+/** The host mesh a world builds for a sprite whose picture sits on its bottom-left corner. */
+function spriteMesh() {
   const drawn = drawnTriangles(object.sprite().geometry, 'sprite', { center: [0, 0] })!;
   const cut = { key: 's', drawn, runtime: {} as never, users: new Set(), held: false } as Cut;
-  const picture = material.sprite();
-  const rows = {} as PlacementRows;
   const { root } = buildWorldMirror({
-    placed: [{ cut, material: picture, rows, name: 's' }],
+    placed: [{ cut, material: material.sprite(), rows: {} as PlacementRows, name: 's' }],
     models: [],
     rankOf: () => 0,
   });
-  const mesh = root.children[0] as GraphMesh;
+  return root.children[0] as GraphMesh;
+}
+
+test("a sprite's host mesh wears the sprite surface and is bounded by its radius", () => {
+  const mesh = spriteMesh();
   assert.ok(importHostSurface(mesh.material as GraphSurface)?.sprite);
   const { boundingBox, boundingSphere } = mesh.geometry;
   const r = Math.SQRT2;
   assert.deepEqual(boundingBox!.min.toArray(), [-r, -r, -r]);
   assert.deepEqual(boundingBox!.max.toArray(), [r, r, r]);
   assert.deepEqual([...boundingSphere!.center.toArray(), boundingSphere!.radius], [0, 0, 0, r]);
+});
+
+// #364 (measure ko): a transparent sprite drawn back then front took two entries of the
+// transparent plan, whose per-frame ranking grows with the square of their count.
+test('a transparent sprite is drawn in one pass: one plan entry, with no cull, and one WebGL2 pass', () => {
+  const mesh = spriteMesh();
+  const blendState = blendSceneOf(
+    [0, 1, 2].map(
+      (x) =>
+        ({
+          surface: surfaceOf(mesh.material),
+          matrix: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, 0, 0, 1] },
+          count: 6,
+          paged: true,
+        }) as unknown as BlendGpuItem,
+    ),
+  );
+  assert.deepEqual([...blendState.orders[0]].map(planCull), [0, 0, 0]);
+  assert.deepEqual(drawPasses(mesh.material), [undefined]);
 });
 
 test("a sprite's row keeps its position and axis lengths, never its turn", () => {

@@ -1,6 +1,6 @@
 //! Common harness of golden fixtures: compile a scene shipped with the package
 //! into a throwaway cache, then reread everything a golden compares — the output
-//! of `compile`, the slim manifest and the binary sidecar. Each golden family
+//! of `compile`, the slim manifest and the binary sidecars. Each golden family
 //! adds its own digest there, never its own harness: two ways to compile a
 //! fixture are two truths.
 use super::*;
@@ -14,7 +14,9 @@ static NEXT: AtomicU64 = AtomicU64::new(0);
 pub(super) struct GoldenRun {
     pub result: Value,
     pub slim: Value,
+    /// The sidecar of the mesh page, and the head's: the texture previews.
     pub binary: Vec<u8>,
+    pub previews: Vec<u8>,
     /// What compilation published along the way: a driver's step is proven in its report.
     pub reports: Vec<Value>,
     /// Throwaway cache: a driver's intermediate scene and products published by the compiler.
@@ -51,16 +53,13 @@ pub(super) fn compile_golden_source(source: &Path, name: &str) -> GoldenRun {
         reports.lock().expect("reports").push(report);
     })
     .unwrap_or_else(|e| panic!("{name}: compile: {e}"));
-    let key = result["key"].as_str().expect("key").to_string();
-    let directory = options.key_directory(&key);
-    let slim =
-        serde_json::from_slice(&fs::read(directory.join("clusters.json")).expect("clusters.json"))
-            .expect("clusters.json is valid JSON");
-    let binary = fs::read(directory.join(MANIFEST_BINARY_FILE)).expect("clusters.bin");
+    let paged = paged(&options.key_directory(result["key"].as_str().expect("key")));
+    let [previews, binary] = <[Vec<u8>; 2]>::try_from(paged.sidecars).expect("head and one mesh");
     GoldenRun {
         result,
-        slim,
+        slim: paged.manifest,
         binary,
+        previews,
         reports: reports.into_inner().expect("reports"),
         cache: options.cache.clone(),
         root,

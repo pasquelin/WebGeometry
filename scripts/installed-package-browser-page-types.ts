@@ -38,12 +38,14 @@ export interface LooseSdk {
       size: { width: number; height: number },
     ): Promise<{ data: Uint8Array<ArrayBuffer> }>;
   };
-  decodeManifestBinary(slim: unknown, buffer: ArrayBuffer): LooseMetadata;
+  readPagedManifest(
+    root: unknown,
+    read: (page: { url: string }) => Promise<Uint8Array>,
+  ): Promise<LooseMetadata>;
 }
 
-export interface LooseMetadata {
+interface LooseMetadata {
   primitives: { pages: { geometry?: { url: string } }[] }[];
-  binary?: { url: string };
 }
 
 declare global {

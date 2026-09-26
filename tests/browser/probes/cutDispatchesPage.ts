@@ -22,25 +22,13 @@ import {
 } from '../../../packages/sdk-browser/src/gpu/core/selection.ts';
 import { writeDagUniforms } from '../../../packages/sdk-browser/src/gpu/dag/uniforms.ts';
 import { SELECTION_HEADER_WORDS } from '../../../packages/sdk-browser/src/gpu/dag/layout.ts';
-import { DAG_SELECTION_SHADER } from '../../../packages/sdk-browser/src/gpu/dag/shader/shader.ts';
-import { DAG_LEVEL_WGSL } from '../../../packages/sdk-browser/src/gpu/dag/shader/levelWgsl.ts';
 import { cameraMoteur } from '../../../packages/sdk-browser/src/camera/camera.fixture.ts';
-import {
-  DAG_LEVEL_WGSL_AVANT,
-  encodeAvant,
-  ressourcesAvant,
-} from '../../../bench/oracles/browser/cut-dispatches.ts';
+import { encodeAvant, ressourcesAvant } from '../../../bench/oracles/browser/cut-dispatches.ts';
+import { DAG_SELECTION_SHADER_AVANT } from '../../../bench/oracles/browser/cut-dispatches-wgsl.ts';
 import { ouvrirAppareil } from './webgpuDevice.ts';
 import { commandes, scene } from './cutDispatchesScene.ts';
 import { median } from '../../../scripts/median.ts';
 import type { ExecuterParams, ExecuterResultat } from './cutDispatchesTypes.ts';
-
-// The frozen descent reads the camera's block under its old name: the shipped shader binds one
-// block per view, and a camera is view 0 (\`viewsWgsl.ts\`).
-const SHADER_AVANT = DAG_SELECTION_SHADER.replace(
-  DAG_LEVEL_WGSL,
-  DAG_LEVEL_WGSL_AVANT.replaceAll('uni.', 'views[0u].'),
-);
 
 export async function executer({
   feuilles,
@@ -64,7 +52,7 @@ export async function executer({
   // The shipped side: its buffers, its stages, its encode. Nothing of it is rewritten.
   const livre = await createDagResources(device, packed, true);
   if (!livre) return { indisponible: 'the shipped cut does not mount' };
-  const { module, compilation } = await appareil.compile(SHADER_AVANT);
+  const { module, compilation } = await appareil.compile(DAG_SELECTION_SHADER_AVANT);
   if (compilation.length) return { compilation, erreurs };
   // `ressourcesAvant`'s own `PackedAvant` is a private, unexported interface: `packed` (`PackedDag`)
   // is structurally what it reads (`levelSizes` included, indexed and measured by `.length`, which

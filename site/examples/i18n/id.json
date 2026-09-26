@@ -941,7 +941,11 @@
     "banner": "Seret untuk melihat sekeliling. Centang Kemudikan untuk mengambil mobil: W atau ↑ mempercepat, S atau ↓ mengerem, A D atau ← → membelok. Jatuhkan lagi menjatuhkan peti dan bola sekali lagi.",
     "words": {
       "credit": "Lembah dimodelkan dalam kode untuk contoh ini, CC0 — lihat assets/examples/CREDITS.md",
-      "refused": "Ditolak di backend ini"
+      "refused": "Ditolak di backend ini",
+      "close": "Jarak dekat",
+      "far": "Pandangan jauh",
+      "pan": "Geser cepat",
+      "still": "Diam"
     },
     "controls": {
       "drive": "Kemudikan mobil",

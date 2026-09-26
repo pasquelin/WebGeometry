@@ -4,29 +4,34 @@ import { createCutDelta } from '../cut/delta.ts';
 import { createWebgpuPageTracking } from '../row/pageTracking.ts';
 import { createWebgpuResidencySets } from './sets.ts';
 
-const rec = (url: string, level: number) => ({ url, level }) as unknown as PageRec;
+export const rec = (url: string, level: number) => ({ url, level }) as unknown as PageRec;
 
-/** Sixteen opaque placements over eight pages — two placements share a page — then four
- *  transparent clusters of the same cut, and a two-page pinned cover. One catalogue, one cut. */
-export function scene() {
-  const opaque = Array.from({ length: 16 }, (_, id) => rec(`o${id >> 1}`, id >> 1));
-  const transparent = Array.from({ length: 4 }, (_, id) => rec(`t${id}`, id));
-  const packed = [...opaque, ...transparent];
+/** The residency sets over `packed`, the catalogue in cut order, with `cover` pinned. */
+export function world(packed: PageRec[], cover: readonly PageRec[] = []) {
   // The page's rank travels on the page, as the engine catalogue posts it.
   packed.forEach((page, index) => (page.packedIndex = index));
-  const cover = [rec('o0', 0), rec('t0', 0)];
   const tracking = createWebgpuPageTracking([...packed, ...cover]);
   const bootstrapKey = new Uint8Array(tracking.keyCount);
   for (const page of cover) bootstrapKey[tracking.keyOf(page)] = 1;
   const sets = createWebgpuResidencySets({ tracking, bootstrapKey, packedPages: packed });
   const pages: PageRec[] = [];
   const delta = createCutDelta(packed, pages);
-  return { packed, transparent, tracking, bootstrapKey, sets, pages, delta };
+  return { packed, tracking, bootstrapKey, sets, pages, delta };
+}
+
+type World = ReturnType<typeof world>;
+
+/** Sixteen opaque placements over eight pages — two placements share a page — then four
+ *  transparent clusters of the same cut, and a two-page pinned cover. One catalogue, one cut. */
+export function scene() {
+  const opaque = Array.from({ length: 16 }, (_, id) => rec(`o${id >> 1}`, id >> 1));
+  const transparent = Array.from({ length: 4 }, (_, id) => rec(`t${id}`, id));
+  return { ...world([...opaque, ...transparent], [rec('o0', 0), rec('t0', 0)]), transparent };
 }
 
 /** What the whole-set version computed every image, written out in full. The budget counts slots,
  *  and one page is one slot: the cut is deduplicated before it is cut. */
-function reference(world: ReturnType<typeof scene>, cutIds: readonly number[], room: number) {
+function reference(world: World, cutIds: readonly number[], room: number) {
   const { tracking, bootstrapKey, packed } = world,
     key = tracking.keyOf;
   const cover: number[] = [];
@@ -50,7 +55,7 @@ function reference(world: ReturnType<typeof scene>, cutIds: readonly number[], r
 }
 
 /** One image of the GPU-cut path, in the order the engine runs it. */
-export function frame(world: ReturnType<typeof scene>, cutIds: readonly number[], room: number) {
+export function frame(world: World, cutIds: readonly number[], room: number) {
   const { delta, sets } = world;
   delta.apply(cutIds);
   sets.applyCut(delta);
@@ -62,12 +67,7 @@ export function frame(world: ReturnType<typeof scene>, cutIds: readonly number[]
 export const keysOf = (set: { list: Int32Array; count: number }) =>
   new Set([...set.list.subarray(0, set.count)]);
 
-export function check(
-  world: ReturnType<typeof scene>,
-  cutIds: readonly number[],
-  room: number,
-  label: string,
-) {
+export function check(world: World, cutIds: readonly number[], room: number, label: string) {
   const got = frame(world, cutIds, room);
   const want = reference(world, cutIds, room);
   assert.equal(got.requested, want.requested, `${label}: requested pages`);

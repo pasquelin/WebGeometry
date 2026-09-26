@@ -94,6 +94,20 @@ test('raw texels are written as they are, or rows reversed when flipY is asked',
   assert.deepEqual([...upload(flipped, [1, 2]).rows[0]], [0, 0, 255, 255, 255, 0, 0, 255]);
 });
 
+// #43: texels the RGBA8 working texture cannot hold as stored — three channels, one, floats, fewer
+// bytes than the size holds — are refused in the WebGL2 gate's words (`texelsReason`), never
+// written as RGBA8 to draw wrong or fail the device's validation.
+test('texels the RGBA8 working texture cannot hold as stored are refused by name', () => {
+  const refused: [string, ...Parameters<typeof texture.data>][] = [
+    ['texel format 1022 is unsupported: RGBA only', new Uint8Array(12), 2, 2, 'rgb'],
+    ['texel format 1028 is unsupported: RGBA only', new Uint8Array(4), 2, 2, 'r'],
+    ['texel storage is unsupported: 8-bit texels only', new Float32Array(16), 2, 2],
+    ['texel storage holds 8 bytes, not 2×2 RGBA', new Uint8Array(8), 2, 2],
+  ];
+  for (const [message, ...texels] of refused)
+    assert.throws(() => upload(texture.data(...texels), [2, 2]), { message });
+});
+
 // A host texture that says `premultiplyAlpha`, as `UNPACK_PREMULTIPLY_ALPHA_WEBGL` uploads it.
 test('a premultiplyAlpha canvas is copied premultiplied; one that does not say so is not', () => {
   const canvas = { width: 1, height: 1 } as HTMLCanvasElement;

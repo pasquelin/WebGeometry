@@ -13,6 +13,7 @@ import type {
   Reglages,
   Verdict,
 } from './measureTypes.ts';
+import { ligne } from './measureTypes.ts';
 
 export function graine(depart: number) {
   let etat = depart >>> 0 || 0x9e3779b9;
@@ -32,39 +33,6 @@ function stats(durees: number[]): Stats {
   const i95 = Math.min(Math.ceil(n * 0.95) - 1, n - 1);
   return { medianeMs, p95Ms: t[i95], minMs: t[0], tours: n };
 }
-
-/** Fields of a row not fed by any timer. `null` is never zero. */
-const SANS_MESURE = {
-  medianeMs: null,
-  p95Ms: null,
-  minMs: null,
-  nsParElement: null,
-  tours: 0,
-  opsParSec: null,
-  temoin: null,
-  ecartTemoin: null,
-} as const;
-
-const ligne = ({
-  name,
-  size = null,
-  motif = null,
-  correct = null,
-  difference = null,
-}: {
-  name: string;
-  size?: number | null;
-  motif?: string | null;
-  correct?: boolean | null;
-  difference?: string | null;
-}): LigneResultat => ({
-  name,
-  size,
-  ...SANS_MESURE,
-  correct,
-  difference,
-  motif,
-});
 
 const compteTexte = (c: Compteur) => `${c.nombre} discrepancy(ies), ${c.ulpMax} ULP at most`;
 
@@ -117,7 +85,7 @@ export async function mesure<Entree = unknown, Sortie = unknown>({
     const verdict = await verifie(item, conf);
 
     if (item.mesure === false) {
-      resultats.push(ligne({ ...verdict, name: item.name, size: item.size }));
+      resultats.push(ligne({ ...verdict, name: item.name, size: item.size ?? null }));
       continue;
     }
 

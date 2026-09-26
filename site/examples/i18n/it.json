@@ -941,7 +941,11 @@
     "banner": "Trascina per guardarti intorno. Spunta Guida per prendere l’auto: W o ↑ accelera, S o ↓ frena, A D o ← → sterzano. Lascia cadere fa ricadere casse e palle.",
     "words": {
       "credit": "Valle modellata in codice per questo esempio, CC0 — vedi assets/examples/CREDITS.md",
-      "refused": "Rifiutato su questo backend"
+      "refused": "Rifiutato su questo backend",
+      "close": "Primo piano",
+      "far": "Vista lontana",
+      "pan": "Panoramica rapida",
+      "still": "Fermo"
     },
     "controls": {
       "drive": "Guida l’auto",

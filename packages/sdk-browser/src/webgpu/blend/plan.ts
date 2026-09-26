@@ -73,7 +73,7 @@ function sceneVertexShift(items: readonly BlendGpuItem[], paged: number, capacit
 }
 
 /** Instances the scene can expand at most: the paged table, plus the others' chunks, and all of
- *  that twice — a double-sided material carries two plan entries. */
+ *  that twice — a double-sided material drawn in two passes carries two plan entries. */
 function instanceCapacity(libres: readonly number[], shift: number, capacity: number) {
   let total = capacity;
   for (const count of libres) total += Math.ceil(count / blendChunkWords(shift, count));
@@ -139,7 +139,7 @@ export function buildBlendStatics(blendState: BlendState) {
 const modeBase = (surface: PageSurface, transmissive: boolean) =>
   BLEND_MODES.indexOf(drawnBlending(surface.blending, transmissive)) * 3;
 
-/** Two plan entries of a double-sided item, in the order the pass encoded: back, face. */
+/** Plan entries of an item: back then face for a double-sided one drawn in two passes, else one. */
 function sidesOf(item: BlendGpuItem) {
   // One determinant: the call used to yield the same value twice to pick the two faces.
   const renverse = matrixWindingCw(item.matrix.elements);
@@ -165,8 +165,8 @@ export function refreshBlendPlan(blendState: BlendState) {
   const items = blendState.blendGpu;
   const blend: number[] = [],
     transmission: number[] = [];
-  // Triangles each pass SUBMITS: a double-sided item submits its own twice, since it carries two
-  // plan entries. Counted here, with the plan, and never per frame.
+  // Triangles each pass SUBMITS: a double-sided item drawn in two passes submits its own twice,
+  // since it carries two plan entries. Counted here, with the plan, and never per frame.
   let blendTriangles = 0,
     transmissionTriangles = 0;
   for (let i = 0; i < items.length; i++) {

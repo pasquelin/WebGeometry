@@ -15,7 +15,7 @@ pub(crate) const PAGE_BYTES: usize = crate::STREAM_BUNDLE_BYTES;
 pub(crate) const FAN_OUT: usize = 8;
 /// A slot: the page's SHA-256 in 64 hexadecimal digits, its size in 8, then its box — the union
 /// of its records' at the declared poses — as the bits of six `f64` in 16 each. Zeros: no page.
-const SLOT_WIDTH: usize = 64 + 8 + 6 * 16;
+pub(crate) const SLOT_WIDTH: usize = 64 + 8 + 6 * 16;
 
 /// A kind of page: the prefix of its files, the version every page carries, and the member a
 /// region page lists its records under.

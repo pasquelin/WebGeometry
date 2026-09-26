@@ -41,14 +41,8 @@ pub(in crate::tests) fn source_texturee() -> (PathBuf, Options, PathBuf) {
 fn key_and_sidecar(options: &Options) -> (String, String) {
     let result = compile(options, |_| {}).expect("compile");
     let key = result["key"].as_str().expect("key").to_string();
-    let sidecar = options
-        .cache
-        .join("native")
-        .join(&options.scope)
-        .join(&key)
-        .join(MANIFEST_BINARY_FILE);
-    let bytes = fs::read(sidecar).expect("binary sidecar");
-    (key, hash(&bytes))
+    let directory = options.cache.join("native").join(&options.scope).join(&key);
+    (key, hash(&paged(&directory).sidecars.concat()))
 }
 
 // Behaviour: a linked image that changes changes the exposed key; the same image
