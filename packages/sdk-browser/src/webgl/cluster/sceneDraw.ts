@@ -15,6 +15,7 @@ import { depthOf } from './meshDepth.ts';
 import { meshes } from '../../scene/meshes.ts';
 import { DEFAULT_PIXEL_RATIO } from '../../backend/common.ts';
 import type { BackendHostDraw } from '../../backend/hostDraw.ts';
+import type { BackendContext } from '../../backend/types.ts';
 import { linearRefusalOf } from './linearRefusal.ts';
 
 /** The scene the owner reads for its lights and background, its world matrices resolved
@@ -37,6 +38,9 @@ type DisplayScene = ClusterDrawScene & {
   onAfterRender?(): void;
 };
 
+/** What the session gives the draw: its pixel ratio and its degraded-surface notice. */
+type DrawHosts = Pick<BackendContext, 'pixelRatio' | 'materialDegraded'>;
+
 /** A scene draw hands the program no page batch: shared, so a frame allocates no empty list. */
 const NO_BATCHES: readonly never[] = [];
 
@@ -55,13 +59,13 @@ const NO_BATCHES: readonly never[] = [];
  * first, it walks before `onBeforeRender`, whose one hook (`../../lighting/unlitAlbedo.ts`) writes
  * no field the walk reads. Without a context (a session that never draws on the host
  * surface) the draw is refused by name. `pixelRatio`, read each frame, scales a line's CSS-pixel
- * width to the image's pixels.
+ * width to the image's pixels; `materialDegraded` hears a surface drawn without a physical feature.
  */
 export function createSceneDraw(
   gl: WebGL2RenderingContext | undefined,
   display: GraphScene,
   copies: readonly object[] = [],
-  pixelRatio: () => number = () => DEFAULT_PIXEL_RATIO,
+  { pixelRatio = () => DEFAULT_PIXEL_RATIO, materialDegraded }: DrawHosts = {},
 ) {
   const scene: DisplayScene = display;
   // The copies list grows with the placement rows (`growBlendCopies`): the set follows it.
@@ -129,6 +133,7 @@ export function createSceneDraw(
       if (!gl) throw new Error('HOST_SURFACE_MISSING');
       if (!opened) throw new Error('Draw before render');
       owner ??= new WebglClusterOwner(gl);
+      owner.degraded = materialDegraded;
       if (!owner.censused) owner.census(meshes(display));
       owner.toneCurve = TONE_MAPPING_RANK[output.toneMapping ?? DEFAULT_TONE_MAPPING];
       owner.pixelRatio = pixelRatio();

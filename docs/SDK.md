@@ -1408,6 +1408,11 @@ bend }` simulates the mesh's vertices one by one on Jolt's soft bodies. A cloth 
 - Specular environment-map IBL and screen-space reflections are not implemented; the
   bounce lighting exists but is off by default ([ENGINE.md](ENGINE.md#light-that-bounces)), and only
   with it on does a surface at the roughness floor reflect the scene, at the proxy's detail.
+- WebGL2 draws a physical material's transmission volume and nothing else of its extensions:
+  clearcoat, sheen, iridescence, anisotropy, dispersion, a specular factor, an IOR without
+  transmission and their maps. A surface declaring one is drawn without it — the loop never stops
+  — and the world's diagnostic channel says `material-degraded` once per surface and feature
+  (`context.material`, `context.feature`); WebGPU draws them and never says it.
 - Transparent surfaces are lit from the source file's own light graph with a fixed ambient, not yet
   by the declared-light rule above.
 - A lost device is recovered, the page never reloaded: the world asks for a device again, reopens its

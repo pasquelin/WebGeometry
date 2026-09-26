@@ -46,7 +46,7 @@ export const autonomousPagesBackend: BackendFactory = (context) => {
   const modifiedPages = new Set<string>();
   const state = createAutonomousRenderState(),
     gate = createWebglFrameGate(),
-    hostDraw = createSceneDraw(context.webglContext, scene, blendCopies, context.pixelRatio);
+    hostDraw = createSceneDraw(context.webglContext, scene, blendCopies, context);
   // The engine's own lighting: the cache's radiometric light table where it declares one, the
   // source graph's lights otherwise (`../../lighting/contractLightingApi.ts`). A transmissive
   // surface is not paged: it is a copy the program draws whole (`hostPageScene`).

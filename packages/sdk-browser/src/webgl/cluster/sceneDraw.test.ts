@@ -169,7 +169,7 @@ test('a line surface draws with its CSS width, the host pixel ratio and its dash
   Object.assign(lines, { lineWidth: 3, dashSize: 0.25, gapSize: 0.5 });
   scene.add(mesh(6, 0, lines));
   let ratio = 2;
-  const draw = createSceneDraw(context.gl, scene, [], () => ratio);
+  const draw = createSceneDraw(context.gl, scene, [], { pixelRatio: () => ratio });
   const uniform = (name: string) =>
     context
       .of('uniform1f')

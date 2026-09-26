@@ -3,7 +3,11 @@ import type { WorldRenderer } from '../capability/worldReady.ts';
 import type { WorldOptions } from './worldOptions.ts';
 import { EffectChain } from '../../../../sdk-core/src/world/effect/chain.ts';
 import { createGuideSet, type Guides } from '../../guides/guideSet.ts';
-import { noticeEffectRefusal, type WorldNotices } from '../diagnostic/worldNotices.ts';
+import {
+  noticeEffectRefusal,
+  noticeMaterialDegraded,
+  type WorldNotices,
+} from '../diagnostic/worldNotices.ts';
 import type { ParticlePool } from '../../../../sdk-core/src/fluids/particles.ts';
 
 /** What of the world's runtime the switches reach: its open session, and its reopening. */
@@ -25,7 +29,7 @@ export function worldSwitches(
   runtime: () => SwitchedRuntime,
   device: { readonly renderer: WorldRenderer | null },
   invalidate: () => void,
-  notices: Pick<WorldNotices, 'once'>,
+  notices: Pick<WorldNotices, 'once' | 'say'>,
 ) {
   const held = {
     bounce: false,
@@ -33,6 +37,7 @@ export function worldSwitches(
     // One chain for the world's life: every session draws it, a change asks for a frame.
     effects: new EffectChain(invalidate),
     effectsRefused: noticeEffectRefusal(notices),
+    materialDegraded: noticeMaterialDegraded(notices),
     guides: createGuideSet(invalidate),
     // The particle pools the measurement entry attaches (`attachParticles`); none by default.
     particles: [] as ParticlePool[],

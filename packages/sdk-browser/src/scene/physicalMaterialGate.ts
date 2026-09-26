@@ -1,8 +1,9 @@
 /**
- * What the autonomous WebGL2 program accepts of a physical material: the glTF transmission
+ * What the autonomous WebGL2 program draws of a physical material: the glTF transmission
  * volume — `KHR_materials_transmission`, `KHR_materials_ior`, `KHR_materials_volume` as
- * factors — and nothing else. Every other physical extension is named here before a draw,
- * so a surface never loses a declared feature silently.
+ * factors — and nothing else. Every other physical extension is named here before a draw: the
+ * surface is drawn without it and the world says so by name (`noticeMaterialDegraded`), so a
+ * surface never loses a declared feature silently and never stops the loop.
  */
 import type { HostShadedMaterial } from '../host/shadedMaterial.ts';
 
@@ -53,20 +54,21 @@ const EXTENSION_MAPS = [
   'specularColorMap',
 ] as const;
 
-/** Names the physical extension a material uses beyond the transmission volume, if any. The
- *  IOR shapes the Fresnel of the transmission pass alone: without transmission, the cluster
- *  BRDF would keep its dielectric F0 and the declared IOR would be lost in silence. */
-export function physicalExtensionReason(material: PhysicalLike) {
+/** Names every physical extension a material declares beyond the transmission volume, none
+ *  when it declares none. The IOR shapes the Fresnel of the transmission pass alone: without
+ *  transmission, the cluster BRDF keeps its dielectric F0, so the declared IOR is one of them. */
+export function physicalFeaturesLost(material: PhysicalLike) {
   if (material.family !== 'physical') return;
-  if ((material.ior ?? 1.5) !== 1.5 && !((material.transmission ?? 0) > 0))
-    return 'physical ior without transmission is unsupported';
-  for (const factor of EXTENSION_FACTORS)
-    if ((material[factor] ?? 0) !== 0) return `physical ${factor} is unsupported`;
-  for (const map of EXTENSION_MAPS) if (material[map]) return `physical ${map} is unsupported`;
+  let lost: string[] | undefined;
+  const add = (feature: string) => (lost ??= []).push(feature);
+  if ((material.ior ?? 1.5) !== 1.5 && !((material.transmission ?? 0) > 0)) add('ior');
+  for (const factor of EXTENSION_FACTORS) if ((material[factor] ?? 0) !== 0) add(factor);
+  for (const map of EXTENSION_MAPS) if (material[map]) add(map);
   const specular = material.specularColor;
   if (
     (material.specularIntensity ?? 1) !== 1 ||
     (specular && (specular.r !== 1 || specular.g !== 1 || specular.b !== 1))
   )
-    return 'physical specular factor is unsupported';
+    add('specular');
+  return lost;
 }

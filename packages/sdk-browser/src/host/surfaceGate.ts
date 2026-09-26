@@ -15,7 +15,6 @@ import { readsOcclusion, unreadMapRefusal } from '../scene/surfaceModel.ts';
 import { HOST_MAPPING_UV, HOST_NORMAL_MAP_TANGENT_SPACE } from './surfaceConstants.ts';
 import { texelsReason } from '../visibility/types.ts';
 import { declaresCompileHook } from './materialHook.ts';
-import { physicalExtensionReason } from '../scene/physicalMaterialGate.ts';
 import { isTransmissive } from '../visibility/shader/material.ts';
 
 const textureReason = (texture: HostMap) => {
@@ -34,6 +33,7 @@ const ownBuffer = (attribute: HostAttribute | undefined) => attribute?.kind === 
 
 /**
  * Names material input the autonomous WebGL2 program cannot preserve before it submits a draw.
+ * A physical extension is not one: it is drawn without, by name (`physicalFeaturesLost`).
  * A transmissive physical material is accepted only where `transmissive` says the draw reads
  * the frozen backdrop: a scene copy of the transmission pass does, a paged cluster never does.
  */
@@ -54,8 +54,6 @@ export function clusterMaterialReason(
     host.clippingPlanes?.length
   )
     return `material ${host.family} uses an unsupported blend state`;
-  const physical = physicalExtensionReason(host);
-  if (physical) return physical;
   if (!transmissive && isTransmissive(material))
     return 'a transmissive material is drawn as a scene copy, not as a paged cluster';
   if (

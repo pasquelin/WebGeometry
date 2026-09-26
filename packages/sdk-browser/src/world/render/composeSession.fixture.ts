@@ -1,5 +1,6 @@
 // A WebGL2 session of the effect chain's tests (#349): the engine's scene draw and the composer on
-// a recorded context that renders half floats, the world's refusal notices, and what they said.
+// a recorded context that renders half floats, the world's refusal and degradation notices, and
+// what they said.
 import * as G from '../../host/graph/graph.fixture.ts';
 import type { RenderBackend } from '../../backend/types.ts';
 import type { EffectChain } from '../../../../sdk-core/src/world/effect/chain.ts';
@@ -10,6 +11,7 @@ import {
   createWorldNotices,
   listenWorldNotices,
   noticeEffectRefusal,
+  noticeMaterialDegraded,
 } from '../diagnostic/worldNotices.ts';
 import { createFrameComposer } from './compose.ts';
 
@@ -25,9 +27,11 @@ const HALF_FLOATS = {
  *  (`../../backend/autonomous/pages.ts`); `hold` says whether the engine holds its frames. */
 export function session(scene: GraphScene, chain: EffectChain) {
   const context = createTestContext({ answers: HALF_FLOATS });
-  const draw = createSceneDraw(context.gl, scene);
-  const backend = { id: 'engine', scene, frameHeld: false, ...draw, ...draw.host };
   const notices = createWorldNotices();
+  const draw = createSceneDraw(context.gl, scene, [], {
+    materialDegraded: noticeMaterialDegraded(notices),
+  });
+  const backend = { id: 'engine', scene, frameHeld: false, ...draw, ...draw.host };
   const refused = noticeEffectRefusal(notices);
   const compose = createFrameComposer(context.gl, camera, {
     effects: { chain, shown: () => true, refused },

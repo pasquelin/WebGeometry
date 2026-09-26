@@ -134,6 +134,9 @@ export interface MeasuredWorldOptions {
   particles?: readonly import('../../../../sdk-core/src/fluids/particles.ts').ParticlePool[];
   /** Hears, once per refusal, why the renderer refused the `particles`; the session goes on. */
   particlesRefused?: (reason: string) => void;
+  /** Hears a surface WebGL2 draws without a physical feature, held by the world
+   *  (`noticeMaterialDegraded`). */
+  materialDegraded?: import('../../webgl/cluster/validation.ts').MaterialDegraded;
   /** Bounced light. Off by default; `true` turns it on for the whole session. */
   bounce?: boolean;
   /** Target duration of the "Bounce" step per frame, in milliseconds. 0.8 ms by default. */

@@ -3,6 +3,7 @@ import test from 'node:test';
 import * as G from '../../host/graph/graph.fixture.ts';
 import { clusterMaterialReason } from './compatibility.ts';
 import { validateClusterMeshes } from './validation.ts';
+import { physicalFeaturesLost } from '../../scene/physicalMaterialGate.ts';
 import { drawPasses } from '../../cluster/batchMesh.ts';
 import { hostBlending } from '../../scene/materialBlending.ts';
 
@@ -125,25 +126,28 @@ test('a transmissive physical material is a scene copy of the transmission pass,
   const plain = G.physicalSurface();
   assert.equal(clusterMaterialReason(plain, { position, normal }), undefined);
   assert.equal(clusterMaterialReason(plain, { position, normal }, true), undefined);
+  // A physical extension is drawn without, by name (#772): never a refusal.
   plain.ior = 1.3;
-  assert.match(clusterMaterialReason(plain, { position, normal })!, /ior without transmission/);
-  glass.ior = 1.3;
-  assert.equal(clusterMaterialReason(glass, { position, normal }, true), undefined);
+  assert.equal(clusterMaterialReason(plain, { position, normal }), undefined);
+  assert.deepEqual(physicalFeaturesLost(plain), ['ior']);
+  glass.ior = 1.3; // the IOR of a transmission is drawn
   glass.clearcoat = 0.5;
-  assert.match(clusterMaterialReason(glass, { position, normal }, true)!, /clearcoat/);
-  glass.clearcoat = 0;
   glass.thicknessMap = fakeTexture();
-  assert.match(clusterMaterialReason(glass, { position, normal }, true)!, /thicknessMap/);
+  assert.equal(clusterMaterialReason(glass, { position, normal }, true), undefined);
+  assert.deepEqual(physicalFeaturesLost(glass), ['clearcoat', 'thicknessMap']);
 });
 
-test('a transmissive copy mutated into another physical extension is refused before drawing', () => {
+test('a transmissive copy mutated into another physical extension is drawn without it, heard', () => {
   const normal = new G.BufferAttribute(new Float32Array(9), 3);
   const glass = G.physicalSurface({ transmission: 1 });
   const copy = { material: glass, geometry: { attributes: { position, normal } } } as never;
   const copies = { ...NO_COPIES, transmissive: [copy] };
-  validateClusterMeshes([], [], copies, new Map());
+  const heard: string[][] = [];
+  const degraded = (_: unknown, features: readonly string[]) => void heard.push([...features]);
+  validateClusterMeshes([], [], copies, new Map(), degraded);
   glass.sheen = 1;
-  assert.throws(() => validateClusterMeshes([], [], copies, new Map()), /sheen/);
+  validateClusterMeshes([], [], copies, new Map(), degraded);
+  assert.deepEqual(heard, [['sheen']]);
   glass.sheen = 0;
   // A blended copy the owner submits is validated like a page: it never transmits.
   assert.throws(

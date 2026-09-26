@@ -17,7 +17,7 @@ import type { HostDrawCamera } from '../../camera/world.ts';
 import { Matrix3UniformCache, setClusterSamplers, setMatrix3 } from './uniforms.ts';
 import { WebglClusterMaterialUniforms } from './materialUniforms.ts';
 import { createClusterProgram } from './program.ts';
-import { validateClusterMeshes } from './validation.ts';
+import { validateClusterMeshes, type MaterialDegraded } from './validation.ts';
 import { WebglClusterBackdrop } from './backdrop.ts';
 import { BACKDROP_UNITS, ClusterMaterialPass, type Material } from './materialBinding.ts';
 import { refuseCluster } from './refusal.ts';
@@ -38,7 +38,7 @@ export class WebglClusterRenderer {
   private modelViewUpload = new Float32Array(16);
   private lights: WebglClusterLights;
   private state: WebglClusterState;
-  private validatedMaterials = new Map<Material, HostAttributes>();
+  private validated = new Map<Material, HostAttributes>();
   private multiDraw: MultiDraw | null;
   private backdrop: WebglClusterBackdrop;
   private copies = new WebglClusterCopies<SceneCopy>();
@@ -54,6 +54,7 @@ export class WebglClusterRenderer {
   backdropPasses = 0;
   /** The display curve's rank (`TONE_MAPPING_RANK`), written by the owner before a frame. */
   toneCurve: number = TONE_MAPPING_RANK.aces;
+  degraded: MaterialDegraded | undefined; // written by the owner before a frame, as `toneCurve`
   readonly pass: ClusterMaterialPass;
   /** The display renderer whose vertex arrays, maps, backdrop and raster state this one shares:
    *  set on the effect chain's linear variant (`createClusterProgram`). */
@@ -150,7 +151,7 @@ export class WebglClusterRenderer {
     if (lightReason) refuseCluster(lightReason);
     this.copies.cull(copies, camera);
     const { plain, blended, transmissive } = this.copies;
-    validateClusterMeshes(meshes, diagnosticMeshes, this.copies, this.validatedMaterials);
+    validateClusterMeshes(meshes, diagnosticMeshes, this.copies, this.validated, this.degraded);
     gl.useProgram(this.program);
     gl.disable(gl.STENCIL_TEST);
     gl.uniformMatrix4fv(this.at('projectionMatrix'), false, camera.projection);
