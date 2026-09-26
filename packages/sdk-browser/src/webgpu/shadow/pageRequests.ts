@@ -56,7 +56,7 @@ export function createShadowPageRequests(device: GPUDevice, pages: number) {
     /** What the shading records its requests in (`../../lighting/direct/shadowWgsl.ts`). */
     buffer: requestBuffer,
     /** GPU bytes of the request buffer, counted in the pool (`shadowRequestBytes`). */
-    bytes: shadowRequestBytes(pages),
+    bytes: requestBuffer.size,
     /** Copies waiting for their image to be read back: an image may not hold before they land. */
     get inFlight() {
       return inFlight;

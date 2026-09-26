@@ -93,13 +93,11 @@ export const PAGE_INDEX_MASK = 0xffff;
  *  WebGPU guarantees on every device (the default `maxTextureDimension2D`). */
 const LAYER_SIDE = Math.floor(8192 / SHADOW_PAGE);
 export const LAYER_PAGES = LAYER_SIDE * LAYER_SIDE;
-/** Layers the page index addresses (`PAGE_INDEX_MASK`): 16 of 4 096 pages. */
-export const MAX_LAYERS = (PAGE_INDEX_MASK + 1) / LAYER_PAGES;
 /** The fewest whole layers of at most `layerSide²` pages — the device's texture side, the portable
  *  one by default — that hold `pages`, each the smallest square that shares them out. Page `p`
  *  lies in layer `⌊p / side²⌋`: one layer is the one square the pool always was. */
 export function shadowPoolShape(pages: number, layerSide = LAYER_SIDE) {
-  const wanted = Math.min(Math.max(1, Math.ceil(pages)), MAX_LAYERS * LAYER_PAGES);
+  const wanted = Math.min(Math.max(1, Math.ceil(pages)), PAGE_INDEX_MASK + 1);
   const layers = Math.ceil(wanted / layerSide ** 2);
   return { side: Math.ceil(Math.sqrt(wanted / layers)), layers };
 }

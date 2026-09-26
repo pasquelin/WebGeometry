@@ -11,14 +11,14 @@ import { MAX_SHADOW_PAGES, MAX_SHADOW_REGIONS } from './recordPack.ts';
  * is sized here from one rule, never grown at run time, and counted in the memory budget
  * (`residency/memoryBudget.ts`).
  *
- * The rule: a frame draws at most one layer's pages, and a batch holds `MAX_SHADOW_PAGES` of them,
+ * The rule: a frame draws at most `LAYER_PAGES` pages, and a batch holds `MAX_SHADOW_PAGES` of them,
  * so a frame needs at most `MAX_SHADOW_BATCHES` full batches, each in at most `DAG_MAX_VIEWS` light
- * views. A frame that lists more — a pool of several layers, or a view limit a light cut bisected
+ * views. A frame that lists more — a larger pool (#850), or a view limit a light cut bisected
  * after dropping work (`../dag/lightCutRedraws.ts`) — draws `MAX_SHADOW_BATCHES` and leaves the
  * rest pending, drawn the next frame.
  */
 
-/** Batches one frame draws at most: one layer's pages (`LAYER_PAGES`), in full batches. */
+/** Batches one frame draws at most: `LAYER_PAGES` pages, in full batches. */
 export const MAX_SHADOW_BATCHES = Math.ceil(LAYER_PAGES / MAX_SHADOW_PAGES);
 /** Light views, one per face a batch draws, of one frame's batches together. */
 export const MAX_SHADOW_RUNS = MAX_SHADOW_BATCHES * DAG_MAX_VIEWS;
