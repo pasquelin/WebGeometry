@@ -6,7 +6,7 @@
 // page the former descent kept, 11,905 pages against 6,000 (#486).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sceneView } from './cutDispatchesScene.ts';
+import { sceneView } from '../../../tests/browser/probes/cutDispatchesScene.ts';
 import { evaluateDagSelectionKernel } from '../../../packages/sdk-browser/src/gpu/dag/selection.ts';
 import { DAG_NODE_FLOATS } from '../../../packages/sdk-browser/src/gpu/dag/types.ts';
 import { NODE_FLOOR } from '../../../packages/sdk-browser/src/gpu/dag/packNodes.ts';
